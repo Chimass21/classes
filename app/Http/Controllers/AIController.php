@@ -20,174 +20,195 @@ class AIController extends Controller
 
     public function generateLessonPlan(Request $request)
     {
-        $data = $request->validate([
-            'subject' => 'required|string',
-            'class' => 'required|string',
-            'term' => 'required|string',
-            'week' => 'required|integer|min:1|max:13',
-            'topic' => 'required|string',
-            'schoolName' => 'nullable|string',
-            'teacherName' => 'nullable|string',
-            'duration' => 'nullable|string',
-        ]);
+        try {
+            $data = $request->validate([
+                'subject' => 'required|string',
+                'class' => 'required|string',
+                'term' => 'required|string',
+                'week' => 'required|integer|min:1|max:13',
+                'topic' => 'required|string',
+                'schoolName' => 'nullable|string',
+                'teacherName' => 'nullable|string',
+                'duration' => 'nullable|string',
+            ]);
 
-        $user = Session::get('user');
-        $teacherName = $data['teacherName'] ?? $user['name'] ?? 'Teacher';
-        $schoolName = $data['schoolName'] ?? 'ClassPortal Academy';
-        $duration = $data['duration'] ?? '40 Minutes';
-        $ageRange = CurriculumData::getAgeRange($data['class']);
-        $scheme = CurriculumData::getSchemeOfWork($data['subject'], $data['class'], $data['term']);
+            $user = Session::get('user');
+            $teacherName = $data['teacherName'] ?? $user['name'] ?? 'Teacher';
+            $schoolName = $data['schoolName'] ?? 'ClassPortal Academy';
+            $duration = $data['duration'] ?? '40 Minutes';
+            $ageRange = CurriculumData::getAgeRange($data['class']);
+            $scheme = CurriculumData::getSchemeOfWork($data['subject'], $data['class'], $data['term']);
 
-        $prompt = $this->buildLessonPlanPrompt(
-            $data['subject'], $data['class'], $data['term'], $data['week'],
-            $data['topic'], $schoolName, $teacherName, $duration, $ageRange, $scheme
-        );
-
-        $response = $this->gemini->generate($prompt);
-        $plan = json_decode($response, true);
-
-        if (!is_array($plan) || empty($plan)) {
-            $plan = $this->fallbackLessonPlan(
+            $prompt = $this->buildLessonPlanPrompt(
                 $data['subject'], $data['class'], $data['term'], $data['week'],
-                $data['topic'], $schoolName, $teacherName, $duration, $ageRange
+                $data['topic'], $schoolName, $teacherName, $duration, $ageRange, $scheme
             );
+
+            $response = $this->gemini->generate($prompt);
+            $plan = json_decode($response, true);
+
+            if (!is_array($plan) || empty($plan)) {
+                $plan = $this->fallbackLessonPlan(
+                    $data['subject'], $data['class'], $data['term'], $data['week'],
+                    $data['topic'], $schoolName, $teacherName, $duration, $ageRange
+                );
+            }
+
+            $plan['subject'] = $data['subject'];
+            $plan['class'] = $data['class'];
+            $plan['term'] = $data['term'];
+            $plan['week'] = $data['week'];
+            $plan['topic'] = $data['topic'];
+            $plan['schoolName'] = $schoolName;
+            $plan['teacherName'] = $teacherName;
+            $plan['duration'] = $duration;
+            $plan['ageRange'] = $ageRange;
+            $plan['date'] = now()->format('l, F j, Y');
+
+            JsonDb::init();
+            $db = JsonDb::get();
+            $teacherId = $user['id'] ?? 'unknown';
+            $planId = 'plan_' . uniqid();
+            $db['lessonPlans'][] = array_merge($plan, [
+                'id' => $planId,
+                'teacherId' => $teacherId,
+                'createdAt' => now()->toIso8601String(),
+            ]);
+            JsonDb::save($db);
+
+            return response()->json([
+                'success' => true,
+                'plan' => $plan,
+                'planId' => $planId,
+                'message' => 'Lesson plan generated successfully.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Generation failed: ' . $e->getMessage(),
+            ], 500);
         }
-
-        $plan['subject'] = $data['subject'];
-        $plan['class'] = $data['class'];
-        $plan['term'] = $data['term'];
-        $plan['week'] = $data['week'];
-        $plan['topic'] = $data['topic'];
-        $plan['schoolName'] = $schoolName;
-        $plan['teacherName'] = $teacherName;
-        $plan['duration'] = $duration;
-        $plan['ageRange'] = $ageRange;
-        $plan['date'] = now()->format('l, F j, Y');
-
-        JsonDb::init();
-        $db = JsonDb::get();
-        $teacherId = $user['id'] ?? 'unknown';
-        $planId = 'plan_' . uniqid();
-        $db['lessonPlans'][] = array_merge($plan, [
-            'id' => $planId,
-            'teacherId' => $teacherId,
-            'createdAt' => now()->toIso8601String(),
-        ]);
-        JsonDb::save($db);
-
-        return response()->json([
-            'success' => true,
-            'plan' => $plan,
-            'planId' => $planId,
-            'message' => 'Curriculum-based lesson plan generated successfully.',
-        ]);
     }
 
     public function generateLessonNote(Request $request)
     {
-        $data = $request->validate([
-            'subject' => 'required|string',
-            'class' => 'required|string',
-            'term' => 'required|string',
-            'week' => 'required|integer|min:1|max:13',
-            'topic' => 'required|string',
-            'difficulty' => 'nullable|string',
-            'periods' => 'nullable|string',
-        ]);
+        try {
+            $data = $request->validate([
+                'subject' => 'required|string',
+                'class' => 'required|string',
+                'term' => 'required|string',
+                'week' => 'required|integer|min:1|max:13',
+                'topic' => 'required|string',
+                'difficulty' => 'nullable|string',
+                'periods' => 'nullable|string',
+            ]);
 
-        $user = Session::get('user');
-        $difficulty = $data['difficulty'] ?? 'Medium';
-        $periods = $data['periods'] ?? '2 Periods';
-        $ageRange = CurriculumData::getAgeRange($data['class']);
-        $scheme = CurriculumData::getSchemeOfWork($data['subject'], $data['class'], $data['term']);
+            $user = Session::get('user');
+            $difficulty = $data['difficulty'] ?? 'Medium';
+            $periods = $data['periods'] ?? '2 Periods';
+            $ageRange = CurriculumData::getAgeRange($data['class']);
+            $scheme = CurriculumData::getSchemeOfWork($data['subject'], $data['class'], $data['term']);
 
-        $prompt = $this->buildLessonNotePrompt(
-            $data['subject'], $data['class'], $data['term'], $data['week'],
-            $data['topic'], $periods, $difficulty, $ageRange, $scheme
-        );
-
-        $response = $this->gemini->generate($prompt);
-        $note = json_decode($response, true);
-
-        if (!is_array($note) || empty($note)) {
-            $note = $this->fallbackLessonNote(
+            $prompt = $this->buildLessonNotePrompt(
                 $data['subject'], $data['class'], $data['term'], $data['week'],
-                $data['topic'], $periods, $difficulty, $ageRange
+                $data['topic'], $periods, $difficulty, $ageRange, $scheme
             );
+
+            $response = $this->gemini->generate($prompt);
+            $note = json_decode($response, true);
+
+            if (!is_array($note) || empty($note)) {
+                $note = $this->fallbackLessonNote(
+                    $data['subject'], $data['class'], $data['term'], $data['week'],
+                    $data['topic'], $periods, $difficulty, $ageRange
+                );
+            }
+
+            $note['subject'] = $data['subject'];
+            $note['class'] = $data['class'];
+            $note['term'] = $data['term'];
+            $note['week'] = $data['week'];
+            $note['topic'] = $data['topic'];
+            $note['difficulty'] = $difficulty;
+            $note['periods'] = $periods;
+            $note['ageRange'] = $ageRange;
+
+            JsonDb::init();
+            $db = JsonDb::get();
+            $teacherId = $user['id'] ?? 'unknown';
+            $noteId = 'note_' . uniqid();
+            $db['lessonNotes'][] = array_merge($note, [
+                'id' => $noteId,
+                'teacherId' => $teacherId,
+                'createdAt' => now()->toIso8601String(),
+            ]);
+            JsonDb::save($db);
+
+            return response()->json([
+                'success' => true,
+                'note' => $note,
+                'noteId' => $noteId,
+                'message' => 'Lesson note generated successfully.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Generation failed: ' . $e->getMessage(),
+            ], 500);
         }
-
-        $note['subject'] = $data['subject'];
-        $note['class'] = $data['class'];
-        $note['term'] = $data['term'];
-        $note['week'] = $data['week'];
-        $note['topic'] = $data['topic'];
-        $note['difficulty'] = $difficulty;
-        $note['periods'] = $periods;
-        $note['ageRange'] = $ageRange;
-
-        JsonDb::init();
-        $db = JsonDb::get();
-        $teacherId = $user['id'] ?? 'unknown';
-        $noteId = 'note_' . uniqid();
-        $db['lessonNotes'][] = array_merge($note, [
-            'id' => $noteId,
-            'teacherId' => $teacherId,
-            'createdAt' => now()->toIso8601String(),
-        ]);
-        JsonDb::save($db);
-
-        return response()->json([
-            'success' => true,
-            'note' => $note,
-            'noteId' => $noteId,
-            'message' => 'Curriculum-based lesson note generated successfully.',
-        ]);
     }
 
     public function generateQuestions(Request $request)
     {
-        $data = $request->validate([
-            'subject' => 'required|string',
-            'topic' => 'required|string',
-            'class' => 'nullable|string',
-            'term' => 'nullable|string',
-            'week' => 'nullable|integer',
-            'count' => 'required|integer|in:10,20,30,50,100',
-            'includeTheory' => 'nullable|boolean',
-            'lessonNoteId' => 'nullable|string',
-        ]);
+        try {
+            $data = $request->validate([
+                'subject' => 'required|string',
+                'topic' => 'required|string',
+                'class' => 'nullable|string',
+                'term' => 'nullable|string',
+                'week' => 'nullable|integer',
+                'count' => 'required|integer|in:10,20,30,50,100',
+                'includeTheory' => 'nullable|boolean',
+                'lessonNoteId' => 'nullable|string',
+            ]);
 
-        $lessonNoteContent = '';
-        if (!empty($data['lessonNoteId'])) {
-            JsonDb::init();
-            $db = JsonDb::get();
-            foreach ($db['lessonNotes'] as $n) {
-                if ($n['id'] === $data['lessonNoteId']) {
-                    $lessonNoteContent = json_encode($n);
-                    break;
+            $lessonNoteContent = '';
+            if (!empty($data['lessonNoteId'])) {
+                JsonDb::init();
+                $db = JsonDb::get();
+                foreach ($db['lessonNotes'] as $n) {
+                    if ($n['id'] === $data['lessonNoteId']) {
+                        $lessonNoteContent = json_encode($n);
+                        break;
+                    }
                 }
             }
+
+            $prompt = $this->buildQuestionsPrompt(
+                $data['subject'], $data['topic'], $data['count'],
+                $data['class'] ?? 'SS1', $data['term'] ?? 'First Term',
+                $data['week'] ?? 1, $data['includeTheory'] ?? false, $lessonNoteContent
+            );
+
+            $response = $this->gemini->generate($prompt);
+            $questions = json_decode($response, true);
+
+            if (!is_array($questions) || empty($questions)) {
+                $questions = $this->fallbackQuestions($data['subject'], $data['topic'], $data['count'], $data['includeTheory'] ?? false);
+            }
+
+            return response()->json([
+                'success' => true,
+                'questions' => $questions,
+                'count' => $data['count'],
+                'message' => $data['count'] . ' questions generated with ' . ($data['includeTheory'] ? 'theory questions' : 'MCQ only') . '.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => 'Generation failed: ' . $e->getMessage(),
+            ], 500);
         }
-
-        $prompt = $this->buildQuestionsPrompt(
-            $data['subject'], $data['topic'], $data['count'],
-            $data['class'] ?? 'SS1', $data['term'] ?? 'First Term',
-            $data['week'] ?? 1, $data['includeTheory'] ?? false, $lessonNoteContent
-        );
-
-        $response = $this->gemini->generate($prompt);
-        $questions = json_decode($response, true);
-
-        if (!is_array($questions) || empty($questions)) {
-            $questions = $this->fallbackQuestions($data['subject'], $data['topic'], $data['count'], $data['includeTheory'] ?? false);
-        }
-
-        return response()->json([
-            'success' => true,
-            'questions' => $questions,
-            'count' => $data['count'],
-            'message' => $data['count'] . ' questions generated with ' . ($data['includeTheory'] ? 'theory questions' : 'MCQ only') . '.',
-        ]);
     }
 
     public function saveGeneratedQuestions(Request $request)
