@@ -8,8 +8,10 @@ coverage/
 *.log
 .env*
 !.env.example
-/storage/
-/bootstrap/cache/
+/storage/*
+!/storage/.gitkeep
+/bootstrap/cache/*
+!/bootstrap/cache/.gitkeep
 
 # Zip archives
 *.zip
