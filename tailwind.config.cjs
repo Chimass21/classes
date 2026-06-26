@@ -1,0 +1,38 @@
+module.exports = {
+  content: [
+    './resources/**/*.blade.php',
+    './resources/**/*.js',
+    './resources/**/*.ts',
+  ],
+  theme: {
+    extend: {
+      colors: {
+        'red-650': '#dc2626',
+        'emerald-650': '#059669',
+        'emerald-750': '#047857',
+        'emerald-150': '#d1fae5',
+        'blue-150': '#bfdbfe',
+        'blue-955': '#1e3a5f',
+        'slate-55': '#f8fafc',
+        'slate-105': '#f1f5f9',
+        'slate-150': '#e2e8f0',
+        'slate-205': '#cbd5e1',
+        'slate-250': '#b0bec5',
+        'slate-350': '#94a3b8',
+        'slate-450': '#64748b',
+        'slate-550': '#475569',
+        'slate-650': '#334155',
+        'slate-850': '#1e293b',
+        'slate-905': '#0f172a',
+        'indigo-105': '#e0e7ff',
+        'indigo-150': '#c7d2fe',
+        'indigo-505': '#6366f1',
+        'indigo-650': '#4f46e5',
+        'indigo-750': '#4338ca',
+        'indigo-805': '#3730a3',
+        'indigo-850': '#312e81',
+      },
+    },
+  },
+  plugins: [],
+};

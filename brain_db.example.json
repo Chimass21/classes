@@ -1,0 +1,18 @@
+{
+    "users": [],
+    "exams": [],
+    "results": [],
+    "lessonNotes": [],
+    "lessonPlans": [],
+    "notifications": [],
+    "reportSheets": [],
+    "transactions": [],
+    "questionSets": [],
+    "subjects": ["Mathematics","Physics","Chemistry","Biology","English Language","Accounting","Economics","Government","ICT","Literature","Commerce","Agriculture","Civic Education"],
+    "schemes": [],
+    "schoolConfig": {
+        "name": "ClassPortal Academy",
+        "address": "",
+        "motto": "Excellence in Education"
+    }
+}
