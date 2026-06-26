@@ -361,7 +361,7 @@
                         <span class="text-xs font-bold uppercase text-emerald-300 tracking-wider">Educator Bundle</span>
                         <h3 class="text-2xl font-black text-white">Publish CBT Exams</h3>
                         <p class="text-xs text-slate-300">Publish exams for hundreds of examinees, host link sessions.</p>
-                        <div class="text-4xl font-black text-white font-sans">₦0 <span class="text-xs text-emerald-300 font-medium">/ per CBT Published</span></div>
+                        <div class="text-4xl font-black text-white font-sans">₦1,000 <span class="text-xs text-emerald-300 font-medium">/ per CBT Published</span></div>
                         <p class="text-[11px] text-slate-400 font-sans block">All features unlocked instantly & completely free</p>
                         <ul class="space-y-3 text-xs text-slate-200 font-semibold">
                             <li class="flex items-center gap-2"><span class="w-4 h-4 text-emerald-400">✓</span> Bulk spreadsheet CSV Adapters</li>

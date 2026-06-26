@@ -536,7 +536,7 @@ export default function LandingPage({ onGetStarted, onLoginClick, onSelectExam }
                 <span className="text-xs font-bold uppercase text-emerald-300 tracking-wider">Educator Bundle</span>
                 <h3 className="text-2xl font-black text-white">Publish CBT Exams</h3>
                 <p className="text-xs text-slate-300">Publish exams for hundreds of examinees, host link sessions.</p>
-                <div className="text-4xl font-black text-white font-sans">₦0 <span className="text-xs text-emerald-300 font-medium">/ per CBT Published</span></div>
+                <div className="text-4xl font-black text-white font-sans">₦1,000 <span className="text-xs text-emerald-300 font-medium">/ per CBT Published</span></div>
                 <p className="text-[11px] text-slate-405 font-sans block">All features unlocked instantly & completely free</p>
                 <ul className="space-y-3 text-xs text-slate-200 font-semibold">
                   <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Bulk spreadsheet CSV Adapters</li>
