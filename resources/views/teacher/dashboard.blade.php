@@ -338,11 +338,12 @@ async function loadTeacherData() {
         renderExams();
         renderResults();
 
-        // Auto-display the most recent lesson note in the preview
+        // Auto-display the most recent lesson note and switch to its tab
         if (teacherData.notes.length > 0) {
             const last = teacherData.notes[teacherData.notes.length - 1];
             currentNoteId = last.id;
             displayLessonNote(last);
+            switchTab('lesson-notes');
         }
 
         document.getElementById('loading').classList.add('hidden');
