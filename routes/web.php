@@ -116,6 +116,7 @@ Route::prefix('api')->group(function () {
     Route::get('/download/lesson-note/{id}/{format}', [DownloadController::class, 'downloadLessonNote']);
     Route::get('/download/lesson-plan/{id}/{format}', [DownloadController::class, 'downloadLessonPlan']);
     Route::get('/download/exam/{id}/{format}', [DownloadController::class, 'downloadExam']);
+    Route::delete('/lesson-notes/{id}', [AIController::class, 'deleteLessonNote']);
 });
 
 // Migrate legacy plaintext passwords to hashed
@@ -132,6 +133,9 @@ Route::get('/migrate-passwords', function () {
     \App\Helpers\JsonDb::save($db);
     return "$count passwords hashed.";
 });
+
+// Shared note view
+Route::get('/shared/note/{id}', [HomeController::class, 'sharedNoteView'])->name('shared.note');
 
 // Direct portal access
 Route::get('/portal/student', function () {

@@ -205,11 +205,15 @@ function renderQuestion() {
   // Options
   const opts = document.getElementById('options-container');
   const selected = selectedAnswers[currentIndex];
+  const optA = q.optionA || (q.options && q.options.A) || q.A || '';
+  const optB = q.optionB || (q.options && q.options.B) || q.B || '';
+  const optC = q.optionC || (q.options && q.options.C) || q.C || '';
+  const optD = q.optionD || (q.options && q.options.D) || q.D || '';
   opts.innerHTML = [
-    { key: 'A', label: q.optionA },
-    { key: 'B', label: q.optionB },
-    { key: 'C', label: q.optionC },
-    { key: 'D', label: q.optionD },
+    { key: 'A', label: optA },
+    { key: 'B', label: optB },
+    { key: 'C', label: optC },
+    { key: 'D', label: optD },
   ].map(opt => {
     const isSelected = selected === opt.key;
     return `<button onclick="selectOption('${opt.key}')" class="w-full flex items-center justify-between text-left p-2.5 sm:p-3.5 rounded-xl border font-bold text-xs sm:text-sm transition duration-150 cursor-pointer ${isSelected ? 'bg-indigo-600/10 border-indigo-600 text-indigo-950 ring-2 ring-indigo-600/15' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'}">
@@ -487,9 +491,13 @@ function showResults() {
           let badgeText = 'Wrong';
           if (isCorrect) { badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200'; badgeText = 'Correct'; }
           else if (isNotAnswered) { badgeColor = 'bg-amber-50 text-amber-700 border-amber-200'; badgeText = 'Not Answered'; }
+          const rOptA = item.optionA || (item.options && item.options.A) || item.A || '';
+          const rOptB = item.optionB || (item.options && item.options.B) || item.B || '';
+          const rOptC = item.optionC || (item.options && item.options.C) || item.C || '';
+          const rOptD = item.optionD || (item.options && item.options.D) || item.D || '';
           const opts = [
-            { key: 'A', label: item.optionA }, { key: 'B', label: item.optionB },
-            { key: 'C', label: item.optionC }, { key: 'D', label: item.optionD }
+            { key: 'A', label: rOptA }, { key: 'B', label: rOptB },
+            { key: 'C', label: rOptC }, { key: 'D', label: rOptD }
           ];
           return '<div class="pt-6 space-y-3 text-left">' +
             '<div class="flex items-center justify-between"><span class="text-xs bg-slate-105 text-slate-650 py-1 px-2.5 rounded-full font-extrabold font-mono">Question ' + String(idx + 1).padStart(2, '0') + '</span><span class="text-[10px] uppercase font-black tracking-wide border py-1 px-3 rounded-full ' + badgeColor + '">' + badgeText + '</span></div>' +

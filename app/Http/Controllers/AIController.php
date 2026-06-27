@@ -283,13 +283,11 @@ class AIController extends Controller
             $formattedQuestions[] = [
                 'id' => $i + 1,
                 'question' => $q['question'] ?? $q['text'] ?? '',
-                'options' => [
-                    'A' => $q['A'] ?? $q['options']['A'] ?? $q['optionA'] ?? '',
-                    'B' => $q['B'] ?? $q['options']['B'] ?? $q['optionB'] ?? '',
-                    'C' => $q['C'] ?? $q['options']['C'] ?? $q['optionC'] ?? '',
-                    'D' => $q['D'] ?? $q['options']['D'] ?? $q['optionD'] ?? '',
-                ],
-                'answer' => $q['answer'] ?? $q['correctAnswer'] ?? $q['correct'] ?? 'A',
+                'optionA' => $q['A'] ?? $q['options']['A'] ?? $q['optionA'] ?? '',
+                'optionB' => $q['B'] ?? $q['options']['B'] ?? $q['optionB'] ?? '',
+                'optionC' => $q['C'] ?? $q['options']['C'] ?? $q['optionC'] ?? '',
+                'optionD' => $q['D'] ?? $q['options']['D'] ?? $q['optionD'] ?? '',
+                'correctAnswer' => $q['answer'] ?? $q['correctAnswer'] ?? $q['correct'] ?? 'A',
             ];
         }
 
@@ -546,6 +544,15 @@ PROMPT;
             'assignment' => $gen['assignment'],
             'detailedNote' => $gen['detailedNote'],
         ];
+    }
+
+    public function deleteLessonNote($noteId)
+    {
+        JsonDb::init();
+        $db = JsonDb::get();
+        $db['lessonNotes'] = array_values(array_filter($db['lessonNotes'], fn($n) => $n['id'] !== $noteId));
+        JsonDb::save($db);
+        return response()->json(['success' => true, 'message' => 'Lesson note deleted.']);
     }
 
     protected function fallbackQuestions($subject, $topic, $count, $includeTheory): array

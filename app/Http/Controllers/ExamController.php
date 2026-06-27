@@ -187,10 +187,10 @@ class ExamController extends Controller
             }
             $failedQuestions[] = [
                 'question' => $q['question'] ?? '',
-                'optionA' => $q['optionA'] ?? '',
-                'optionB' => $q['optionB'] ?? '',
-                'optionC' => $q['optionC'] ?? '',
-                'optionD' => $q['optionD'] ?? '',
+                'optionA' => $q['optionA'] ?? $q['options']['A'] ?? '',
+                'optionB' => $q['optionB'] ?? $q['options']['B'] ?? '',
+                'optionC' => $q['optionC'] ?? $q['options']['C'] ?? '',
+                'optionD' => $q['optionD'] ?? $q['options']['D'] ?? '',
                 'selectedAnswer' => $selected,
                 'correctAnswer' => $correctAnswer,
                 'isCorrect' => $isCorrect,

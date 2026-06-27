@@ -101,6 +101,20 @@ class HomeController extends Controller
         return response()->json(['success' => true, 'feedback' => $feedback]);
     }
 
+    public function sharedNoteView($id)
+    {
+        JsonDb::init();
+        $db = JsonDb::get();
+        $note = null;
+        foreach ($db['lessonNotes'] ?? [] as $n) {
+            if ($n['id'] === $id) { $note = $n; break; }
+        }
+        if (!$note) {
+            abort(404, 'Lesson note not found.');
+        }
+        return view('shared-note', ['note' => $note]);
+    }
+
     public function chatFeedback(Request $request)
     {
         $message = $request->input('message', '');

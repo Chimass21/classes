@@ -807,7 +807,7 @@ function renderPracticeQuiz(questions) {
                 ${['A','B','C','D'].map(k => `
                     <button onclick="practiceSelect('${k}')" class="p-3.5 rounded-xl border text-left font-semibold text-xs flex items-center gap-2.5 transition cursor-pointer ${answers[idx] === k ? 'bg-slate-900 text-white border-slate-900' : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'}">
                         <span class="w-6 h-6 rounded-md flex items-center justify-center font-bold font-mono border text-[11px] ${answers[idx] === k ? 'bg-white text-slate-900' : 'bg-white text-slate-500 border-slate-200'}">${k}</span>
-                        ${escapeHtml(q['option'+k])}
+                        ${escapeHtml(q['option'+k] || q[k] || (q.options && q.options[k]) || '')}
                     </button>
                 `).join('')}
             </div>

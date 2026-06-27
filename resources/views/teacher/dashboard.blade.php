@@ -179,14 +179,6 @@
                         </div>
                     </div>
 
-                    {{-- Lesson Note Preview --}}
-                    <div id="note-preview" class="hidden mt-6 bg-white border border-slate-200 rounded-xl p-6">
-                        <div class="flex flex-wrap items-center justify-between gap-2 mb-4 border-b border-slate-200 pb-4">
-                            <h3 class="text-lg font-bold text-slate-900">Lesson Note Preview</h3>
-                            <div class="flex flex-wrap gap-2" id="note-action-buttons"></div>
-                        </div>
-                        <div id="note-content" class="prose max-w-none text-sm"></div>
-                    </div>
                 </div>
 
                 {{-- === QUESTION POOL TAB === --}}
@@ -278,6 +270,15 @@
                         <h3 class="text-lg font-bold text-slate-900">Student Results</h3>
                         <div id="results-list" class="space-y-2"></div>
                     </div>
+                </div>
+
+                {{-- Persistent previews (always visible) --}}
+                <div id="note-preview" class="hidden mt-6 bg-white border border-slate-200 rounded-xl p-6">
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-4 border-b border-slate-200 pb-4">
+                        <h3 class="text-lg font-bold text-slate-900">Lesson Note Preview</h3>
+                        <div class="flex flex-wrap gap-2" id="note-action-buttons"></div>
+                    </div>
+                    <div id="note-content" class="prose max-w-none text-sm"></div>
                 </div>
             </div>
         </div>
@@ -561,6 +562,8 @@ function displayLessonNote(note) {
         <button onclick="downloadNote('docx')" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer">DOCX</button>
         <button onclick="printNote()" class="px-3 py-1.5 bg-slate-600 text-white text-xs font-bold rounded-lg hover:bg-slate-700 cursor-pointer">Print</button>
         <button onclick="copyNoteContent()" class="px-3 py-1.5 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 cursor-pointer">Copy</button>
+        <button onclick="copyNoteLink()" class="px-3 py-1.5 bg-cyan-600 text-white text-xs font-bold rounded-lg hover:bg-cyan-700 cursor-pointer">Copy Link</button>
+        <button onclick="deleteNote()" class="px-3 py-1.5 bg-red-700 text-white text-xs font-bold rounded-lg hover:bg-red-800 cursor-pointer">Delete</button>
         <button onclick="shareNote()" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 cursor-pointer">Share</button>
         <button onclick="readAloud('note-content')" class="px-3 py-1.5 bg-purple-600 text-white text-xs font-bold rounded-lg hover:bg-purple-700 cursor-pointer">Read Aloud</button>
         <button onclick="generateQuestionsFromNote()" class="px-3 py-1.5 bg-pink-600 text-white text-xs font-bold rounded-lg hover:bg-pink-700 cursor-pointer">Generate Q from Note</button>
@@ -576,6 +579,27 @@ function shareNote() {
     const text = document.getElementById('note-content').innerText;
     if (navigator.share) navigator.share({ title: 'Lesson Note', text }).catch(() => {});
     else { copyNoteContent(); alert('Content copied for sharing!'); }
+}
+function copyNoteLink() {
+    if (!currentNoteId) return;
+    const url = window.location.origin + '/shared/note/' + currentNoteId;
+    navigator.clipboard.writeText(url).then(() => alert('Note link copied!')).catch(() => { fallbackCopy(url); });
+}
+function fallbackCopy(text) {
+    const ta = document.createElement('textarea'); ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); alert('Note link copied!');
+}
+async function deleteNote() {
+    if (!currentNoteId || !confirm('Delete this lesson note? This cannot be undone.')) return;
+    try {
+        const res = await fetch('/api/lesson-notes/' + currentNoteId, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+            currentNoteId = null;
+            document.getElementById('note-preview').classList.add('hidden');
+            loadTeacherData();
+        } else { alert('Delete failed.'); }
+    } catch(e) { alert('Network error.'); }
 }
 async function generateQuestionsFromNote() {
     if (!currentNoteId) return;
