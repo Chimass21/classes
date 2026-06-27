@@ -195,6 +195,16 @@ class AIController extends Controller
 
             if (!is_array($questions) || empty($questions)) {
                 $questions = $this->fallbackQuestions($data['subject'], $data['topic'], $data['count'], $data['includeTheory'] ?? false);
+            } else {
+                $objectives = $questions['objectives'] ?? [];
+                $hasOptions = !empty($objectives) && (
+                    isset($objectives[0]['A']) ||
+                    isset($objectives[0]['options']) ||
+                    isset($objectives[0]['optionA'])
+                );
+                if (!$hasOptions) {
+                    $questions = $this->fallbackQuestions($data['subject'], $data['topic'], $data['count'], $data['includeTheory'] ?? false);
+                }
             }
 
             return response()->json([
@@ -230,7 +240,7 @@ class AIController extends Controller
             'teacherId' => $user['id'] ?? 'unknown',
             'source' => 'ai_generated',
             'sourceId' => null,
-            'questions' => $data['questions'],
+            'questions' => $request->input('questions'),
             'subject' => $data['subject'],
             'topic' => $data['topic'],
             'createdAt' => now()->toIso8601String(),

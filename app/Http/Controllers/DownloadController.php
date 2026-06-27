@@ -211,21 +211,12 @@ class DownloadController extends Controller
             ' . $matRow . '
             ' . $prevRow . '
             <tr>
-                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700;border:1px solid #000" colspan="4">Lesson Procedure</td>
+                <td style="padding:1px 2px;font-size:7pt;font-weight:700;text-align:center;background:#1a56db;color:#fff;border:1px solid #1a56db">Step</td>
+                <td style="padding:1px 2px;font-size:7pt;font-weight:700;text-align:left;background:#1a56db;color:#fff;border:1px solid #1a56db">Teacher\'s Activities</td>
+                <td style="padding:1px 2px;font-size:7pt;font-weight:700;text-align:left;background:#1a56db;color:#fff;border:1px solid #1a56db">Learners\' Activities</td>
+                <td style="padding:1px 2px;font-size:7pt;font-weight:700;text-align:left;background:#1a56db;color:#fff;border:1px solid #1a56db">Learning Points</td>
             </tr>
-            <tr>
-                <td colspan="4" style="padding:0;border:0">
-                    <table style="width:100%;border-collapse:collapse;font-size:7pt">
-                        <tr>
-                            <th style="padding:1px 2px;border:1px solid #000;font-size:7pt;font-weight:700;text-align:left;background:#1a56db;color:#fff">Step</th>
-                            <th style="padding:1px 2px;border:1px solid #000;font-size:7pt;font-weight:700;text-align:left;background:#1a56db;color:#fff">Teacher\'s Activities</th>
-                            <th style="padding:1px 2px;border:1px solid #000;font-size:7pt;font-weight:700;text-align:left;background:#1a56db;color:#fff">Learners\' Activities</th>
-                            <th style="padding:1px 2px;border:1px solid #000;font-size:7pt;font-weight:700;text-align:left;background:#1a56db;color:#fff">Learning Points</th>
-                        </tr>
-                        ' . ($stepsHtml ?: '<tr><td style="padding:2px;border:1px solid #000;font-size:7pt" colspan="4">No steps available</td></tr>') . '
-                    </table>
-                </td>
-            </tr>
+            ' . ($stepsHtml ?: '<tr><td style="padding:2px;border:1px solid #000;font-size:7pt" colspan="4">No steps available</td></tr>') . '
             ' . $evalRow . '
             ' . $assignRow . '
             ' . $summaryRow . '
