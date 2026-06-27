@@ -53,6 +53,13 @@ Route::prefix('admin')->middleware(['json.auth', 'role:admin'])->group(function 
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
 });
 
+// Portal Switching (requires login)
+Route::middleware('json.auth')->group(function () {
+    Route::post('/switch/student', [AuthController::class, 'switchToStudent'])->name('switch.to.student');
+    Route::post('/switch/teacher', [AuthController::class, 'switchToTeacher'])->name('switch.to.teacher');
+    Route::post('/switch/back', [AuthController::class, 'switchBack'])->name('switch.back');
+});
+
 // API Routes (for AJAX calls)
 Route::prefix('api')->group(function () {
     // Auth API

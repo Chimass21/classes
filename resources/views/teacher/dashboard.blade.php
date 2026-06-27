@@ -14,6 +14,21 @@
                 <p class="text-sm text-slate-500">Generate curriculum-based lesson plans, notes, and CBT exams</p>
             </div>
             <div class="flex items-center gap-2">
+                @if(Session::get('user._switched'))
+                    <form action="{{ route('switch.back') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-100 transition cursor-pointer">
+                            ⬅ Back to {{ ucfirst(Session::get('user._original_role')) }}
+                        </button>
+                    </form>
+                @else
+                    <form action="{{ route('switch.to.student') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold hover:bg-indigo-100 transition cursor-pointer">
+                            👤 Student Portal
+                        </button>
+                    </form>
+                @endif
                 <span class="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold">{{ Session::get('user.name') }}</span>
                 <button onclick="loadTeacherData()" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 transition cursor-pointer" title="Refresh">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>

@@ -63,7 +63,15 @@
                     ⚡ Student Dashboard
                 </div>
             </div>
-            <div class="flex items-center space-x-6">
+            <div class="flex items-center space-x-3">
+                @if(Session::get('user._switched'))
+                    <form action="{{ route('switch.back') }}" method="POST">
+                        @csrf
+                        <button type="submit" class="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-100 transition cursor-pointer">
+                            ⬅ Back to {{ ucfirst(Session::get('user._original_role')) }}
+                        </button>
+                    </form>
+                @endif
                 <div class="text-right">
                     <div class="text-sm font-bold text-slate-900">{{ session('user')['name'] ?? 'Student' }}</div>
                     <div class="text-[10px] text-slate-400 uppercase tracking-widest font-black">Active Student</div>

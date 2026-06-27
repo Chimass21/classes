@@ -208,6 +208,47 @@ class AuthController extends Controller
         return response()->json(['success' => true, 'message' => 'Verification instruction sent!']);
     }
 
+    public function switchToStudent()
+    {
+        $user = Session::get('user');
+        if (!$user) return redirect()->route('login');
+
+        Session::put('original_user', $user);
+        $switched = $user;
+        $switched['role'] = 'student';
+        $switched['_switched'] = true;
+        $switched['_original_role'] = $user['role'];
+        Session::put('user', $switched);
+
+        return redirect()->route('student.dashboard');
+    }
+
+    public function switchToTeacher()
+    {
+        $user = Session::get('user');
+        if (!$user) return redirect()->route('login');
+
+        Session::put('original_user', $user);
+        $switched = $user;
+        $switched['role'] = 'teacher';
+        $switched['_switched'] = true;
+        $switched['_original_role'] = $user['role'];
+        Session::put('user', $switched);
+
+        return redirect()->route('teacher.dashboard');
+    }
+
+    public function switchBack()
+    {
+        $original = Session::get('original_user');
+        if ($original) {
+            Session::put('user', $original);
+            Session::forget('original_user');
+            return redirect()->route($original['role'] . '.dashboard');
+        }
+        return redirect()->route('landing');
+    }
+
     private function checkPassword($plaintext, &$user)
     {
         if (Hash::check($plaintext, $user['password'])) {
