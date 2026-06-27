@@ -367,49 +367,115 @@ function displayLessonPlan(plan) {
     const objectives = plan.behaviouralObjectives || [];
     const materials = plan.instructionalMaterials || [];
 
-    let stepsHtml = steps.map(s => `<tr class="border-b border-slate-200">
-        <td class="p-2 text-xs font-bold text-slate-700 align-top">${s.step || ''}</td>
-        <td class="p-2 text-xs text-slate-600">${s.teacherActivities || ''}</td>
-        <td class="p-2 text-xs text-slate-600">${s.learnerActivities || ''}</td>
-        <td class="p-2 text-xs text-slate-600">${s.learningPoints || ''}</td>
+    const stepsHtml = steps.map(s => `<tr>
+        <td style="padding:1px 2px;border:1px solid #000;font-size:7pt;font-weight:700;vertical-align:top;text-align:center">${s.step || ''}</td>
+        <td style="padding:1px 2px;border:1px solid #000;font-size:7pt;vertical-align:top">${s.teacherActivities || ''}</td>
+        <td style="padding:1px 2px;border:1px solid #000;font-size:7pt;vertical-align:top">${s.learnerActivities || ''}</td>
+        <td style="padding:1px 2px;border:1px solid #000;font-size:7pt;vertical-align:top">${s.learningPoints || ''}</td>
     </tr>`).join('');
 
+    const stepsHeader = `<tr>
+        <th style="padding:1px 2px;border:1px solid #000;font-size:7pt;font-weight:700;text-align:left;background:#1a56db;color:#fff">Step</th>
+        <th style="padding:1px 2px;border:1px solid #000;font-size:7pt;font-weight:700;text-align:left;background:#1a56db;color:#fff">Teacher's Activities</th>
+        <th style="padding:1px 2px;border:1px solid #000;font-size:7pt;font-weight:700;text-align:left;background:#1a56db;color:#fff">Learners' Activities</th>
+        <th style="padding:1px 2px;border:1px solid #000;font-size:7pt;font-weight:700;text-align:left;background:#1a56db;color:#fff">Learning Points</th>
+    </tr>`;
+
+    const objItems = objectives.map(o => `<tr><td style="padding:0 2px;font-size:7.5pt;border:1px solid #000" colspan="4">${o}</td></tr>`).join('');
+    const matItems = materials.length ? `<tr><td style="padding:1px 2px;font-size:7pt;border:1px solid #000" colspan="4">${materials.join('; ')}</td></tr>` : '';
+
+    const remarksHtml = `<tr>
+        <td style="padding:1px 2px;border:1px solid #000;font-size:7pt;font-weight:700;width:12%">Remarks</td>
+        <td style="padding:1px 2px;border:1px solid #000;font-size:7pt" colspan="3"></td>
+    </tr>`;
+
+    const dateStr = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+    const sigHtml = `<tr>
+        <td style="padding:1px 2px;border:1px solid #000;font-size:7.5pt;width:25%"><b>Teacher's Signature:</b> _______________</td>
+        <td style="padding:1px 2px;border:1px solid #000;font-size:7.5pt;width:25%"><b>Date:</b> _______________</td>
+        <td style="padding:1px 2px;border:1px solid #000;font-size:7.5pt;width:25%"><b>Head Teacher's Signature:</b> _______________</td>
+        <td style="padding:1px 2px;border:1px solid #000;font-size:7.5pt;width:25%"><b>Date:</b> _______________</td>
+    </tr>`;
+
     container.innerHTML = `
-        <div class="max-w-[210mm] mx-auto bg-white">
-            <div class="text-center border-b-2 border-indigo-600 pb-3 mb-4">
-                <h1 class="text-lg font-bold text-indigo-700">LESSON PLAN</h1>
-                <p class="text-xs text-slate-500">${plan.subject || ''} | ${plan.class || ''} | ${plan.term || ''} | Week ${plan.week || ''}</p>
-            </div>
-            <table class="w-full text-xs border-collapse mb-4">
-                <tr class="border border-slate-300"><td class="p-1.5 font-bold w-1/4">School:</td><td class="p-1.5">${plan.schoolName || ''}</td><td class="p-1.5 font-bold w-1/4">Teacher:</td><td class="p-1.5">${plan.teacherName || ''}</td></tr>
-                <tr class="border border-slate-300"><td class="p-1.5 font-bold">Subject:</td><td class="p-1.5">${plan.subject || ''}</td><td class="p-1.5 font-bold">Class:</td><td class="p-1.5">${plan.class || ''} (${plan.ageRange || ''})</td></tr>
-                <tr class="border border-slate-300"><td class="p-1.5 font-bold">Term:</td><td class="p-1.5">${plan.term || ''}</td><td class="p-1.5 font-bold">Week:</td><td class="p-1.5">${plan.week || ''}</td></tr>
-                <tr class="border border-slate-300"><td class="p-1.5 font-bold">Date:</td><td class="p-1.5">${plan.date || ''}</td><td class="p-1.5 font-bold">Duration:</td><td class="p-1.5">${plan.duration || ''}</td></tr>
-                <tr class="border border-slate-300"><td class="p-1.5 font-bold" colspan="4">Topic: ${plan.topic || ''}</td></tr>
-            </table>
-            <h3 class="text-sm font-bold text-slate-800 mt-4 mb-2">Behavioural Objectives</h3>
-            <ol class="text-xs text-slate-600 pl-4 mb-3">${objectives.map(o => `<li class="mb-1">${o}</li>`).join('')}</ol>
-            ${materials.length ? `<h3 class="text-sm font-bold text-slate-800 mt-3 mb-2">Instructional Materials</h3><ul class="text-xs text-slate-600 pl-4 mb-3">${materials.map(m => `<li>${m}</li>`).join('')}</ul>` : ''}
-            ${plan.previousKnowledge ? `<h3 class="text-sm font-bold text-slate-800 mt-3 mb-2">Previous Knowledge</h3><p class="text-xs text-slate-600 mb-3">${plan.previousKnowledge}</p>` : ''}
-            <h3 class="text-sm font-bold text-slate-800 mt-4 mb-2">Lesson Procedure</h3>
-            <table class="w-full text-xs border-collapse mb-3">
-                <thead><tr class="bg-indigo-600 text-white"><th class="p-1.5 text-left font-bold">Step</th><th class="p-1.5 text-left font-bold">Teacher's Activities</th><th class="p-1.5 text-left font-bold">Learners' Activities</th><th class="p-1.5 text-left font-bold">Learning Points</th></tr></thead>
-                <tbody>${stepsHtml}</tbody>
-            </table>
-            ${plan.evaluation ? `<h3 class="text-sm font-bold text-slate-800 mt-3 mb-2">Evaluation</h3><div class="text-xs text-slate-600 mb-2 whitespace-pre-wrap">${plan.evaluation}</div>` : ''}
-            ${plan.assignment ? `<h3 class="text-sm font-bold text-slate-800 mt-3 mb-2">Assignment</h3><div class="text-xs text-slate-600 mb-2 whitespace-pre-wrap">${plan.assignment}</div>` : ''}
-            ${plan.summary ? `<h3 class="text-sm font-bold text-slate-800 mt-3 mb-2">Summary</h3><p class="text-xs text-slate-600 mb-2">${plan.summary}</p>` : ''}
-            ${plan.conclusion ? `<h3 class="text-sm font-bold text-slate-800 mt-3 mb-2">Conclusion</h3><p class="text-xs text-slate-600">${plan.conclusion}</p>` : ''}
-        </div>
+    <style>
+        .lp-table { width:100%; border-collapse:collapse; font-family:Arial,sans-serif; }
+        .lp-table td, .lp-table th { border:1px solid #000; }
+        .lp-container { max-width:210mm; margin:0 auto; background:#fff; page-break-inside:avoid; break-inside:avoid; }
+        @media print {
+            .lp-container { max-width:100%; margin:0; padding:0; }
+            .lp-table { font-size:7pt !important; }
+            .lp-table td, .lp-table th { padding:1px 2px !important; }
+            .no-print { display:none !important; }
+        }
+    </style>
+    <div class="lp-container">
+        <table class="lp-table" style="font-size:7.5pt">
+            <tr>
+                <th colspan="4" style="padding:3px;font-size:9pt;font-weight:700;text-align:center;background:#1a56db;color:#fff;border:1px solid #000">LESSON PLAN</th>
+            </tr>
+            <tr>
+                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700;width:12%">School:</td>
+                <td style="padding:1px 3px;font-size:7.5pt;width:38%">${plan.schoolName || ''}</td>
+                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700;width:12%">Teacher:</td>
+                <td style="padding:1px 3px;font-size:7.5pt;width:38%">${plan.teacherName || ''}</td>
+            </tr>
+            <tr>
+                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700">Subject:</td>
+                <td style="padding:1px 3px;font-size:7.5pt">${plan.subject || ''}</td>
+                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700">Class:</td>
+                <td style="padding:1px 3px;font-size:7.5pt">${plan.class || ''}${plan.ageRange ? ' (' + plan.ageRange + ')' : ''}</td>
+            </tr>
+            <tr>
+                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700">Term:</td>
+                <td style="padding:1px 3px;font-size:7.5pt">${plan.term || ''}</td>
+                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700">Week:</td>
+                <td style="padding:1px 3px;font-size:7.5pt">${plan.week || ''}</td>
+            </tr>
+            <tr>
+                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700">Date:</td>
+                <td style="padding:1px 3px;font-size:7.5pt">${plan.date || ''}</td>
+                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700">Duration:</td>
+                <td style="padding:1px 3px;font-size:7.5pt">${plan.duration || ''}</td>
+            </tr>
+            <tr>
+                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700" colspan="2">Topic:</td>
+                <td style="padding:1px 3px;font-size:7.5pt" colspan="2">${plan.topic || ''}</td>
+            </tr>
+            <tr>
+                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700" colspan="4">Behavioural Objectives</td>
+            </tr>
+            ${objItems}
+            ${materials.length ? `<tr><td style="padding:1px 3px;font-size:7pt;font-weight:700" colspan="4">Instructional Materials</td></tr>${matItems}` : ''}
+            ${plan.previousKnowledge ? `<tr><td style="padding:1px 3px;font-size:7pt;font-weight:700" colspan="4">Previous Knowledge</td></tr><tr><td style="padding:1px 3px;font-size:7pt" colspan="4">${plan.previousKnowledge}</td></tr>` : ''}
+            <tr>
+                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700" colspan="4">Lesson Procedure</td>
+            </tr>
+            <tr>
+                <td colspan="4" style="padding:0;border:0">
+                    <table style="width:100%;border-collapse:collapse;font-size:7pt">
+                        ${stepsHeader}
+                        ${stepsHtml || '<tr><td style="padding:2px;border:1px solid #000;font-size:7pt" colspan="4">No steps available</td></tr>'}
+                    </table>
+                </td>
+            </tr>
+            ${plan.evaluation ? `<tr><td style="padding:1px 3px;font-size:7pt;font-weight:700" colspan="4">Evaluation</td></tr><tr><td style="padding:1px 3px;font-size:7pt" colspan="4">${plan.evaluation}</td></tr>` : ''}
+            ${plan.assignment ? `<tr><td style="padding:1px 3px;font-size:7pt;font-weight:700" colspan="4">Assignment / Homework</td></tr><tr><td style="padding:1px 3px;font-size:7pt" colspan="4">${plan.assignment}</td></tr>` : ''}
+            ${plan.summary ? `<tr><td style="padding:1px 3px;font-size:7pt;font-weight:700" colspan="4">Summary</td></tr><tr><td style="padding:1px 3px;font-size:7pt" colspan="4">${plan.summary}</td></tr>` : ''}
+            ${plan.conclusion ? `<tr><td style="padding:1px 3px;font-size:7pt;font-weight:700" colspan="4">Conclusion</td></tr><tr><td style="padding:1px 3px;font-size:7pt" colspan="4">${plan.conclusion}</td></tr>` : ''}
+            ${remarksHtml}
+            ${sigHtml}
+        </table>
+    </div>
     `;
 
     document.getElementById('plan-action-buttons').innerHTML = `
-        <button onclick="downloadPlan('pdf')" class="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 cursor-pointer">PDF</button>
-        <button onclick="downloadPlan('docx')" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer">DOCX</button>
-        <button onclick="printPlan()" class="px-3 py-1.5 bg-slate-600 text-white text-xs font-bold rounded-lg hover:bg-slate-700 cursor-pointer">Print</button>
-        <button onclick="copyPlanContent()" class="px-3 py-1.5 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 cursor-pointer">Copy</button>
-        <button onclick="sharePlan()" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 cursor-pointer">Share</button>
-        <button onclick="readAloud('plan-content')" class="px-3 py-1.5 bg-purple-600 text-white text-xs font-bold rounded-lg hover:bg-purple-700 cursor-pointer">Read Aloud</button>
+        <button onclick="downloadPlan('pdf')" class="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 cursor-pointer no-print">PDF</button>
+        <button onclick="downloadPlan('docx')" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer no-print">DOCX</button>
+        <button onclick="printPlan()" class="px-3 py-1.5 bg-slate-600 text-white text-xs font-bold rounded-lg hover:bg-slate-700 cursor-pointer no-print">Print</button>
+        <button onclick="copyPlanContent()" class="px-3 py-1.5 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 cursor-pointer no-print">Copy</button>
+        <button onclick="sharePlan()" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 cursor-pointer no-print">Share</button>
+        <button onclick="readAloud('plan-content')" class="px-3 py-1.5 bg-purple-600 text-white text-xs font-bold rounded-lg hover:bg-purple-700 cursor-pointer no-print">Read Aloud</button>
     `;
 }
 
