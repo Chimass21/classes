@@ -14,7 +14,7 @@ class GeminiService
     {
         $key = config('services.gemini.api_key');
         $this->apiKey = (is_string($key) && $key !== '') ? $key : null;
-        $this->apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+        $this->apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
     }
 
     public function generate(string $prompt): string

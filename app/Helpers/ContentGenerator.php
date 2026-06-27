@@ -128,7 +128,7 @@ class ContentGenerator
                 ? ['define', 'explain', 'describe', 'differentiate', 'apply']
                 : ['define', 'explain', 'analyse', 'evaluate', 'synthesise']);
 
-        $contexts = self::getObjectiveContexts($subject, $topic, $verbs);
+        $contexts = self::getObjectiveContexts($subject, $class, $topic, $verbs);
         return array_slice($contexts, 0, rand(3, 5));
     }
 
