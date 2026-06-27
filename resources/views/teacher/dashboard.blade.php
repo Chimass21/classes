@@ -338,6 +338,13 @@ async function loadTeacherData() {
         renderExams();
         renderResults();
 
+        // Auto-display the most recent lesson note in the preview
+        if (teacherData.notes.length > 0) {
+            const last = teacherData.notes[teacherData.notes.length - 1];
+            currentNoteId = last.id;
+            displayLessonNote(last);
+        }
+
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('content').classList.remove('hidden');
     } catch(e) {
