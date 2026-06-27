@@ -573,6 +573,15 @@ PROMPT;
         return response()->json(['success' => true, 'message' => 'Lesson note deleted.']);
     }
 
+    public function deleteLessonPlan($planId)
+    {
+        JsonDb::init();
+        $db = JsonDb::get();
+        $db['lessonPlans'] = array_values(array_filter($db['lessonPlans'], fn($p) => $p['id'] !== $planId));
+        JsonDb::save($db);
+        return response()->json(['success' => true, 'message' => 'Lesson plan deleted.']);
+    }
+
     protected function fallbackQuestions($subject, $topic, $count, $includeTheory): array
     {
         return ContentGenerator::generateQuestions($subject, $topic, $count, $includeTheory);

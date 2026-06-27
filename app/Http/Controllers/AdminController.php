@@ -59,7 +59,7 @@ class AdminController extends Controller
         $db = JsonDb::get();
         return response()->json([
             'users' => $db['users'],
-            'documents' => $db['lessonNotes'] ?? [],
+            'lessonNotes' => $db['lessonNotes'] ?? [],
             'exams' => $db['exams'],
             'results' => $db['results'],
             'feedback' => $db['feedback'] ?? [],

@@ -499,7 +499,22 @@ function displayLessonPlan(plan) {
         <button onclick="copyPlanContent()" class="px-3 py-1.5 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 cursor-pointer no-print">Copy</button>
         <button onclick="sharePlan()" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 cursor-pointer no-print">Share</button>
         <button onclick="readAloud('plan-content')" class="px-3 py-1.5 bg-purple-600 text-white text-xs font-bold rounded-lg hover:bg-purple-700 cursor-pointer no-print">Read Aloud</button>
+        <button onclick="deletePlan()" class="px-3 py-1.5 bg-red-700 text-white text-xs font-bold rounded-lg hover:bg-red-800 cursor-pointer no-print">Delete</button>
     `;
+}
+
+function deletePlan() {
+    if (!currentPlanId || !confirm('Delete this lesson plan? This cannot be undone.')) return;
+    fetch('/api/lesson-plans/' + currentPlanId, { method: 'DELETE', headers: { 'Accept': 'application/json' } })
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                currentPlanId = null;
+                document.getElementById('plan-preview').classList.add('hidden');
+                loadTeacherData();
+            } else { alert('Delete failed.'); }
+        })
+        .catch(() => alert('Network error.'));
 }
 
 function downloadPlan(format) { if (currentPlanId) window.open('/api/download/lesson-plan/' + currentPlanId + '/' + format, '_blank'); }

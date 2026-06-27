@@ -117,6 +117,7 @@ Route::prefix('api')->group(function () {
     Route::get('/download/lesson-plan/{id}/{format}', [DownloadController::class, 'downloadLessonPlan']);
     Route::get('/download/exam/{id}/{format}', [DownloadController::class, 'downloadExam']);
     Route::delete('/lesson-notes/{id}', [AIController::class, 'deleteLessonNote']);
+    Route::delete('/lesson-plans/{id}', [AIController::class, 'deleteLessonPlan']);
 });
 
 // Migrate legacy plaintext passwords to hashed
