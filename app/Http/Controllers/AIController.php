@@ -122,6 +122,22 @@ class AIController extends Controller
                     $data['subject'], $data['class'], $data['term'], $data['week'],
                     $data['topic'], $periods, $difficulty, $ageRange
                 );
+            } else {
+                $contentText = ($note['content'] ?? '') . ' ' . ($note['introduction'] ?? '') . ' ' . ($note['summary'] ?? '');
+                $topicLower = strtolower($data['topic']);
+                $relevanceScore = 0;
+                foreach (explode(' ', $topicLower) as $word) {
+                    if (strlen($word) > 3 && substr_count(strtolower($contentText), $word) > 0) {
+                        $relevanceScore++;
+                    }
+                }
+                $wordCount = str_word_count($topicLower);
+                if ($wordCount > 1 && $relevanceScore < min(2, $wordCount)) {
+                    $note = $this->fallbackLessonNote(
+                        $data['subject'], $data['class'], $data['term'], $data['week'],
+                        $data['topic'], $periods, $difficulty, $ageRange
+                    );
+                }
             }
 
             $note['subject'] = $data['subject'];
@@ -412,50 +428,52 @@ PROMPT;
             }
         }
 
+        $topicUpper = strtoupper($topic);
         return <<<PROMPT
-You are a Nigerian curriculum expert and experienced subject teacher writing a DETAILED LESSON NOTE for the Nigerian (NERDC/UBEC) curriculum.
+You are a Nigerian curriculum expert and experienced subject teacher. Your ONLY task is to write a DETAILED LESSON NOTE about the EXACT topic specified below. DO NOT write about any other topic.
 
-Generate a COMPREHENSIVE LESSON NOTE in STRICT JSON format only.
+CRITICAL: Every single sentence you generate must be directly about the topic "{$topic}". If you write about anything else, the lesson note will be rejected.
 
 CONTEXT:
 - Subject: {$subject}
 - Class: {$class} (Age range: {$ageRange})
 - Term: {$term}
 - Week: {$week}
-- Topic: {$topic}
+- TOPIC (MUST FOLLOW EXACTLY): {$topic}
 - Periods: {$periods}
 - Difficulty: {$difficulty}
 {$weekScheme}
 
-Return JSON in this exact structure:
+Return ONLY valid JSON with this exact structure (no markdown, no code fences):
 {
   "topic": "{$topic}",
-  "subtopics": ["Sub-topic 1", "Sub-topic 2", "Sub-topic 3"],
+  "subtopics": ["Sub-topic 1 related to {$topic}", "Sub-topic 2 related to {$topic}", "Sub-topic 3 related to {$topic}"],
   "learningObjectives": ["By the end of the lesson, students should be able to: 1. ...", "2. ...", "3. ..."],
-  "introduction": "Engaging introduction paragraph connecting to prior knowledge",
-  "content": "Detailed FULL HTML content with <h4> headings, <p> paragraphs, <ul>/<ol> lists covering ALL subtopics comprehensively. Include definitions, explanations, and illustrations.",
+  "introduction": "Engaging introduction paragraph connecting to prior knowledge, directly about {$topic}",
+  "content": "Detailed FULL HTML content with <h4> headings, <p> paragraphs, <ul>/<ol> lists. ALL content must be about {$topic}. Include definitions, explanations, and illustrations relevant to {$topic}.",
   "examples": [
-    {"title": "Example 1", "description": "Worked example with step-by-step solution"}
+    {"title": "Example 1 about {$topic}", "description": "Worked example with step-by-step solution related to {$topic}"}
   ],
   "classroomActivities": [
-    {"title": "Activity 1", "description": "Description of classroom activity"}
+    {"title": "Activity 1 about {$topic}", "description": "Description of classroom activity related to {$topic}"}
   ],
-  "summary": "Concise summary of the lesson",
-  "conclusion": "Concluding remarks and connection to next lesson",
-  "evaluationQuestions": ["Question 1", "Question 2", "Question 3"],
-  "assignment": "Home assignment tasks",
-  "detailedNote": "Full comprehensive lesson note text with all subtopics explained in detail"
+  "summary": "Concise summary of the lesson focusing on {$topic}",
+  "conclusion": "Concluding remarks about {$topic} and connection to next lesson",
+  "evaluationQuestions": ["Question 1 about {$topic}", "Question 2 about {$topic}", "Question 3 about {$topic}"],
+  "assignment": "Home assignment tasks related to {$topic}",
+  "detailedNote": "Full comprehensive lesson note text about {$topic} with all subtopics explained in detail"
 }
 
 REQUIREMENTS:
-1. Content MUST be academically accurate and follow Nigerian curriculum standards
-2. Cover ALL relevant subtopics under the topic
-3. Content must be suitable for {$class} level ({$ageRange})
+1. EVERY sentence MUST be about "{$topic}" - nothing else
+2. Content MUST be academically accurate and follow Nigerian curriculum standards
+3. Cover ALL relevant subtopics under "{$topic}" for {$class} level ({$ageRange})
 4. Be teacher-friendly and student-friendly
 5. Use Nigeria-centric examples (₦aira, Nigerian cities, cultural references)
-6. For Mathematics and Physics: include at least 10 fully solved examples progressing from simple to advanced
-7. For Chemistry with calculations: include at least 10 fully solved examples
+6. For Mathematics and Physics: include at least 10 fully solved examples progressing from simple to advanced, ALL related to {$topic}
+7. For Chemistry with calculations: include at least 10 fully solved examples about {$topic}
 8. Content must be curriculum-compliant (NERDC/UBEC approved)
+9. The topic "{$topic}" MUST appear in every section
 PROMPT;
     }
 
