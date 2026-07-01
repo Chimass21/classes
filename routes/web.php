@@ -12,6 +12,7 @@ use App\Http\Controllers\TeacherController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AIController;
 use App\Http\Controllers\DownloadController;
+use App\Http\Controllers\CsvImportController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -118,6 +119,11 @@ Route::prefix('api')->group(function () {
     Route::get('/download/exam/{id}/{format}', [DownloadController::class, 'downloadExam']);
     Route::delete('/lesson-notes/{id}', [AIController::class, 'deleteLessonNote']);
     Route::delete('/lesson-plans/{id}', [AIController::class, 'deleteLessonPlan']);
+
+    // CSV Import
+    Route::get('/csv-import/template', [CsvImportController::class, 'downloadTemplate']);
+    Route::post('/csv-import/preview', [CsvImportController::class, 'preview']);
+    Route::post('/csv-import/import', [CsvImportController::class, 'import']);
 });
 
 // Migrate legacy plaintext passwords to hashed

@@ -288,6 +288,7 @@ class JsonDb {
             'reportSheets' => [],
             'transactions' => [],
             'questionSets' => [],
+            'importLogs' => [],
             'subjects' => ['Mathematics','Physics','Chemistry','Biology','English Language','Accounting','Economics','Government','ICT','Literature','Commerce','Agriculture','Civic Education'],
             'schemes' => [],
             'schoolConfig' => ['name' => 'ClassPortal Academy', 'address' => '', 'motto' => 'Excellence in Education'],

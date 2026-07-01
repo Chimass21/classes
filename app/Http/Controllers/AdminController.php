@@ -155,6 +155,17 @@ class AdminController extends Controller
             ];
         }
 
+        foreach ($db['importLogs'] ?? [] as $log) {
+            $activities[] = [
+                'type' => 'csv_import',
+                'icon' => 'import',
+                'title' => ($log['userName'] ?? 'Someone') . ' imported ' . $log['imported'] . ' questions into ' . ($log['subject'] ?? '') . ' (' . ($log['class'] ?? '') . ')',
+                'userName' => $log['userName'] ?? 'Unknown',
+                'userRole' => 'teacher',
+                'timestamp' => $log['date'] ?? null,
+            ];
+        }
+
         usort($activities, function ($a, $b) {
             $ta = $a['timestamp'] ?? '0';
             $tb = $b['timestamp'] ?? '0';
