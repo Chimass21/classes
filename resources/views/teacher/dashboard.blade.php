@@ -598,6 +598,27 @@
                                 <button type="submit" id="scheme-upload-btn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition cursor-pointer">Upload Scheme of Work</button>
                             </form>
                             <div id="scheme-upload-result" class="hidden p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800 font-medium"></div>
+
+                            <div class="border-t border-slate-200 pt-4">
+                                <h4 class="text-sm font-bold text-slate-800 mb-3">Browse Topics</h4>
+                                <p class="text-xs text-slate-500 mb-3">Select subject, class, and term to view topics from your uploaded scheme (or built-in curriculum).</p>
+                                <div class="grid grid-cols-3 gap-2 mb-2">
+                                    <div>
+                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Subject</label>
+                                        <select id="browse-scheme-subject" class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500"><option value="">Select...</option></select>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Class</label>
+                                        <select id="browse-scheme-class" class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500"></select>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Term</label>
+                                        <select id="browse-scheme-term" class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500"></select>
+                                    </div>
+                                </div>
+                                <button onclick="showSchemeTopics()" id="show-topics-btn" class="w-full py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold text-xs rounded-lg transition cursor-pointer">Show Topics</button>
+                                <div id="browse-topics-result" class="hidden mt-3"></div>
+                            </div>
                         </div>
                         <div>
                             <h4 class="text-sm font-bold text-slate-800 mb-3">Uploaded Schemes</h4>
@@ -636,16 +657,16 @@ async function loadCurriculumSelects() {
         document.querySelectorAll('select[id$="-subject"], select[id$="-subject"], #q-subject, #plan-subject, #note-subject').forEach(sel => {
             sel.innerHTML = '<option value="">Select subject...</option>' + subjects.map(s => `<option value="${s}">${s}</option>`).join('');
         });
-        document.querySelectorAll('#plan-class, #note-class, #q-class, #scheme-class').forEach(sel => {
+        document.querySelectorAll('#plan-class, #note-class, #q-class, #scheme-class, #browse-scheme-class').forEach(sel => {
             sel.innerHTML = classes.map(c => `<option value="${c}">${c}</option>`).join('');
         });
-        document.querySelectorAll('#plan-term, #note-term, #q-term, #scheme-term').forEach(sel => {
+        document.querySelectorAll('#plan-term, #note-term, #q-term, #scheme-term, #browse-scheme-term').forEach(sel => {
             sel.innerHTML = terms.map(t => `<option value="${t}">${t}</option>`).join('');
         });
         document.querySelectorAll('#plan-week, #note-week, #q-week').forEach(sel => {
             sel.innerHTML = weeks.map(w => `<option value="${w}">Week ${w}</option>`).join('');
         });
-        document.querySelectorAll('#scheme-subject').forEach(sel => {
+        document.querySelectorAll('#scheme-subject, #browse-scheme-subject').forEach(sel => {
             sel.innerHTML = '<option value="">Select subject...</option>' + subjects.map(s => `<option value="${s}">${s}</option>`).join('');
         });
     } catch(e) { console.error('Failed to load curriculum data:', e); }
@@ -1724,6 +1745,50 @@ async function deleteScheme(id) {
         if (data.success) loadSchemes();
         else alert(data.error || 'Delete failed.');
     } catch(e) { alert('Network error.'); }
+}
+
+async function showSchemeTopics() {
+    const subject = document.getElementById('browse-scheme-subject').value;
+    const classLevel = document.getElementById('browse-scheme-class').value;
+    const term = document.getElementById('browse-scheme-term').value;
+    const container = document.getElementById('browse-topics-result');
+    const btn = document.getElementById('show-topics-btn');
+
+    if (!subject || !classLevel || !term) {
+        alert('Please select subject, class, and term.');
+        return;
+    }
+
+    container.innerHTML = '<div class="text-center py-4"><div class="animate-spin w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto"></div><p class="text-xs text-slate-400 mt-2">Loading topics...</p></div>';
+    container.classList.remove('hidden');
+    btn.disabled = true;
+
+    try {
+        const res = await fetch('/api/schemes/get-topics?subject=' + encodeURIComponent(subject) + '&class=' + encodeURIComponent(classLevel) + '&term=' + encodeURIComponent(term));
+        const data = await res.json();
+        if (!data.success) { container.innerHTML = '<div class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700 font-bold">Failed to load topics.</div>'; return; }
+
+        const topics = data.topics || [];
+        if (!topics.length) {
+            container.innerHTML = '<div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700 font-bold">No topics found for this selection.</div>';
+            return;
+        }
+
+        const source = data.schemeName ? '<span class="text-emerald-600">from <strong>' + data.schemeName + '</strong></span>' : '<span class="text-slate-400">from built-in curriculum</span>';
+        container.innerHTML = '<div class="bg-white border border-slate-200 rounded-xl overflow-hidden">' +
+            '<div class="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">' +
+            '<span class="text-xs font-bold text-slate-700">' + subject + ' &middot; ' + classLevel + ' &middot; ' + term + '</span>' +
+            '<span class="text-[10px] text-slate-500">' + source + '</span>' +
+            '</div><div class="divide-y divide-slate-100">' +
+            topics.map(t => '<div class="flex items-center gap-3 px-3 py-1.5 hover:bg-slate-50 transition">' +
+                '<span class="w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-bold shrink-0">' + t.week + '</span>' +
+                '<span class="text-xs text-slate-700">' + t.topic + '</span>' +
+            '</div>').join('') +
+            '</div></div>';
+    } catch(e) {
+        container.innerHTML = '<div class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700 font-bold">Connection error.</div>';
+    }
+    btn.disabled = false;
 }
 
 // ====== AUTO-POPULATE TOPIC FROM SCHEME ======
