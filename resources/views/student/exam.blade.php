@@ -9,6 +9,25 @@
     #print-section-certificate { page-break-after: always !important; page-break-inside: avoid !important; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   }
+  .nav-btn { transition: all 0.15s ease; }
+  .nav-btn:hover:not(:disabled) { transform: scale(1.05); }
+  .nav-btn:active:not(:disabled) { transform: scale(0.95); }
+  .opt-btn { transition: all 0.15s ease; }
+  .opt-btn:hover { transform: translateY(-1px); }
+  .opt-btn:active { transform: translateY(0); }
+  .fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .slide-up { animation: slideUp 0.4s ease; }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .bar-animate { animation: barGrow 0.8s ease; }
+  @keyframes barGrow { from { width: 0; } }
+  .result-card { animation: cardFade 0.5s ease both; }
+  .result-card:nth-child(1) { animation-delay: 0.05s; }
+  .result-card:nth-child(2) { animation-delay: 0.1s; }
+  .result-card:nth-child(3) { animation-delay: 0.15s; }
+  .result-card:nth-child(4) { animation-delay: 0.2s; }
+  .result-card:nth-child(5) { animation-delay: 0.25s; }
+  @keyframes cardFade { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 </style>
 
 <div class="min-h-screen bg-slate-50 text-slate-800 pb-16">
@@ -16,7 +35,7 @@
   <header id="cbt-header" class="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-xs print-hidden">
     <div class="max-w-7xl mx-auto px-3 sm:px-4 py-2 sm:py-3 flex items-center justify-between gap-2">
       <div class="flex items-center gap-2 sm:gap-3 min-w-0">
-        <span class="bg-slate-900 text-white rounded-xl py-1 px-2.5 sm:px-3.5 font-bold text-[10px] sm:text-xs uppercase tracking-wider shrink-0">CBT Engine</span>
+        <span class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl py-1 px-2.5 sm:px-3.5 font-bold text-[10px] sm:text-xs uppercase tracking-wider shrink-0">CBT Engine</span>
         <div class="min-w-0">
           <h1 class="text-sm sm:text-base font-extrabold text-slate-900 truncate">{{ $exam->title }}</h1>
           <p class="text-[10px] sm:text-xs font-semibold text-slate-500 truncate">{{ $exam->subject }} &bull; Prep Mode</p>
@@ -34,53 +53,71 @@
     </div>
   </header>
 
-  <div class="max-w-5xl mx-auto px-3 sm:px-4 mt-4 sm:mt-8">
+  <div class="max-w-7xl mx-auto px-3 sm:px-4 mt-4 sm:mt-8">
     <!-- Exam Active State -->
     <div id="exam-active">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <!-- Left: Question -->
-        <div class="md:col-span-2 space-y-4">
-          <div class="p-3 sm:p-6 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-xs space-y-4">
-            <div class="flex items-center justify-between">
-              <span id="q-counter" class="text-xs bg-slate-100 text-slate-700 py-1 px-3.5 rounded-full font-bold">Question 1 of {{ count($exam->questions) }}</span>
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-4 sm:gap-6">
+        <!-- Main: Question Area -->
+        <div class="lg:col-span-3 space-y-4">
+          <div class="p-4 sm:p-6 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-xs space-y-5">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <span id="q-counter" class="text-xs bg-indigo-50 text-indigo-700 py-1.5 px-3.5 rounded-full font-bold border border-indigo-100">Question 1 of {{ count($exam->questions) }}</span>
               <div class="flex items-center gap-2">
                 <button id="flag-btn" onclick="toggleFlag()" class="p-2 rounded-xl border transition bg-white text-slate-400 border-slate-200 hover:text-slate-700 hover:bg-slate-50" title="Flag Question for Review">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>
                 </button>
-                <span id="q-marks" class="text-xs bg-indigo-50 text-indigo-700 py-1 px-3 rounded-full font-extrabold border border-indigo-100">+5 Mark</span>
+                <span id="q-marks" class="text-xs bg-emerald-50 text-emerald-700 py-1 px-3 rounded-full font-extrabold border border-emerald-100">+5 Mark</span>
               </div>
             </div>
-            <h3 id="q-text" class="text-base sm:text-lg font-extrabold text-slate-800 leading-relaxed"></h3>
-            <div id="options-container" class="space-y-2 sm:space-y-3"></div>
-            <div class="flex items-center justify-between pt-4 border-t border-slate-150">
-              <button id="prev-btn" onclick="goToQuestion(currentIndex - 1)" class="flex items-center gap-1.5 py-2 px-3 sm:py-2.5 sm:px-4 bg-slate-50 border border-slate-200 hover:bg-slate-100 disabled:opacity-40 rounded-xl font-bold text-xs text-slate-700 transition" disabled>
+            <div class="min-h-[120px]">
+              <h3 id="q-text" class="text-base sm:text-lg font-extrabold text-slate-800 leading-relaxed"></h3>
+            </div>
+            <div id="options-container" class="space-y-2.5 sm:space-y-3"></div>
+            <div class="flex items-center justify-between pt-4 border-t border-slate-100">
+              <button id="prev-btn" onclick="goToQuestion(currentIndex - 1)" class="flex items-center gap-1.5 py-2.5 px-3.5 sm:py-2.5 sm:px-4 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-bold text-xs text-slate-700 transition-all shadow-xs" disabled>
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg> Previous
               </button>
-              <span id="q-nav-counter" class="text-xs text-slate-450 font-bold">Question 1 of {{ count($exam->questions) }}</span>
-              <button id="next-btn" onclick="goToQuestion(currentIndex + 1)" class="flex items-center gap-1.5 py-2 px-3 sm:py-2.5 sm:px-4 bg-slate-50 border border-slate-200 hover:bg-slate-100 disabled:opacity-40 rounded-xl font-bold text-xs text-slate-700 transition">Next
+              <span id="q-nav-counter" class="text-xs text-slate-400 font-bold hidden sm:block">Question 1 of {{ count($exam->questions) }}</span>
+              <button id="next-btn" onclick="goToQuestion(currentIndex + 1)" class="flex items-center gap-1.5 py-2.5 px-3.5 sm:py-2.5 sm:px-4 bg-white border border-slate-200 hover:bg-slate-50 hover:border-slate-300 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl font-bold text-xs text-slate-700 transition-all shadow-xs">Next
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
               </button>
             </div>
           </div>
         </div>
-        <!-- Right: Navigation Grid -->
-        <div class="space-y-4 sm:space-y-6">
-          <div class="p-4 sm:p-6 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-xs space-y-4">
-            <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500">CBT Navigation Center</h4>
-            <div id="nav-grid" class="grid grid-cols-5 gap-1.5 sm:gap-2"></div>
-            <div class="border-t border-slate-100 pt-4 space-y-2 text-xs text-slate-500 leading-none">
-              <div class="flex items-center gap-2"><span class="w-3 h-3 bg-indigo-600 rounded-md border border-indigo-700 block"></span><span>Current Active Q</span></div>
-              <div class="flex items-center gap-2"><span class="w-3 h-3 bg-indigo-50 rounded-md border border-indigo-200 block"></span><span>Attempted Q</span></div>
-              <div class="flex items-center gap-2"><span class="w-3 h-3 bg-slate-50 rounded-md border border-slate-200 block"></span><span>Unanswered Choice</span></div>
-              <div class="flex items-center gap-2"><span class="w-3 h-3 bg-amber-400 rounded-md block"></span><span>Flagged for Review</span></div>
+
+        <!-- Right: Navigation Panel -->
+        <div class="space-y-4">
+          <!-- Question Palette -->
+          <div class="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl sm:rounded-2xl shadow-xs">
+            <div class="flex items-center justify-between mb-3">
+              <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Question Palette</h4>
+              <span id="answered-count" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">0/{{ count($exam->questions) }}</span>
             </div>
-            <button id="submit-btn" onclick="triggerSubmit()" class="w-full mt-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-md shadow-emerald-100 min-h-12 flex items-center justify-center cursor-pointer">Finish & Submit Exam</button>
+            <div id="nav-grid" class="grid grid-cols-5 gap-1.5"></div>
+            <!-- Legend -->
+            <div class="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-y-2 gap-x-1 text-[10px] text-slate-500 font-semibold leading-tight">
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 bg-indigo-600 rounded border border-indigo-700 shrink-0"></span><span>Current</span></div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 bg-emerald-400 rounded shrink-0"></span><span>Answered</span></div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 bg-slate-100 rounded border border-slate-300 shrink-0"></span><span>Unanswered</span></div>
+              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 bg-amber-400 rounded shrink-0"></span><span>Flagged</span></div>
+            </div>
           </div>
-          <div class="p-5 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3">
-            <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/></svg>
-            <div class="text-xs text-amber-800 space-y-1">
-              <p class="font-bold">Security Lock Protocols Active</p>
-              <p class="leading-relaxed">This exam is automatically saved to local caching systems. If you accidentally refresh, you will resume directly.</p>
+
+          <!-- Submit Card -->
+          <div class="p-4 sm:p-5 bg-gradient-to-br from-emerald-600 to-teal-700 rounded-2xl shadow-lg shadow-emerald-200/40">
+            <button id="submit-btn" onclick="triggerSubmit()" class="w-full py-3.5 bg-white hover:bg-emerald-50 text-emerald-700 font-extrabold text-xs uppercase tracking-widest rounded-xl transition-all shadow-sm cursor-pointer flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Finish & Submit
+            </button>
+            <p class="text-[10px] text-emerald-200 text-center mt-2 font-semibold">Your progress is auto-saved locally</p>
+          </div>
+
+          <!-- Security Info -->
+          <div class="p-4 bg-amber-50 border border-amber-200 rounded-2xl flex items-start gap-3">
+            <svg class="w-4 h-4 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            <div class="text-[11px] text-amber-800 space-y-1">
+              <p class="font-bold">Auto-Saved</p>
+              <p class="leading-relaxed">Your answers are saved locally. If you refresh, you'll resume where you left off.</p>
             </div>
           </div>
         </div>
@@ -88,41 +125,49 @@
     </div>
 
     <!-- Results State -->
-    <div id="exam-results" class="hidden space-y-8"></div>
+    <div id="exam-results" class="hidden space-y-6"></div>
 
     <!-- Printable Certificate -->
     <div id="print-section-certificate" class="hidden print:block p-4 sm:p-10 bg-white min-h-[190mm]">
-      <div class="border border-double border-amber-600 p-4 sm:p-8 text-center bg-amber-50/20 max-w-5xl mx-auto rounded-2xl sm:rounded-3xl relative">
-        <h1 class="text-3xl font-serif font-bold text-amber-900 uppercase">Certificate of Excellence</h1>
-        <p class="italic text-sm text-slate-600 my-4">Presented to</p>
-        <h2 id="cert-name" class="text-4xl font-serif font-black underline my-4 uppercase"></h2>
-        <p id="cert-desc" class="text-sm text-slate-700 max-w-lg mx-auto"></p>
-        <div id="cert-percentage" class="my-6 text-5xl font-black text-rose-700"></div>
-        <div class="flex justify-between items-center text-xs text-slate-500 mt-12 px-12 pt-6 border-t border-dashed border-amber-300">
-          <div class="text-left">Principal Assessor Name: <strong class="text-slate-800">Nwaigbo Augustine</strong><div class="h-[1px] bg-slate-350 w-32 mt-2"></div></div>
-          <div id="cert-id" class="text-right">Official CBT Verification Code: <strong class="text-slate-800"></strong><div class="h-[1px] bg-slate-350 w-32 mt-2"></div></div>
+      <div class="border-4 border-double border-amber-600 p-6 sm:p-10 text-center bg-gradient-to-b from-amber-50/40 to-white max-w-5xl mx-auto rounded-2xl sm:rounded-3xl relative shadow-xl">
+        <div class="absolute top-4 left-4 w-16 h-16 border-t-4 border-l-4 border-amber-600 rounded-tl-xl"></div>
+        <div class="absolute top-4 right-4 w-16 h-16 border-t-4 border-r-4 border-amber-600 rounded-tr-xl"></div>
+        <div class="absolute bottom-4 left-4 w-16 h-16 border-b-4 border-l-4 border-amber-600 rounded-bl-xl"></div>
+        <div class="absolute bottom-4 right-4 w-16 h-16 border-b-4 border-r-4 border-amber-600 rounded-br-xl"></div>
+        <div class="relative z-10">
+          <h1 class="text-3xl sm:text-4xl font-serif font-bold text-amber-900 uppercase tracking-wide">Certificate of Excellence</h1>
+          <div class="w-24 h-1 bg-amber-500 mx-auto my-4 rounded-full"></div>
+          <p class="italic text-sm text-slate-600">Presented to</p>
+          <h2 id="cert-name" class="text-3xl sm:text-4xl font-serif font-black underline underline-offset-8 my-4 uppercase text-slate-900"></h2>
+          <p id="cert-desc" class="text-sm text-slate-700 max-w-lg mx-auto leading-relaxed"></p>
+          <div id="cert-percentage" class="my-6 text-5xl sm:text-6xl font-black text-amber-700"></div>
+          <div class="flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 mt-10 sm:mt-16 pt-6 border-t border-dashed border-amber-300 gap-4">
+            <div class="text-left">Principal Assessor: <strong class="text-slate-800 block mt-1">Nwaigbo Augustine</strong></div>
+            <div id="cert-id" class="text-right">Verification Code: <strong class="text-slate-800 block mt-1 font-mono"></strong></div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Printable Result Slip -->
-    <div id="printable-result-slip" class="hidden print:block p-4 sm:p-10 bg-white font-sans text-[9px] sm:text-xs min-h-[297mm]">
-      <div class="space-y-6">
+    <div id="printable-result-slip" class="hidden print:block p-6 sm:p-10 bg-white font-sans text-[9px] sm:text-xs min-h-[297mm]">
+      <div class="space-y-6 max-w-4xl mx-auto">
         <div class="text-center border-b-2 border-slate-900 pb-4">
-          <h1 class="text-2xl font-black uppercase text-slate-900">REPUBLIC OF EDUCATION CLASS PORTAL</h1>
-          <p class="text-xs uppercase font-extrabold text-slate-500 tracking-wider">Official Assessment Center &bull; Computer Based Testing Division</p>
-          <p class="text-[10px] text-slate-400">Portal Link: brain-cbt.system</p>
+          <h1 class="text-xl sm:text-2xl font-black uppercase text-slate-900 tracking-tight">Republic of Education Class Portal</h1>
+          <p class="text-xs uppercase font-extrabold text-slate-500 tracking-wider mt-1">Official Assessment Center &bull; Computer Based Testing Division</p>
         </div>
-        <div class="text-center"><h2 class="text-sm bg-slate-900 text-white font-extrabold py-2 uppercase tracking-widest inline-block px-8 rounded-md">Candidate Result Slip</h2></div>
-        <div id="slip-meta" class="grid grid-cols-2 gap-4 bg-slate-50 p-4 border border-slate-200 rounded-xl leading-relaxed"></div>
-        <table class="w-full text-left border-collapse border border-slate-200">
-          <thead><tr class="bg-slate-100 text-slate-700 text-[10px] uppercase font-black tracking-wider"><th class="p-3 border border-slate-200">Evaluation Factor</th><th class="p-3 border border-slate-200">Registered Metric</th><th class="p-3 border border-slate-200">Score Achieved</th><th class="p-3 border border-slate-200">Final Outcome</th></tr></thead>
+        <div class="text-center">
+          <h2 class="text-sm bg-slate-900 text-white font-extrabold py-2 uppercase tracking-widest inline-block px-8 rounded-md">Candidate Result Slip</h2>
+        </div>
+        <div id="slip-meta" class="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-4 sm:p-5 border border-slate-200 rounded-xl leading-relaxed"></div>
+        <table class="w-full text-left border-collapse border border-slate-300">
+          <thead><tr class="bg-slate-100 text-slate-700 text-[10px] uppercase font-black tracking-wider"><th class="p-3 border border-slate-300">Evaluation Factor</th><th class="p-3 border border-slate-300">Registered Metric</th><th class="p-3 border border-slate-300">Score Achieved</th><th class="p-3 border border-slate-300">Final Outcome</th></tr></thead>
           <tbody id="slip-table-body" class="font-semibold text-slate-800"></tbody>
         </table>
-        <div id="slip-kpi" class="space-y-2"></div>
-        <div class="grid grid-cols-2 pt-16 border-t border-slate-100 items-end">
-          <div><p class="italic text-slate-500">Official Web Print Stamp</p><p class="text-[9px] text-slate-400 mt-2">Generated dynamically by brain-cbt system: <span id="print-date"></span></p></div>
-          <div class="text-right"><p class="font-bold">Principal Assessment Center Signature</p><p class="font-serif italic text-lg text-indigo-600 my-1">Austin Nwaigbo</p><div class="h-[1px] bg-slate-350 w-48 ml-auto"></div></div>
+        <div id="slip-kpi" class="space-y-3"></div>
+        <div class="flex flex-col sm:flex-row justify-between items-end pt-8 border-t border-slate-200 gap-4">
+          <div><p class="italic text-slate-500 text-xs">Official Web Print Stamp</p><p class="text-[9px] text-slate-400 mt-1">Generated: <span id="print-date"></span></p></div>
+          <div class="text-right"><p class="font-bold text-xs">Principal's Signature</p><p class="font-serif italic text-base text-indigo-600 my-1">Austin Nwaigbo</p><div class="h-px bg-slate-300 w-48 ml-auto"></div></div>
         </div>
       </div>
     </div>
@@ -149,7 +194,6 @@ let result = null;
 let attempts = [];
 
 function initExam() {
-  // Resume saved progress
   const saved = localStorage.getItem('cbt_progress_' + examId);
   if (saved) {
     try {
@@ -162,13 +206,12 @@ function initExam() {
       }
     } catch(e) {}
   }
-  // Load attempt history
   try {
     const hist = localStorage.getItem('brain_history_' + examId);
     if (hist) attempts = JSON.parse(hist);
   } catch(e) {}
-  // Render
   buildNavGrid();
+  updateAnsweredCount();
   renderQuestion();
   startTimer();
 }
@@ -179,9 +222,26 @@ function buildNavGrid() {
     const isAnswered = selectedAnswers[i] !== undefined;
     const isActive = currentIndex === i;
     const isFlagged = flaggedQuestions[i] === true;
-    let cls = isActive ? 'bg-indigo-600 border-indigo-600 text-white shadow-xs' : isAnswered ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-600';
-    return `<button onclick="goToQuestion(${i})" class="h-10 text-xs font-mono font-black relative rounded-lg border flex items-center justify-center transition-colors shadow-xs cursor-pointer ${cls}">${String(i + 1).padStart(2, '0')}${isFlagged ? '<span class="absolute top-0 right-0 w-2.5 h-2.5 bg-amber-500 rounded-bl-md border-t border-r border-white rounded-tr-md"></span>' : ''}</button>`;
+    let cls = 'nav-btn h-9 text-xs font-mono font-bold rounded-lg border flex items-center justify-center transition-all cursor-pointer shadow-xs ';
+    if (isActive) {
+      cls += 'bg-indigo-600 border-indigo-600 text-white ring-2 ring-indigo-300 scale-105';
+    } else if (isAnswered) {
+      cls += 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100';
+    } else if (isFlagged) {
+      cls += 'bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100';
+    } else {
+      cls += 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300';
+    }
+    return `<button onclick="goToQuestion(${i})" class="${cls}">${i + 1}${isFlagged ? '<span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full border border-white"></span>' : ''}</button>`;
   }).join('');
+  grid.querySelectorAll('button').forEach((btn, i) => {
+    if (currentIndex === i) btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  });
+}
+
+function updateAnsweredCount() {
+  const count = Object.keys(selectedAnswers).length;
+  document.getElementById('answered-count').textContent = count + '/' + questions.length;
 }
 
 function renderQuestion() {
@@ -193,16 +253,14 @@ function renderQuestion() {
   document.getElementById('q-marks').textContent = '+' + (q.marks || 5) + ' Mark';
   document.getElementById('prev-btn').disabled = currentIndex === 0;
   document.getElementById('next-btn').disabled = currentIndex === questions.length - 1;
-  // Flag button
   const flagBtn = document.getElementById('flag-btn');
   if (flaggedQuestions[currentIndex]) {
-    flagBtn.className = 'p-2 rounded-xl border transition bg-amber-50 text-amber-700 border-amber-300';
+    flagBtn.className = 'p-2 rounded-xl border transition bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100';
     flagBtn.innerHTML = '<svg class="w-3.5 h-3.5 fill-amber-500" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>';
   } else {
     flagBtn.className = 'p-2 rounded-xl border transition bg-white text-slate-400 border-slate-200 hover:text-slate-700 hover:bg-slate-50';
     flagBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>';
   }
-  // Options
   const opts = document.getElementById('options-container');
   const selected = selectedAnswers[currentIndex];
   const optA = q.optionA || (q.options && q.options.A) || q.A || '';
@@ -216,14 +274,15 @@ function renderQuestion() {
     { key: 'D', label: optD },
   ].map(opt => {
     const isSelected = selected === opt.key;
-    return `<button onclick="selectOption('${opt.key}')" class="w-full flex items-center justify-between text-left p-2.5 sm:p-3.5 rounded-xl border font-bold text-xs sm:text-sm transition duration-150 cursor-pointer ${isSelected ? 'bg-indigo-600/10 border-indigo-600 text-indigo-950 ring-2 ring-indigo-600/15' : 'bg-slate-50 hover:bg-slate-100 border-slate-200 text-slate-700'}">
-      <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-        <span class="w-7 h-7 rounded-lg font-mono font-black flex items-center justify-center shrink-0 border text-xs leading-none transition ${isSelected ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-500 border-slate-200'}">${opt.key}</span>
-        <span class="break-words min-w-0 leading-tight">${opt.label}</span>
-      </div>${isSelected ? '<div class="w-4 h-4 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] shrink-0">\u2713</div>' : ''}
+    return `<button onclick="selectOption('${opt.key}')" class="opt-btn w-full flex items-center justify-between text-left p-3 sm:p-3.5 rounded-xl border font-bold text-xs sm:text-sm transition-all duration-150 cursor-pointer ${isSelected ? 'bg-indigo-50 border-indigo-400 text-indigo-900 ring-2 ring-indigo-200 shadow-sm' : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-700 shadow-xs'}">
+      <div class="flex items-center gap-3 min-w-0 flex-1">
+        <span class="w-8 h-8 rounded-lg font-mono font-black flex items-center justify-center shrink-0 border text-sm leading-none transition ${isSelected ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-100 text-slate-500 border-slate-200'}">${opt.key}</span>
+        <span class="break-words min-w-0 leading-snug">${opt.label}</span>
+      </div>${isSelected ? '<div class="w-5 h-5 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] shrink-0 shadow-sm">✓</div>' : ''}
     </button>`;
   }).join('');
   buildNavGrid();
+  updateAnsweredCount();
   autoSave();
 }
 
@@ -288,7 +347,6 @@ function triggerSubmit() {
   document.getElementById('submit-btn').textContent = 'Scoring metrics...';
   document.getElementById('submit-btn').disabled = true;
   const timeSpent = (examDuration * 60) - secondsLeft;
-  // Try API submission
   fetch('/api/exams/' + examId + '/submit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -354,7 +412,7 @@ function showResults() {
   document.getElementById('submit-btn').classList.add('hidden');
   const headerControls = document.getElementById('header-controls');
   headerControls.innerHTML = '<a href="{{ route("student.dashboard") }}" class="px-5 py-2 text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-all">Return to Dashboard</a>';
-  // Compute analytics
+
   const topicStats = {};
   questions.forEach((q, i) => {
     const tn = q.topic || 'General Concepts';
@@ -380,142 +438,214 @@ function showResults() {
   document.getElementById('cert-name').textContent = result.studentName;
   document.getElementById('cert-desc').innerHTML = 'For completing the computer-based evaluation CBT test score aggregates in <strong class="font-extrabold">' + examTitle + ' (' + examSubject + ')</strong> with a final score percentage of:';
   document.getElementById('cert-percentage').textContent = result.percentage + '%';
-  document.getElementById('cert-id').innerHTML = 'Official CBT Verification Code: <strong class="text-slate-800">' + result.id + '</strong>';
+  document.getElementById('cert-id').innerHTML = 'Verification Code: <strong class="text-slate-800 font-mono">' + result.id + '</strong>';
 
   // Result Slip
-  document.getElementById('slip-meta').innerHTML = '<div><span class="text-slate-450 uppercase font-bold text-[9px]">CANDIDATE STUDENT</span><p class="text-sm font-extrabold text-slate-900">' + result.studentName + '</p><p class="text-[10px] text-slate-500">Student ID: ' + result.studentId + '</p></div><div class="text-right"><span class="text-slate-450 uppercase font-bold text-[9px]">ASSESSMENT METRIC</span><p class="text-sm font-extrabold text-slate-900">' + examTitle + '</p><p class="text-[10px] text-slate-500">Subject Area: ' + examSubject + ' (' + examLevel + ')</p></div>';
-  document.getElementById('slip-table-body').innerHTML = '<tr><td class="p-3 border border-slate-200">Aggregate Questions</td><td class="p-3 border border-slate-200">' + result.totalQuestions + ' Questions</td><td class="p-3 border border-slate-200">' + result.correctAnswers + ' Correct</td><td class="p-3 border border-slate-200 text-indigo-700">' + result.percentage + '%</td></tr><tr class="bg-slate-50"><td class="p-3 border border-slate-200">Session Elapsed</td><td class="p-3 border border-slate-200">' + examDuration + ' Minutes max</td><td class="p-3 border border-slate-200">' + formatTime(result.timeSpent || 0) + '</td><td class="p-3 border border-slate-200 text-emerald-600 font-extrabold uppercase">' + (isPassed ? 'Pass' : 'Fail') + '</td></tr>';
-  document.getElementById('slip-kpi').innerHTML = '<h3 class="font-extrabold text-xs uppercase border-b border-slate-200 pb-1 text-slate-700">Detailed Subject Performance Chart</h3><div class="grid grid-cols-2 gap-4"><div><span class="text-[9px] text-slate-400 uppercase">Strongest Concept Block</span><strong class="block text-slate-800">' + strongest + '</strong></div><div><span class="text-[9px] text-slate-400 uppercase">Weakest Concept Area</span><strong class="block text-slate-850">' + weakest + '</strong></div></div>';
+  document.getElementById('slip-meta').innerHTML = '<div><span class="text-slate-400 uppercase font-bold text-[9px]">Student</span><p class="text-sm font-extrabold text-slate-900">' + result.studentName + '</p><p class="text-[10px] text-slate-500">ID: ' + result.studentId + '</p></div><div class="sm:text-right"><span class="text-slate-400 uppercase font-bold text-[9px]">Assessment</span><p class="text-sm font-extrabold text-slate-900">' + examTitle + '</p><p class="text-[10px] text-slate-500">Subject: ' + examSubject + ' (' + examLevel + ')</p></div>';
+  document.getElementById('slip-table-body').innerHTML = '<tr><td class="p-3 border border-slate-300">Total Questions</td><td class="p-3 border border-slate-300">' + result.totalQuestions + ' Questions</td><td class="p-3 border border-slate-300">' + result.correctAnswers + ' Correct</td><td class="p-3 border border-slate-300 text-indigo-700 font-extrabold">' + result.percentage + '%</td></tr><tr class="bg-slate-50/50"><td class="p-3 border border-slate-300">Time Utilized</td><td class="p-3 border border-slate-300">' + examDuration + ' Min max</td><td class="p-3 border border-slate-300">' + formatTime(result.timeSpent || 0) + '</td><td class="p-3 border border-slate-300"><span class="' + (isPassed ? 'text-emerald-600' : 'text-rose-600') + ' font-extrabold uppercase">' + (isPassed ? 'Pass' : 'Fail') + '</span></td></tr>';
+  document.getElementById('slip-kpi').innerHTML = '<h3 class="font-extrabold text-xs uppercase border-b border-slate-200 pb-1 text-slate-700">Performance Summary</h3><div class="grid grid-cols-1 sm:grid-cols-2 gap-3"><div class="bg-slate-50 p-3 rounded-lg border border-slate-200"><span class="text-[9px] text-slate-400 uppercase font-bold block">Strongest Area</span><strong class="text-sm text-slate-800">' + strongest + '</strong></div><div class="bg-slate-50 p-3 rounded-lg border border-slate-200"><span class="text-[9px] text-slate-400 uppercase font-bold block">Needs Improvement</span><strong class="text-sm text-slate-800">' + weakest + '</strong></div></div>';
   document.getElementById('print-date').textContent = new Date().toLocaleString();
 
-  // Attempt history
-  const attemptsHtml = attempts.length === 0 ? '<p class="text-[11px] text-slate-400">First logged attempt completed.</p>' :
-    '<div class="space-y-1.5 max-h-48 overflow-y-auto">' + attempts.map((a, i) =>
-      '<div class="flex items-center justify-between p-2 bg-slate-50 rounded-lg text-xs leading-none border border-slate-100"><div><span class="font-extrabold text-slate-800">Attempt #' + (i + 1) + '</span><p class="text-[9px] text-slate-400 mt-0.5">' + new Date(a.date).toLocaleDateString() + '</p></div><span class="font-black uppercase py-1 px-2.5 rounded-md text-[10px] ' + (a.percentage >= 50 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-600') + '">' + a.percentage + '%</span></div>'
+  // Attempt history HTML
+  const attemptsHtml = attempts.length === 0 ? '<p class="text-xs text-slate-400 italic">First logged attempt.</p>' :
+    '<div class="space-y-2 max-h-48 overflow-y-auto pr-1">' + attempts.map((a, i) =>
+      '<div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100"><div><span class="font-extrabold text-sm text-slate-800">Attempt #' + (i + 1) + '</span><p class="text-[10px] text-slate-400">' + new Date(a.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) + '</p></div><span class="font-black uppercase py-1.5 px-3 rounded-lg text-xs ' + (a.percentage >= 50 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-600 border border-rose-200') + '">' + a.percentage + '%</span></div>'
     ).join('') + '</div>';
+
+  // Topic performance bars HTML
+  const topicBars = Object.entries(topicStats).map(([tn, st]) => {
+    const rate = Math.round((st.correct / st.total) * 100);
+    const barColor = rate >= 75 ? 'bg-emerald-500' : rate >= 50 ? 'bg-indigo-500' : 'bg-rose-500';
+    return '<div class="space-y-1.5"><div class="flex items-center justify-between gap-2 text-xs font-bold text-slate-700"><span class="break-words min-w-0">' + tn + '</span><span class="whitespace-nowrap shrink-0 text-slate-500">' + st.correct + '/' + st.total + ' (' + rate + '%)</span></div><div class="w-full bg-slate-100 h-3 rounded-full overflow-hidden"><div class="h-full rounded-full transition-all duration-700 bar-animate ' + barColor + '" style="width:' + rate + '%"></div></div></div>';
+  }).join('');
+
+  // Explanations HTML
+  const explanationsHtml = result.failedQuestions.map((item, idx) => {
+    const isCorrect = item.selectedAnswer === item.correctAnswer;
+    const isNotAnswered = !item.selectedAnswer;
+    let badgeColor, badgeText, badgeIcon;
+    if (isCorrect) { badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200'; badgeText = 'Correct'; badgeIcon = '✓'; }
+    else if (isNotAnswered) { badgeColor = 'bg-amber-50 text-amber-700 border-amber-200'; badgeText = 'Not Answered'; badgeIcon = '—'; }
+    else { badgeColor = 'bg-rose-50 text-rose-700 border-rose-200'; badgeText = 'Wrong'; badgeIcon = '✗'; }
+    const rOptA = item.optionA || (item.options && item.options.A) || item.A || '';
+    const rOptB = item.optionB || (item.options && item.options.B) || item.B || '';
+    const rOptC = item.optionC || (item.options && item.options.C) || item.C || '';
+    const rOptD = item.optionD || (item.options && item.options.D) || item.D || '';
+    const opts = [
+      { key: 'A', label: rOptA }, { key: 'B', label: rOptB },
+      { key: 'C', label: rOptC }, { key: 'D', label: rOptD }
+    ];
+    return '<div class="border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-4 fade-in bg-white">' +
+      '<div class="flex items-center justify-between gap-2 flex-wrap">' +
+        '<span class="text-xs bg-slate-100 text-slate-600 py-1 px-3 rounded-full font-extrabold font-mono">Question ' + String(idx + 1).padStart(2, '0') + '</span>' +
+        '<span class="text-[10px] uppercase font-black tracking-wide border py-1 px-3 rounded-full ' + badgeColor + '">' + badgeIcon + ' ' + badgeText + '</span>' +
+      '</div>' +
+      '<p class="text-sm sm:text-base font-bold text-slate-800 leading-relaxed break-words">' + item.question + '</p>' +
+      '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">' +
+      opts.map(opt => {
+        const isCorrectOpt = opt.key === item.correctAnswer;
+        const isSelectedOpt = opt.key === item.selectedAnswer;
+        let borderStyle = 'border-slate-200 bg-white';
+        let markerColor = 'bg-slate-100 text-slate-500 border-slate-200';
+        let badge = '';
+        if (isCorrectOpt) { borderStyle = 'border-emerald-300 bg-emerald-50/50 ring-1 ring-emerald-200'; markerColor = 'bg-emerald-500 text-white border-emerald-500'; badge = '<span class="text-[10px] font-extrabold text-emerald-600 shrink-0 ml-auto">✓ Correct</span>'; }
+        else if (isSelectedOpt && !isCorrectOpt) { borderStyle = 'border-rose-300 bg-rose-50/50 ring-1 ring-rose-200'; markerColor = 'bg-rose-500 text-white border-rose-500'; badge = '<span class="text-[10px] font-extrabold text-rose-600 shrink-0 ml-auto">✗ Your Answer</span>'; }
+        return '<div class="p-3 border rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2.5 transition-all ' + borderStyle + '"><span class="w-7 h-7 rounded-lg flex items-center justify-center font-mono font-bold shrink-0 text-xs shadow-xs border ' + markerColor + '">' + opt.key + '</span><span class="break-words min-w-0 flex-1 leading-snug">' + opt.label + '</span>' + badge + '</div>';
+      }).join('') + '</div>' +
+      '<div class="p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl flex items-start gap-3 mt-1"><svg class="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><div class="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium break-words min-w-0"><strong class="text-indigo-700 font-extrabold">Explanation:</strong> ' + (item.explanation || 'The correct answer is Option ' + item.correctAnswer + '.') + '</div></div>' +
+    '</div>';
+  }).join('');
 
   const resultContainer = document.getElementById('exam-results');
   resultContainer.innerHTML = `
-    <div class="p-5 sm:p-8 bg-gradient-to-br from-indigo-700 via-indigo-800 to-indigo-900 rounded-2xl sm:rounded-3xl text-white text-left shadow-xl relative overflow-hidden print-hidden">
-      <div class="absolute right-0 bottom-0 top-0 w-1/3 bg-[radial-gradient(#ffffff0a_2px,transparent_2px)]" style="background-size:16px 16px;pointer-events:none"></div>
-      <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
-        <div class="space-y-2">
-          <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/10 rounded-full text-xs font-bold text-indigo-200 border border-white/5">
-            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-            Official CBT Transcript
+    <!-- Hero Score Banner -->
+    <div class="p-6 sm:p-8 bg-gradient-to-br from-indigo-700 via-indigo-800 to-indigo-900 rounded-2xl sm:rounded-3xl text-white shadow-xl relative overflow-hidden print-hidden slide-up">
+      <div class="absolute inset-0 bg-[radial-gradient(#ffffff0a_2px,transparent_2px)]" style="background-size:20px 20px;pointer-events:none"></div>
+      <div class="relative z-10">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div class="space-y-3">
+            <div class="inline-flex items-center gap-2 px-3 py-1.5 bg-white/10 rounded-full text-xs font-bold text-indigo-200 border border-white/5">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+              Exam Complete
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-black">${result.percentage >= 50 ? 'Well Done! Excellent Performance' : 'Keep Practicing!'}</h2>
+            <p class="text-indigo-200 text-xs sm:text-sm max-w-lg font-medium leading-relaxed">Student <strong class="text-white font-extrabold">${result.studentName}</strong> completed <strong class="text-white font-extrabold">${examTitle}</strong>. Review the breakdown and download your results below.</p>
           </div>
-          <h2 class="text-3xl font-black">${result.percentage >= 50 ? 'Outstanding Effort!' : 'Focus & Practise!'}</h2>
-          <p class="text-indigo-200 text-xs max-w-lg font-medium leading-relaxed">Student name <strong class="text-white font-extrabold">${result.studentName}</strong> has logged submission metrics. Check subject breakdown, corrected answers, and download formal transcripts below.</p>
-        </div>
-        <div class="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/10 shrink-0 text-center min-w-[160px]">
-          <span class="text-[10px] uppercase tracking-widest text-indigo-200 font-extrabold block mb-1">Percentage Grade</span>
-          <p class="text-5xl font-black text-white">${result.percentage}%</p>
-          <span class="text-[10px] mt-2 inline-block px-3 py-0.5 bg-white/20 rounded-full font-bold uppercase">${result.percentage >= 50 ? 'Passed' : 'Retake Required'}</span>
+          <div class="bg-white/10 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-white/10 shrink-0 text-center min-w-[160px]">
+            <span class="text-[10px] uppercase tracking-widest text-indigo-200 font-extrabold block mb-1">Score</span>
+            <p class="text-4xl sm:text-5xl font-black text-white">${result.percentage}%</p>
+            <span class="text-[10px] mt-2 inline-block px-3 py-1 ${result.percentage >= 50 ? 'bg-emerald-400/20 text-emerald-300' : 'bg-amber-400/20 text-amber-300'} rounded-full font-bold uppercase">${result.percentage >= 50 ? 'Passed' : 'Retake Required'}</span>
+          </div>
         </div>
       </div>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 pt-6 border-t border-white/10">
-        <div class="bg-white/5 rounded-xl p-3"><span class="text-[10px] text-indigo-200 uppercase font-bold tracking-wider">Correct Score</span><p class="text-lg font-bold text-white">${result.score} Marks (${result.correctAnswers}/${result.totalQuestions})</p></div>
-        <div class="bg-white/5 rounded-xl p-3"><span class="text-[10px] text-indigo-200 uppercase font-bold tracking-wider">Time Completed</span><p class="text-lg font-bold text-white">${formatTime(result.timeSpent || ((examDuration * 60) - secondsLeft))}</p></div>
-        <div class="bg-white/5 rounded-xl p-3"><span class="text-[10px] text-indigo-200 uppercase font-bold tracking-wider">Attempt Timestamp</span><p class="text-xs font-bold text-white mt-1">${new Date(result.date).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</p></div>
-        <div class="bg-white/5 rounded-xl p-3"><span class="text-[10px] text-indigo-200 uppercase font-bold tracking-wider">Evaluation Identity</span><p class="text-[10px] font-mono font-bold text-indigo-100 truncate mt-1.5">${result.id}</p></div>
+    </div>
+
+    <!-- Stats Cards Row -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 result-card">
+      <div class="p-4 sm:p-5 bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-xs">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div class="min-w-0"><span class="text-[10px] text-slate-400 uppercase font-bold block tracking-wider">Score</span><strong class="text-lg font-black text-slate-800">${result.score}/${result.totalPossibleMarks}</strong></div>
+        </div>
       </div>
-      <div class="flex flex-wrap items-center gap-3 mt-6 print-hidden">
-        <button onclick="handlePrintCertificate()" class="px-5 py-3 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2.5 cursor-pointer">
+      <div class="p-4 sm:p-5 bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-xs">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          </div>
+          <div class="min-w-0"><span class="text-[10px] text-slate-400 uppercase font-bold block tracking-wider">Time</span><strong class="text-lg font-black text-slate-800">${formatTime(result.timeSpent || ((examDuration * 60) - secondsLeft))}</strong></div>
+        </div>
+      </div>
+      <div class="p-4 sm:p-5 bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-xs">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-50 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          </div>
+          <div class="min-w-0"><span class="text-[10px] text-slate-400 uppercase font-bold block tracking-wider">Date</span><strong class="text-sm font-black text-slate-800">${new Date(result.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</strong></div>
+        </div>
+      </div>
+      <div class="p-4 sm:p-5 bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-xs">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/></svg>
+          </div>
+          <div class="min-w-0"><span class="text-[10px] text-slate-400 uppercase font-bold block tracking-wider">Correct</span><strong class="text-lg font-black text-slate-800">${result.correctAnswers}/${result.totalQuestions}</strong></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Download / Action Buttons -->
+    <div class="p-5 sm:p-6 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-xs print-hidden slide-up">
+      <div class="flex flex-wrap items-center gap-3">
+        <button onclick="handlePrintCertificate()" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
-          Print Scholar Certificate
+          Print Certificate
         </button>
-        <button onclick="handlePrintResultSlip()" class="px-5 py-3 bg-slate-900 hover:bg-slate-850 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2.5 cursor-pointer">
+        <button onclick="handlePrintResultSlip()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
           <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-          Download PDF Result Slip
+          Download Result Slip (PDF)
         </button>
-        <button onclick="handleRetake()" class="px-5 py-3 bg-white hover:bg-slate-50 border border-slate-200 text-slate-800 font-extrabold text-xs rounded-xl transition-all flex items-center gap-2.5 cursor-pointer">
+        <button onclick="window.open('/api/download/exam/${examId}/pdf', '_blank')" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
+          Download Exam Script (PDF)
+        </button>
+        <button onclick="window.open('/api/download/exam/${examId}/docx', '_blank')" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Download Exam Script (Word)
+        </button>
+        <button onclick="handleRetake()" class="px-4 py-2.5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-extrabold text-xs rounded-xl transition-all flex items-center gap-2 cursor-pointer">
           <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
           Retake Exam
         </button>
-        <a href="{{ route("student.dashboard") }}" class="px-5 py-3 bg-slate-100 hover:bg-slate-250 text-slate-700 font-extrabold text-xs rounded-xl transition-all flex items-center gap-2.5 cursor-pointer">
-          <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-          Return to Dashboard
-        </button>
+        <a href="{{ route("student.dashboard") }}" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-extrabold text-xs rounded-xl transition-all flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          Dashboard
+        </a>
       </div>
     </div>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 print-hidden">
-      <div class="p-4 sm:p-6 bg-white border border-slate-150 rounded-xl sm:rounded-2xl shadow-xs space-y-4 col-span-1">
-        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-550 flex items-center gap-2">
-          <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-          CBT History & Progression
+
+    <!-- Analytics Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 print-hidden">
+      <!-- Attempt History -->
+      <div class="p-4 sm:p-6 bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-xs space-y-4 result-card">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+          <svg class="w-4 h-4 text-indigo-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+          Attempt History
         </h4>
-        <div class="space-y-3.5">
-          <div class="grid grid-cols-2 gap-2">
-            <div class="p-3 bg-slate-50 rounded-xl text-center border border-slate-100"><span class="text-[9px] text-slate-400 uppercase font-black block">Best Score</span><strong class="text-lg font-black text-slate-900">${bestScore}%</strong></div>
-            <div class="p-3 bg-slate-50 rounded-xl text-center border border-slate-100"><span class="text-[9px] text-slate-400 uppercase font-black block">Avg Score</span><strong class="text-lg font-black text-indigo-650">${avgScore}%</strong></div>
+        <div class="grid grid-cols-2 gap-2">
+          <div class="p-3 bg-slate-50 rounded-xl text-center border border-slate-100"><span class="text-[9px] text-slate-400 uppercase font-black block">Best</span><strong class="text-lg font-black text-slate-800">${bestScore}%</strong></div>
+          <div class="p-3 bg-slate-50 rounded-xl text-center border border-slate-100"><span class="text-[9px] text-slate-400 uppercase font-black block">Average</span><strong class="text-lg font-black text-indigo-600">${avgScore}%</strong></div>
+        </div>
+        <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider pt-2 border-t border-slate-100">Previous Attempts (${attempts.length})</div>
+        ${attemptsHtml}
+      </div>
+
+      <!-- Analytics & Topic Performance -->
+      <div class="lg:col-span-2 space-y-4 sm:space-y-6">
+        <div class="p-4 sm:p-6 bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-xs space-y-4 result-card">
+          <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-2">
+            <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+            Subject Analytics
+          </h4>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div class="p-4 bg-emerald-50/60 rounded-xl border border-emerald-100"><span class="text-[10px] text-emerald-700 uppercase font-black tracking-wider block">Strongest Area</span><strong class="text-sm font-black text-slate-800 mt-1 block">${strongest}</strong><p class="text-[10px] text-slate-400 mt-1 font-medium">Top performance in this area.</p></div>
+            <div class="p-4 bg-rose-50/60 rounded-xl border border-rose-100"><span class="text-[10px] text-rose-600 uppercase font-black tracking-wider block">Needs Revision</span><strong class="text-sm font-black text-slate-800 mt-1 block">${weakest}</strong><p class="text-[10px] text-slate-400 mt-1 font-medium">Focus more study here.</p></div>
           </div>
-          <div class="text-xs font-semibold text-slate-500 uppercase tracking-wider pt-2 border-t border-slate-100">Previous Attempts (${attempts.length})</div>
-          ${attemptsHtml}
+          <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 text-xs">
+            <div><span class="text-slate-400 font-extrabold uppercase text-[9px] tracking-wider block mb-1">Attempted</span><p class="text-base font-black text-slate-800">${qAttempted} of ${questions.length}</p></div>
+            <div><span class="text-slate-400 font-extrabold uppercase text-[9px] tracking-wider block mb-1">Unanswered</span><p class="text-base font-black ${qSkipped > 0 ? 'text-amber-600' : 'text-slate-500'}">${qSkipped}</p></div>
+          </div>
         </div>
-      </div>
-      <div class="p-4 sm:p-6 bg-white border border-slate-150 rounded-xl sm:rounded-2xl shadow-xs space-y-4 col-span-2">
-        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-550 flex items-center gap-2">
-          <svg class="w-4 h-4 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-          CBT Subject Analytics Insights
-        </h4>
-        <div class="grid grid-cols-2 gap-4">
-          <div class="p-4 bg-emerald-50/40 rounded-xl border border-emerald-100"><span class="text-[10px] text-emerald-700 uppercase font-black tracking-wider block">Strongest Area of Capability</span><strong class="text-sm font-black text-slate-900 mt-1 block">${strongest}</strong><p class="text-[10px] text-slate-400 mt-1 font-medium">Demonstrated top performance indices in this conceptual sector.</p></div>
-          <div class="p-4 bg-rose-50/45 rounded-xl border border-rose-100"><span class="text-[10px] text-rose-500 uppercase font-black tracking-wider block">Target Weakest revision Area</span><strong class="text-sm font-black text-rose-900 mt-1 block">${weakest}</strong><p class="text-[10px] text-slate-400 mt-1 font-medium">Needs focused revision. Study the detailed explanation keys below.</p></div>
-        </div>
-        <div class="grid grid-cols-2 gap-4 pt-4 border-t border-slate-100 text-xs">
-          <div><span class="text-slate-400 font-extrabold uppercase text-[9px] tracking-wider block mb-1">QUESTIONS ATTEMPTED</span><p class="text-base font-black text-slate-800">${qAttempted} of ${questions.length}</p></div>
-          <div><span class="text-slate-400 font-extrabold uppercase text-[9px] tracking-wider block mb-1">UNANSWERED / SKIPPED</span><p class="text-base font-black text-amber-600">${qSkipped} skipping</p></div>
+
+        <!-- Topic Performance Bars -->
+        <div class="p-4 sm:p-6 bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-xs space-y-4 result-card">
+          <h4 class="text-xs font-extrabold uppercase tracking-widest text-slate-500 flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            Topic Performance
+          </h4>
+          <div class="space-y-3.5">
+            ${topicBars}
+          </div>
         </div>
       </div>
     </div>
-    <div class="p-4 sm:p-6 bg-white border border-slate-150 rounded-2xl sm:rounded-3xl shadow-sm space-y-4 print-hidden">
-      <h4 class="text-xs font-extrabold uppercase tracking-widest text-slate-400 flex items-center gap-1">
-        <svg class="w-3.5 h-3.5 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
-        Sector / Topic Performance Distribution
-      </h4>
-      <div class="space-y-3.5">
-        ${Object.entries(topicStats).map(([tn, st]) => {
-          const rate = Math.round((st.correct / st.total) * 100);
-          const barColor = rate >= 75 ? 'bg-emerald-500' : rate >= 50 ? 'bg-indigo-600' : 'bg-rose-500';
-          return '<div class="space-y-1"><div class="flex items-center justify-between gap-2 text-xs font-bold text-slate-700"><span class="break-words min-w-0">' + tn + '</span><span class="whitespace-nowrap shrink-0">' + st.correct + '/' + st.total + ' (' + rate + '%)</span></div><div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden"><div class="h-full rounded-full transition-all duration-500 ' + barColor + '" style="width:' + rate + '%"></div></div></div>';
-        }).join('')}
+
+    <!-- Review Answers & Explanations -->
+    <div class="p-5 sm:p-7 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-sm space-y-6 print-hidden slide-up">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <div>
+          <h3 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
+            <svg class="w-5 h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Review Answers & Explanations
+          </h3>
+          <p class="text-xs text-slate-400 font-bold mt-1">Review each question, your answer, the correct answer, and the explanation.</p>
+        </div>
+        <span class="text-xs bg-slate-100 text-slate-600 py-1.5 px-3.5 rounded-full font-extrabold">${result.correctAnswers}/${result.totalQuestions} Correct</span>
       </div>
-    </div>
-    <div class="p-4 sm:p-6 bg-white border border-slate-150 rounded-2xl sm:rounded-3xl shadow-sm space-y-6 print-hidden">
-      <div><h3 class="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2"><svg class="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg> Review Answers & Explanations</h3><p class="text-xs text-slate-400 font-bold mt-1">Examine every question, correct choice, your answer, and learning explanations.</p></div>
-      <div class="space-y-6 divide-y divide-slate-100">
-        ${result.failedQuestions.map((item, idx) => {
-          const isCorrect = item.selectedAnswer === item.correctAnswer;
-          const isNotAnswered = !item.selectedAnswer;
-          let badgeColor = 'bg-rose-50 text-rose-700 border-rose-200';
-          let badgeText = 'Wrong';
-          if (isCorrect) { badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200'; badgeText = 'Correct'; }
-          else if (isNotAnswered) { badgeColor = 'bg-amber-50 text-amber-700 border-amber-200'; badgeText = 'Not Answered'; }
-          const rOptA = item.optionA || (item.options && item.options.A) || item.A || '';
-          const rOptB = item.optionB || (item.options && item.options.B) || item.B || '';
-          const rOptC = item.optionC || (item.options && item.options.C) || item.C || '';
-          const rOptD = item.optionD || (item.options && item.options.D) || item.D || '';
-            const opts = [
-              { key: 'A', label: rOptA }, { key: 'B', label: rOptB },
-              { key: 'C', label: rOptC }, { key: 'D', label: rOptD }
-            ];
-            return '<div class="pt-6 space-y-3 text-left">' +
-              '<div class="flex items-center justify-between gap-2"><span class="text-xs bg-slate-105 text-slate-650 py-1 px-2.5 rounded-full font-extrabold font-mono shrink-0">Question ' + String(idx + 1).padStart(2, '0') + '</span><span class="text-[10px] uppercase font-black tracking-wide border py-1 px-3 rounded-full whitespace-nowrap ' + badgeColor + '">' + badgeText + '</span></div>' +
-              '<p class="text-sm sm:text-base font-bold text-slate-800 leading-relaxed break-words">' + item.question + '</p>' +
-              '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">' +
-              opts.map(opt => {
-                const isCorrectOpt = opt.key === item.correctAnswer;
-                const isSelectedOpt = opt.key === item.selectedAnswer;
-                let borderStyle = 'border-slate-150 hover:bg-slate-50';
-                let markerColor = 'bg-slate-100 text-slate-500';
-                let badge = '';
-                if (isCorrectOpt) { borderStyle = 'bg-emerald-500/10 border-emerald-300 text-emerald-950'; markerColor = 'bg-emerald-500 text-white'; badge = '<span class="text-[10px] font-extrabold text-emerald-600 select-none font-mono uppercase shrink-0 ml-auto">\u2713 Correct</span>'; }
-                else if (isSelectedOpt && !isCorrectOpt) { borderStyle = 'bg-rose-500/10 border-rose-300 text-rose-950'; markerColor = 'bg-rose-500 text-white'; badge = '<span class="text-[10px] font-extrabold text-rose-600 select-none font-mono uppercase shrink-0 ml-auto">\u2717 Yours</span>'; }
-                return '<div class="p-3 border rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 transition ' + borderStyle + '"><span class="w-6 h-6 rounded-md flex items-center justify-center font-mono font-bold shrink-0 text-xs shadow-xs ' + markerColor + '">' + opt.key + '</span><span class="break-words min-w-0 flex-1 leading-snug">' + opt.label + '</span>' + badge + '</div>';
-              }).join('') + '</div>' +
-              '<div class="p-3 sm:p-4 bg-slate-50 border border-slate-150 rounded-2xl flex items-start gap-2.5 mt-2"><svg class="w-4 h-4 text-indigo-500 shrink-0 mt-0.5 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><div class="text-xs text-slate-600 leading-relaxed font-semibold break-words min-w-0"><strong class="text-slate-900 font-extrabold">Explanation:</strong> <span>' + (item.explanation || 'The correct answer is Option ' + item.correctAnswer + '.') + '</span></div></div>' +
-              '</div>';
-        }).join('')}
+      <div class="space-y-4 sm:space-y-5">
+        ${explanationsHtml}
       </div>
     </div>
   `;
@@ -530,17 +660,17 @@ function formatTime(s) {
 }
 
 function handlePrintCertificate() {
-  alert('To Save PDF Certificate:\n1. Change Printer/Destination target to \'Save as PDF\'.\n2. Set Layout to \'Landscape\' to fit the diploma grid cleanly.\n3. Make sure background graphics are turned ON under more settings.');
+  alert('To Save PDF Certificate:\n1. Change destination to \'Save as PDF\'.\n2. Set Layout to \'Landscape\'.\n3. Ensure background graphics are ON (under More Settings).');
   window.print();
 }
 
 function handlePrintResultSlip() {
-  alert('To Print standard A4 Results Report:\n1. Change Printer/Destination target to \'Save as PDF\'.\n2. Set Layout to \'Portrait\'.\n3. Click printed sheet to save.');
+  alert('To Save as PDF:\n1. Change destination to \'Save as PDF\'.\n2. Set Layout to \'Portrait\'.\n3. Click Save.');
   window.print();
 }
 
 function handleRetake() {
-  if (confirm('Are you sure you want to retake this exam? This will reset your current timer and answers slate.')) {
+  if (confirm('Are you sure you want to retake this exam? This will reset your current timer and answers.')) {
     selectedAnswers = {};
     flaggedQuestions = {};
     secondsLeft = examDuration * 60;
