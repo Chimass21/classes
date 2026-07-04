@@ -7,6 +7,7 @@ use App\Helpers\CurriculumData;
 use App\Helpers\JsonDb;
 use App\Services\GeminiService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 
 class AIController extends Controller
@@ -52,6 +53,21 @@ class AIController extends Controller
                     $data['subject'], $data['class'], $data['term'], $data['week'],
                     $data['topic'], $schoolName, $teacherName, $duration, $ageRange
                 );
+                if ($this->isGenericTemplateContent($plan, 'lesson_plan')) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'AI generation produced generic content. Please try again with a more specific topic.',
+                    ], 422);
+                }
+            } elseif (!$this->isRelevantToTopic($plan, 'lesson_plan', $data['subject'], $data['topic'], $data['class'])) {
+                $retryResponse = $this->retryWithStrictPrompt($prompt, $data['subject'], $data['topic'], $data['class']);
+                $plan = json_decode($retryResponse, true);
+                if (!is_array($plan) || empty($plan) || !$this->isRelevantToTopic($plan, 'lesson_plan', $data['subject'], $data['topic'], $data['class'])) {
+                    $plan = $this->fallbackLessonPlan(
+                        $data['subject'], $data['class'], $data['term'], $data['week'],
+                        $data['topic'], $schoolName, $teacherName, $duration, $ageRange
+                    );
+                }
             }
 
             $plan['subject'] = $data['subject'];
@@ -95,23 +111,28 @@ class AIController extends Controller
         try {
             $data = $request->validate([
                 'subject' => 'required|string',
-                'class' => 'required|string',
-                'term' => 'required|string',
-                'week' => 'required|integer|min:1|max:13',
+                'class' => 'nullable|string',
+                'term' => 'nullable|string',
+                'week' => 'nullable|integer|min:1|max:13',
                 'topic' => 'required|string',
                 'difficulty' => 'nullable|string',
                 'periods' => 'nullable|string',
+                'subtopics' => 'nullable|string',
             ]);
 
             $user = Session::get('user');
+            $data['class'] = $data['class'] ?? 'SS1';
+            $data['term'] = $data['term'] ?? 'First Term';
+            $data['week'] = $data['week'] ?? 1;
             $difficulty = $data['difficulty'] ?? 'Medium';
             $periods = $data['periods'] ?? '2 Periods';
             $ageRange = CurriculumData::getAgeRange($data['class']);
             $scheme = CurriculumData::getSchemeOfWork($data['subject'], $data['class'], $data['term']);
+            $userSubtopics = $data['subtopics'] ?? '';
 
             $prompt = $this->buildLessonNotePrompt(
                 $data['subject'], $data['class'], $data['term'], $data['week'],
-                $data['topic'], $periods, $difficulty, $ageRange, $scheme
+                $data['topic'], $periods, $difficulty, $ageRange, $scheme, $userSubtopics
             );
 
             $response = $this->gemini->generate($prompt);
@@ -122,17 +143,16 @@ class AIController extends Controller
                     $data['subject'], $data['class'], $data['term'], $data['week'],
                     $data['topic'], $periods, $difficulty, $ageRange
                 );
-            } else {
-                $contentText = ($note['content'] ?? '') . ' ' . ($note['introduction'] ?? '') . ' ' . ($note['summary'] ?? '');
-                $topicLower = strtolower($data['topic']);
-                $relevanceScore = 0;
-                foreach (explode(' ', $topicLower) as $word) {
-                    if (strlen($word) > 3 && substr_count(strtolower($contentText), $word) > 0) {
-                        $relevanceScore++;
-                    }
+                if ($this->isGenericTemplateContent($note, 'lesson_note')) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'AI generation produced generic content. Please try again with a more specific topic.',
+                    ], 422);
                 }
-                $wordCount = str_word_count($topicLower);
-                if ($wordCount > 1 && $relevanceScore < min(2, $wordCount)) {
+            } elseif (!$this->isRelevantToTopic($note, 'lesson_note', $data['subject'], $data['topic'], $data['class'])) {
+                $retryResponse = $this->retryWithStrictPrompt($prompt, $data['subject'], $data['topic'], $data['class']);
+                $note = json_decode($retryResponse, true);
+                if (!is_array($note) || empty($note) || !$this->isRelevantToTopic($note, 'lesson_note', $data['subject'], $data['topic'], $data['class'])) {
                     $note = $this->fallbackLessonNote(
                         $data['subject'], $data['class'], $data['term'], $data['week'],
                         $data['topic'], $periods, $difficulty, $ageRange
@@ -212,20 +232,36 @@ class AIController extends Controller
             if (!is_array($questions) || empty($questions)) {
                 $questions = $this->fallbackQuestions($data['subject'], $data['topic'], $data['count'], $data['includeTheory'] ?? false);
             } else {
-                $objectives = $questions['objectives'] ?? [];
-                $hasOptions = !empty($objectives) && (
-                    isset($objectives[0]['A']) ||
-                    isset($objectives[0]['options']) ||
-                    isset($objectives[0]['optionA'])
+                $hasFormat = !empty($questions['objectives']) && (
+                    isset($questions['objectives'][0]['A']) ||
+                    isset($questions['objectives'][0]['options']) ||
+                    isset($questions['objectives'][0]['optionA'])
                 );
-                if (!$hasOptions) {
+                if (!$hasFormat) {
                     $questions = $this->fallbackQuestions($data['subject'], $data['topic'], $data['count'], $data['includeTheory'] ?? false);
+                } elseif (!$this->isRelevantToTopic($questions, 'questions', $data['subject'], $data['topic'], $data['class'] ?? 'SS1')) {
+                    $retryResponse = $this->retryWithStrictPrompt($prompt, $data['subject'], $data['topic'], $data['class'] ?? 'SS1');
+                    $questions = json_decode($retryResponse, true);
+                    if (!is_array($questions) || empty($questions)) {
+                        $questions = $this->fallbackQuestions($data['subject'], $data['topic'], $data['count'], $data['includeTheory'] ?? false);
+                    } else {
+                        $hasFormatAfterRetry = !empty($questions['objectives']) && (
+                            isset($questions['objectives'][0]['A']) ||
+                            isset($questions['objectives'][0]['options']) ||
+                            isset($questions['objectives'][0]['optionA'])
+                        );
+                        if (!$hasFormatAfterRetry || !$this->isRelevantToTopic($questions, 'questions', $data['subject'], $data['topic'], $data['class'] ?? 'SS1')) {
+                            $questions = $this->fallbackQuestions($data['subject'], $data['topic'], $data['count'], $data['includeTheory'] ?? false);
+                        }
+                    }
                 }
             }
 
+            $questionsArray = $questions['objectives'] ?? $questions;
+
             return response()->json([
                 'success' => true,
-                'questions' => $questions,
+                'questions' => $questionsArray,
                 'count' => $data['count'],
                 'message' => $data['count'] . ' questions generated with ' . ($data['includeTheory'] ? 'theory questions' : 'MCQ only') . '.',
             ]);
@@ -373,20 +409,21 @@ class AIController extends Controller
         return <<<PROMPT
 You are a Nigerian curriculum expert and professional lesson plan writer for the Nigerian (NERDC/UBEC) curriculum.
 
-Generate a COMPLETE LESSON PLAN in STRICT JSON format only. No markdown, no explanations, just JSON.
+CRITICAL — You MUST write ONLY about the EXACT topic specified. Do NOT change the topic or write about something else.
+
+TOPIC (do not deviate): {$topic}
 
 CONTEXT:
 - Subject: {$subject}
 - Class: {$class} (Age range: {$ageRange})
 - Term: {$term}
 - Week: {$week}
-- Topic: {$topic}
 - School: {$schoolName}
 - Teacher: {$teacherName}
 - Duration: {$duration}
 {$weekScheme}
 
-The lesson plan MUST be designed for the Nigerian curriculum and Nigerian classroom context.
+Generate a COMPLETE LESSON PLAN in STRICT JSON format about "{$topic}" in {$subject} for {$class}. Every single objective, step, and evaluation must be directly about {$topic}.
 
 Return JSON in this exact structure:
 {
@@ -412,13 +449,14 @@ RULES:
 - Each objective must have a corresponding lesson step
 - Each objective must have a corresponding evaluation item
 - Teacher and learner activities must be practical and curriculum-based
-- Content must be appropriate for {$class} level ({$ageRange})
+- ALL content must be about "{$topic}" specifically for {$class} level ({$ageRange})
 - Use Nigerian examples (₦aira, Nigerian locations, cultural contexts)
-- Lesson steps should progress logically from introduction to conclusion
+- Before writing, re-read the topic: "{$topic}"
+- If the topic is "{$topic}", do NOT write about anything else
 PROMPT;
     }
 
-    protected function buildLessonNotePrompt($subject, $class, $term, $week, $topic, $periods, $difficulty, $ageRange, $scheme): string
+    protected function buildLessonNotePrompt($subject, $class, $term, $week, $topic, $periods, $difficulty, $ageRange, $scheme, $userSubtopics = ''): string
     {
         $weekScheme = '';
         foreach ($scheme as $s) {
@@ -426,6 +464,11 @@ PROMPT;
                 $weekScheme = 'Scheme sub-topics: ' . implode(', ', $s['subtopics'] ?? []);
                 break;
             }
+        }
+
+        $subtopicInstruction = '';
+        if (!empty($userSubtopics)) {
+            $subtopicInstruction = "\n\nYOU MUST COVER THESE SPECIFIC SUB-TOPICS IN ORDER:\n" . $userSubtopics . "\n\nStructure the content section with each sub-topic as a separate <h4> heading followed by detailed <p> explanations and <ul>/<ol> lists.";
         }
 
         $topicUpper = strtoupper($topic);
@@ -443,6 +486,7 @@ CONTEXT:
 - Periods: {$periods}
 - Difficulty: {$difficulty}
 {$weekScheme}
+{$subtopicInstruction}
 
 Return ONLY valid JSON with this exact structure (no markdown, no code fences):
 {
@@ -474,6 +518,8 @@ REQUIREMENTS:
 7. For Chemistry with calculations: include at least 10 fully solved examples about {$topic}
 8. Content must be curriculum-compliant (NERDC/UBEC approved)
 9. The topic "{$topic}" MUST appear in every section
+10. Tailor the depth and language to {$class} level ({$ageRange}) — simpler explanations for primary, more advanced for secondary
+11. Match the difficulty level "{$difficulty}" — "Easy" means foundational concepts, "Medium" means standard curriculum depth, "Hard" means advanced/extension content
 PROMPT;
     }
 
@@ -493,9 +539,11 @@ PROMPT;
         $noteContext = $lessonNoteContent ? "\n\nBASE THE QUESTIONS ON THIS LESSON NOTE CONTENT:\n" . $lessonNoteContent : '';
 
         return <<<PROMPT
-You are a Nigerian examination expert generating questions for the Nigerian curriculum.
+You are a Nigerian examination expert. Generate questions for the Nigerian curriculum.
 
 Generate {$count} OBJECTIVE (multiple-choice) questions{$theoryPart} about "{$topic}" in {$subject} for {$class} ({$term}, Week {$week}).
+
+CRITICAL: Every question MUST be directly about "{$topic}" in {$subject}. Do NOT write questions about any other topic.
 
 {$noteContext}
 
@@ -515,14 +563,15 @@ Return ONLY valid JSON in this exact format:
 }
 
 RULES:
+- Every single question must test knowledge of "{$topic}"
 - Strictly multiple-choice with exactly 4 options (A, B, C, D)
 - Each question must have exactly one correct answer
 - Questions should test understanding, not just recall
-- Difficulty should range from simple to challenging
+- Difficulty should range from simple to challenging for {$class} level
 - Follow WAEC/NECO/JAMB standards
-- Use Nigeria-centric contexts
+- Use Nigeria-centric contexts, names, and examples
 - Ensure the correct answer is accurate
-- Questions must be directly based on the topic "{$topic}"
+- Do NOT write about any topic other than "{$topic}"
 PROMPT;
     }
 
@@ -585,5 +634,152 @@ PROMPT;
     protected function fallbackQuestions($subject, $topic, $count, $includeTheory): array
     {
         return ContentGenerator::generateQuestions($subject, $topic, $count, $includeTheory);
+    }
+
+    // --- RELEVANCE VALIDATOR ---
+
+    private function isRelevantToTopic(array $content, string $type, string $subject, string $topic, string $class): bool
+    {
+        $topicLower = strtolower(trim($topic));
+        $subjectLower = strtolower(trim($subject));
+        $classLower = strtolower(trim($class));
+
+        $allText = '';
+
+        if ($type === 'lesson_plan') {
+            $allText = implode(' ', $content['behaviouralObjectives'] ?? []) . ' ' .
+                       ($content['previousKnowledge'] ?? '') . ' ' .
+                       implode(' ', array_map(fn($s) => ($s['teacherActivities'] ?? '') . ' ' . ($s['learnerActivities'] ?? '') . ' ' . ($s['learningPoints'] ?? ''), $content['lessonSteps'] ?? [])) . ' ' .
+                       ($content['evaluation'] ?? '') . ' ' .
+                       ($content['summary'] ?? '');
+        } elseif ($type === 'lesson_note') {
+            $allText = ($content['content'] ?? '') . ' ' .
+                       ($content['introduction'] ?? '') . ' ' .
+                       ($content['summary'] ?? '') . ' ' .
+                       ($content['detailedNote'] ?? '') . ' ' .
+                       implode(' ', is_array($content['subtopics'] ?? []) ? $content['subtopics'] : []);
+        } elseif ($type === 'questions') {
+            $items = $content['objectives'] ?? $content;
+            if (is_array($items)) {
+                foreach ($items as $q) {
+                    $allText .= ($q['question'] ?? '') . ' ' . ($q['A'] ?? '') . ' ' . ($q['B'] ?? '') . ' ' . ($q['C'] ?? '') . ' ' . ($q['D'] ?? '');
+                }
+            }
+        }
+
+        $allText = strtolower($allText);
+
+        if (empty(trim($allText))) {
+            return false;
+        }
+
+        $subjectFound = str_contains($allText, $subjectLower);
+
+        $topicWords = array_filter(explode(' ', $topicLower), fn($w) => strlen($w) > 2);
+        if (empty($topicWords)) {
+            $topicWords = [$topicLower];
+        }
+
+        $topicMatchCount = 0;
+        foreach ($topicWords as $word) {
+            if (str_contains($allText, $word)) {
+                $topicMatchCount++;
+            }
+        }
+        $topicScore = $topicMatchCount / count($topicWords);
+
+        $pass = true;
+        $reasons = [];
+
+        if ($topicScore < 0.3) {
+            $pass = false;
+            $reasons[] = "topicScore={$topicScore}";
+        }
+        if (!$subjectFound && $type !== 'questions') {
+            $pass = false;
+            $reasons[] = 'subjectMissing';
+        }
+
+        if (!$pass) {
+            Log::warning("AI relevance rejected [{$type}]: " . implode(', ', $reasons), [
+                'subject' => $subject, 'topic' => $topic, 'class' => $class,
+            ]);
+        }
+
+        return $pass;
+    }
+
+    private function retryWithStrictPrompt(string $originalPrompt, string $subject, string $topic, string $class): string
+    {
+        $strictSuffix = <<<STRICT
+
+
+--- STRICT CORRECTION ---
+
+Your previous response was REJECTED because it was NOT about the requested topic.
+
+CRITICAL — READ CAREFULLY:
+- You MUST write ONLY about "{$topic}" in {$subject} for {$class}.
+- EVERY sentence must directly relate to "{$topic}".
+- Do NOT write about anything else.
+- Include the exact phrase "{$topic}" throughout your response.
+STRICT;
+        return $this->gemini->generate($originalPrompt . $strictSuffix);
+    }
+
+    private function isGenericTemplateContent(array $content, string $type): bool
+    {
+        $allText = '';
+
+        if ($type === 'lesson_plan') {
+            $allText = implode(' ', $content['behaviouralObjectives'] ?? []) . ' ' .
+                       ($content['previousKnowledge'] ?? '') . ' ' .
+                       ($content['evaluation'] ?? '') . ' ' .
+                       ($content['summary'] ?? '');
+        } elseif ($type === 'lesson_note') {
+            $allText = ($content['content'] ?? '') . ' ' .
+                       ($content['introduction'] ?? '') . ' ' .
+                       ($content['summary'] ?? '') . ' ' .
+                       ($content['detailedNote'] ?? '');
+        } elseif ($type === 'questions') {
+            $items = $content['objectives'] ?? $content;
+            if (is_array($items)) {
+                foreach ($items as $q) {
+                    $allText .= ($q['question'] ?? '') . ' ';
+                }
+            }
+        }
+
+        $allText = strtolower($allText);
+
+        if (empty(trim($allText))) {
+            return false;
+        }
+
+        $genericPatterns = [
+            '/is an important concept that helps us understand/i',
+            '/is a fundamental concept in/i',
+            '/that every student should understand/i',
+            '/when studying \w+ in \w+, it is important/i',
+            '/plays a vital role in \w+ education/i',
+            '/mastery of this topic helps students perform better/i',
+            '/mastery of \w+ helps students/i',
+            '/the principles of \w+ apply to many/i',
+            '/this knowledge will be built upon in subsequent lessons/i',
+            '/essential for academic success in/i',
+            '/develops analytical and problem-solving skills/i',
+            '/connects to other important topics in/i',
+            '/building from basic definitions to more complex/i',
+            '/engaging introduction paragraph connecting to prior knowledge/i',
+        ];
+
+        foreach ($genericPatterns as $pattern) {
+            if (preg_match($pattern, $allText)) {
+                Log::warning("Generic template detected [{$type}]: matched pattern", ['pattern' => $pattern]);
+                return true;
+            }
+        }
+
+        return false;
     }
 }

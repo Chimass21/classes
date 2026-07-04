@@ -320,6 +320,7 @@ class ContentGenerator
 
     private static function generateSubtopics(string $subject, string $class, string $topic): array
     {
+        $subj = strtolower($subject);
         $level = CurriculumData::getClassCategory($class);
         $count = $level === 'primary' ? 3 : ($level === 'junior' ? 4 : 5);
 
@@ -330,6 +331,48 @@ class ContentGenerator
             "Importance and Applications of {$topic}",
             "Practical Examples and Case Studies of {$topic}",
         ];
+
+        if (str_contains($subj, 'chemist')) {
+            $generic = [
+                "Chemical Composition and Structure of {$topic}",
+                "Physical and Chemical Properties of {$topic}",
+                "Reactions and Equations Involving {$topic}",
+                "Importance and Applications of {$topic} in Industry and Daily Life",
+                "Quantitative Analysis and Calculations Related to {$topic}",
+            ];
+        } elseif (str_contains($subj, 'physic')) {
+            $generic = [
+                "Definition and Fundamental Principles of {$topic}",
+                "Mathematical Formulations and Calculations in {$topic}",
+                "Practical Applications and Examples of {$topic}",
+                "Experimental Investigations of {$topic}",
+                "{$topic} in Technology and Everyday Life",
+            ];
+        } elseif (str_contains($subj, 'biology') || str_contains($subj, 'science')) {
+            $generic = [
+                "Structure and Organization of {$topic}",
+                "Functions and Processes of {$topic}",
+                "Types and Classification of {$topic}",
+                "Importance of {$topic} to Living Organisms and the Environment",
+                "Practical Observations and Laboratory Studies of {$topic}",
+            ];
+        } elseif (str_contains($subj, 'mathemat')) {
+            $generic = [
+                "Basic Concepts and Definitions of {$topic}",
+                "Formulae and Methods for Solving {$topic} Problems",
+                "Worked Examples and Step-by-Step Solutions for {$topic}",
+                "Real-Life Applications of {$topic}",
+                "Advanced Problems and Challenges in {$topic}",
+            ];
+        } elseif (str_contains($subj, 'english') || str_contains($subj, 'literature')) {
+            $generic = [
+                "Definition and Explanation of {$topic}",
+                "Rules and Conventions Governing {$topic}",
+                "Examples and Illustrations of {$topic}",
+                "Common Errors and How to Avoid Them in {$topic}",
+                "Practical Exercises and Applications of {$topic}",
+            ];
+        }
 
         $result = [];
         foreach (array_slice($generic, 0, $count) as $item) {
@@ -374,34 +417,176 @@ class ContentGenerator
 
     private static function generateContentParagraph(string $subject, string $class, string $topic, string $subtopic, string $difficulty): string
     {
+        $subj = strtolower($subject);
         $level = CurriculumData::getClassCategory($class);
 
-        $paragraphs = [
-            "In {$subject}, {$topic} is an important concept that helps us understand fundamental principles and their applications. At the {$class} level, students engage with this topic progressively, building from basic definitions to more complex applications.",
-            "The study of " . htmlspecialchars($subtopic) . " focuses on understanding the core principles that govern {$topic}. This aspect of {$subject} is essential for developing a strong foundation and preparing for more advanced studies.",
-            "{$topic} plays a vital role in {$subject} education at the {$class} level. By mastering the content covered under " . htmlspecialchars($subtopic) . ", students develop critical thinking skills and gain a deeper appreciation of how {$subject} relates to the world around them.",
-            "When studying {$topic} in {$subject}, it is important to pay attention to the key aspects discussed in " . htmlspecialchars($subtopic) . ". This knowledge will be built upon in subsequent lessons and is essential for academic success in {$subject}.",
-        ];
+        $paragraphs = self::getContentParagraphs($subj, $subject, $class, $topic, $subtopic, $difficulty, $level);
 
-        if ($difficulty === 'Hard' || $level === 'senior') {
-            $paragraphs[] = "A deeper analysis of {$topic} reveals complex interrelationships between its various components. Advanced students should focus on developing analytical frameworks to evaluate competing perspectives and apply theoretical knowledge to novel situations in {$subject}.";
+        if (empty($paragraphs)) {
+            $paragraphs = [
+                "When studying " . htmlspecialchars($subtopic) . ", it is important to focus on the specific facts, definitions, and principles that define this area of {$subject}. Students should take notes, ask questions, and practice applying what they have learned to ensure a thorough understanding of the material.",
+                "The concept of " . htmlspecialchars($subtopic) . " in {$subject} requires careful attention to detail. Learners should work through examples step by step, identifying patterns and relationships that help connect new knowledge to what they already know.",
+                htmlspecialchars($subtopic) . " is a key area within the broader topic of {$topic}. By mastering the content in this section, students develop critical thinking skills and gain confidence in their ability to tackle more advanced concepts in {$subject}.",
+            ];
         }
 
         $key = abs(crc32($subtopic)) % count($paragraphs);
         return $paragraphs[$key];
     }
 
+    private static function getContentParagraphs(string $subj, string $subject, string $class, string $topic, string $subtopic, string $difficulty, string $level): array
+    {
+        if (str_contains($subj, 'chemist')) {
+            return [
+                "The study of " . htmlspecialchars($subtopic) . " in Chemistry focuses on the composition, structure, and behaviour of substances. Students analyse how atoms and molecules interact through chemical bonds, reactions, and energy changes, forming the basis for understanding matter at the molecular level.",
+                "In Chemistry, " . htmlspecialchars($subtopic) . " involves understanding the specific properties and transformations of chemical substances. This includes observing reactions, balancing equations, calculating quantities using mole concepts, and predicting outcomes based on chemical principles.",
+                htmlspecialchars($subtopic) . " is fundamental to the Nigerian Chemistry curriculum at the {$class} level. Learners are expected to master the key concepts, perform relevant calculations, and connect theoretical knowledge to practical laboratory observations and real-world applications.",
+                "When studying " . htmlspecialchars($subtopic) . ", Chemistry students must pay careful attention to symbols, formulae, and equations. Understanding the quantitative relationships between reactants and products through stoichiometry is essential for solving numerical problems and interpreting experimental data.",
+            ];
+        }
+
+        if (str_contains($subj, 'physic')) {
+            return [
+                "In Physics, " . htmlspecialchars($subtopic) . " deals with the fundamental laws and principles that govern physical phenomena. Students learn to describe, measure, and predict the behaviour of physical systems using mathematical models and experimental methods.",
+                "The study of " . htmlspecialchars($subtopic) . " requires Physics students to apply mathematical reasoning to physical situations. This involves identifying relevant variables, selecting appropriate formulae, performing calculations with correct units, and interpreting results in a physical context.",
+                htmlspecialchars($subtopic) . " is a core component of the Nigerian Physics syllabus. Students explore the relationships between forces, energy, motion, and other physical quantities through theoretical study and practical laboratory investigations.",
+                "Understanding " . htmlspecialchars($subtopic) . " in Physics helps students explain natural phenomena and technological applications. From the motion of vehicles to the operation of electrical devices, these principles are observable in everyday life and in advanced scientific contexts.",
+            ];
+        }
+
+        if (str_contains($subj, 'biology') || str_contains($subj, 'science')) {
+            return [
+                "In Biology, " . htmlspecialchars($subtopic) . " examines the structures and processes that sustain life. Students explore the organization of living organisms from cells to systems, understanding how each level contributes to the functioning of the whole organism.",
+                "The study of " . htmlspecialchars($subtopic) . " in Biology involves investigating the diversity of life, ecological relationships, and the physiological mechanisms that allow organisms to grow, reproduce, and respond to their environment.",
+                htmlspecialchars($subtopic) . " is an important part of the Nigerian Biology curriculum for {$class}. Students learn to identify, describe, and explain the biological principles that underpin health, agriculture, and environmental conservation.",
+                "When studying " . htmlspecialchars($subtopic) . " in Biology, learners develop skills in observation, classification, and analysis. Laboratory work involving specimens, models, and experiments helps reinforce theoretical knowledge and develops practical scientific skills.",
+            ];
+        }
+
+        if (str_contains($subj, 'mathemat')) {
+            return [
+                "In Mathematics, " . htmlspecialchars($subtopic) . " requires students to understand and apply specific mathematical procedures and relationships. Mastery comes from practising problems systematically, checking work for accuracy, and building speed and confidence over time.",
+                "The study of " . htmlspecialchars($subtopic) . " in Mathematics involves learning the relevant formulae, methods, and problem-solving strategies. Students should work through examples step by step, paying attention to each stage of the calculation or proof process.",
+                htmlspecialchars($subtopic) . " is a key topic in the Nigerian Mathematics curriculum for {$class}. Regular practice with varied problems helps students develop fluency and the ability to apply mathematical thinking to both theoretical questions and real-life situations.",
+                "When studying " . htmlspecialchars($subtopic) . " in Mathematics, learners should focus on understanding the underlying principles rather than memorizing steps. Connecting mathematical concepts to practical applications makes learning more meaningful and improves long-term retention.",
+            ];
+        }
+
+        if (str_contains($subj, 'english') || str_contains($subj, 'literature')) {
+            return [
+                "In English Language, " . htmlspecialchars($subtopic) . " focuses on developing competence in understanding and using the English language effectively. This includes mastering the rules, structures, and conventions that govern communication in both spoken and written forms.",
+                "The study of " . htmlspecialchars($subtopic) . " helps students improve their reading comprehension, writing skills, and oral communication. Learners are encouraged to practise regularly through reading, writing exercises, and class discussions.",
+                htmlspecialchars($subtopic) . " is an essential component of the Nigerian English Language curriculum. Mastery of this area enables students to express themselves clearly, understand complex texts, and perform well in examinations.",
+                "When studying " . htmlspecialchars($subtopic) . " in English Language, students should pay attention to examples and practise applying the rules in their own writing and speech. Regular practice and exposure to varied texts reinforces learning and builds confidence.",
+            ];
+        }
+
+        if (str_contains($subj, 'econom')) {
+            return [
+                "In Economics, " . htmlspecialchars($subtopic) . " deals with the principles that govern the production, distribution, and consumption of goods and services. Students analyse how individuals, businesses, and governments make decisions about resource allocation in the face of scarcity.",
+                "The study of " . htmlspecialchars($subtopic) . " in Economics requires students to understand key concepts, interpret data, and apply economic models to real-world situations. Learners should be able to explain economic phenomena using appropriate terminology and analytical frameworks.",
+                htmlspecialchars($subtopic) . " is a significant area in the Nigerian Economics curriculum. Students explore how economic principles apply to the Nigerian context, including issues related to development, trade, monetary policy, and financial markets.",
+            ];
+        }
+
+        if (str_contains($subj, 'govern') || str_contains($subj, 'civic')) {
+            return [
+                "In Government, " . htmlspecialchars($subtopic) . " examines the structures, processes, and institutions through which societies are governed. Students learn about political systems, constitutions, the rule of law, and the rights and responsibilities of citizens.",
+                "The study of " . htmlspecialchars($subtopic) . " in Government provides learners with an understanding of how political power is organized and exercised. This includes analysing different forms of government, the electoral process, and the role of citizens in a democracy.",
+                htmlspecialchars($subtopic) . " is an integral part of the Nigerian Government curriculum. Students explore the historical development of Nigeria's political system, the structure of government at federal and state levels, and contemporary political issues.",
+            ];
+        }
+
+        if (str_contains($subj, 'geograph')) {
+            return [
+                "In Geography, " . htmlspecialchars($subtopic) . " involves the study of the Earth's physical features, atmosphere, and human activities across different regions. Students learn to interpret maps, analyse spatial patterns, and understand the relationships between people and their environment.",
+                "The study of " . htmlspecialchars($subtopic) . " in Geography requires learners to develop skills in observation, data collection, and map reading. Fieldwork and the use of geographical tools help students connect theoretical knowledge to real-world observations.",
+                htmlspecialchars($subtopic) . " is a key component of the Geography curriculum in Nigerian schools. Students explore both the physical geography of Nigeria and the human geographical factors that shape settlement patterns, economic activities, and environmental management.",
+            ];
+        }
+
+        if (str_contains($subj, 'history')) {
+            return [
+                "In History, " . htmlspecialchars($subtopic) . " explores past events, societies, and developments that have shaped the present. Students learn to analyse historical sources, understand cause and effect, and develop perspective on contemporary issues through the study of the past.",
+                "The study of " . htmlspecialchars($subtopic) . " in History provides insight into the political, social, economic, and cultural developments that have influenced Nigeria and the wider world. Learners develop critical thinking skills through the evaluation of evidence and interpretation of historical narratives.",
+                htmlspecialchars($subtopic) . " is a significant area of the Nigerian History curriculum. Students examine key events, personalities, and movements in Nigerian history, from pre-colonial times through independence to the present day.",
+            ];
+        }
+
+        return [];
+    }
+
     private static function generateBulletPoints(string $subject, string $topic, int $count): array
     {
-        $bullets = [
-            "{$topic} is a fundamental concept in {$subject} that every student should understand.",
-            "The principles of {$topic} apply to many real-life situations in Nigeria and around the world.",
-            "Mastery of {$topic} helps students perform better in examinations and practical applications.",
-            "{$topic} connects to other important topics in {$subject}, creating a comprehensive learning experience.",
-            "Understanding {$topic} develops analytical and problem-solving skills essential for academic success.",
-        ];
+        $subj = strtolower($subject);
 
-        return array_slice($bullets, 0, $count);
+        if (str_contains($subj, 'chemist')) {
+            $pool = [
+                "Chemistry explains the composition, structure, and properties of all forms of matter around us.",
+                "Understanding chemical reactions helps us explain everyday phenomena from cooking to rusting.",
+                "The mole concept and stoichiometry are essential tools for quantitative chemical analysis.",
+                "Chemical equations must be balanced to satisfy the law of conservation of mass.",
+                "The periodic table organizes elements by their atomic number and chemical properties.",
+            ];
+        } elseif (str_contains($subj, 'physic')) {
+            $pool = [
+                "Physics explains the fundamental laws that govern motion, energy, forces, and matter.",
+                "Understanding physics principles is essential for technological innovation and engineering.",
+                "Measurements and SI units are the foundation of all physical calculations.",
+                "Energy exists in various forms and can be converted from one form to another.",
+                "Forces cause changes in the motion of objects according to Newton's laws.",
+            ];
+        } elseif (str_contains($subj, 'biology') || str_contains($subj, 'science')) {
+            $pool = [
+                "Biology is the study of living organisms and their interactions with the environment.",
+                "The cell is the basic structural and functional unit of all living organisms.",
+                "Living organisms are classified into kingdoms based on shared characteristics.",
+                "Ecosystems consist of living and non-living components that interact in complex ways.",
+                "Understanding biological processes helps us maintain health and manage natural resources.",
+            ];
+        } elseif (str_contains($subj, 'mathemat')) {
+            $pool = [
+                "Mathematics uses logical reasoning and precise methods to solve problems.",
+                "Understanding mathematical concepts builds a foundation for science and technology.",
+                "Regular practice with varied problems is essential for developing mathematical fluency.",
+                "Mathematics helps develop critical thinking and analytical problem-solving skills.",
+                "Mathematical principles are applied in everyday life from budgeting to measurements.",
+            ];
+        } elseif (str_contains($subj, 'english') || str_contains($subj, 'literature')) {
+            $pool = [
+                "English Language skills are essential for effective communication in all subjects.",
+                "Understanding grammar rules helps in constructing clear and correct sentences.",
+                "Reading widely improves vocabulary, comprehension, and writing ability.",
+                "Literature exposes students to diverse cultures, ideas, and forms of creative expression.",
+                "Effective writing requires planning, drafting, revising, and editing.",
+            ];
+        } elseif (str_contains($subj, 'econom')) {
+            $pool = [
+                "Economics studies how societies allocate scarce resources to meet unlimited wants.",
+                "Supply and demand determine the prices of goods and services in a market economy.",
+                "Understanding economic principles helps individuals make informed financial decisions.",
+                "Government policies influence economic growth, employment, and price stability.",
+                "Nigeria's economy is shaped by both domestic policies and global economic trends.",
+            ];
+        } elseif (str_contains($subj, 'govern') || str_contains($subj, 'civic')) {
+            $pool = [
+                "Government is the system through which a society is organized and governed.",
+                "The Nigerian Constitution outlines the structure and powers of the three arms of government.",
+                "Citizenship comes with both rights and responsibilities in a democratic society.",
+                "The rule of law ensures that all persons and institutions are accountable to the law.",
+                "Active civic participation strengthens democracy and promotes good governance.",
+            ];
+        } else {
+            $pool = [
+                "{$topic} is a key area of study within {$subject} that helps students understand important concepts and principles.",
+                "Active engagement with the learning materials and regular revision are essential for mastering this subject.",
+                "Connecting theoretical knowledge to practical examples helps deepen understanding and improve retention.",
+                "Students are encouraged to ask questions, participate in discussions, and seek clarification when needed.",
+                "Consistent practice and review of past topics builds confidence and prepares students for assessments.",
+            ];
+        }
+
+        return array_slice($pool, 0, $count);
     }
 
     private static function generateExamples(string $subject, string $class, string $topic, string $difficulty = 'Medium'): array
@@ -526,52 +711,132 @@ class ContentGenerator
     private static function generateDetailedNote(string $subject, string $class, string $topic, array $subtopics, array $objectives, string $difficulty): string
     {
         $year = date('Y');
+        $subj = strtolower($subject);
+
         $note = "LESSON NOTE: {$subject} - {$topic}\n";
         $note .= "Class: {$class}\n";
-        $note .= "Topic: {$topic}\n";
-        $note .= "Subject: {$subject}\n";
-        $note .= "Difficulty Level: {$difficulty}\n";
         $note .= "Academic Year: {$year}\n";
+        $note .= "Difficulty Level: {$difficulty}\n";
         $note .= str_repeat("=", 50) . "\n\n";
 
         $note .= "LEARNING OBJECTIVES:\n";
         foreach ($objectives as $o) {
-            $note .= "  • {$o}\n";
+            $note .= "  \u{2022} {$o}\n";
         }
         $note .= "\n";
 
         $note .= "INTRODUCTION:\n";
-        $note .= "The teacher introduces the topic '{$topic}' by relating it to real-life experiences and prior knowledge of the students. A stimulating question or scenario is used to arouse curiosity and set the stage for learning. Students are encouraged to share what they already know about the topic.\n\n";
+        $note .= "This lesson focuses on {$topic} in {$subject} for {$class}. Students will explore the key concepts, principles, and applications of this topic through structured learning activities, examples, and practice exercises.\n\n";
 
         $note .= "CONTENT DEVELOPMENT:\n\n";
         foreach ($subtopics as $i => $st) {
             $note .= ($i + 1) . ". " . strip_tags($st) . ":\n";
-            $note .= "   {$topic} in {$subject} involves understanding the key principles and applications of this concept. At the {$class} level, students are expected to grasp these ideas progressively, building from basic definitions to more complex applications.\n\n";
+            $note .= "   " . self::generateDetailedSection($subject, $class, $topic, $st, $subj, $difficulty) . "\n\n";
         }
 
         $note .= "KEY POINTS TO NOTE:\n";
-        $note .= "  • {$topic} is a fundamental concept in {$subject}.\n";
-        $note .= "  • Understanding {$topic} requires practice and application.\n";
-        $note .= "  • {$topic} connects to other important areas of {$subject}.\n";
-        $note .= "  • Mastery of {$topic} is essential for academic progression.\n\n";
+        if (str_contains($subj, 'chemist')) {
+            $note .= "  \u{2022} Chemical substances have specific compositions and properties that determine their behaviour.\n";
+            $note .= "  \u{2022} Balanced chemical equations are essential for quantitative analysis of reactions.\n";
+            $note .= "  \u{2022} Understanding chemical principles helps explain natural phenomena and industrial processes.\n";
+        } elseif (str_contains($subj, 'physic')) {
+            $note .= "  \u{2022} Physical quantities must be measured using appropriate instruments and SI units.\n";
+            $note .= "  \u{2022} Scientific laws and principles form the foundation for understanding physical phenomena.\n";
+            $note .= "  \u{2022} Practical experimentation and data analysis are essential skills in Physics.\n";
+        } elseif (str_contains($subj, 'biology') || str_contains($subj, 'science')) {
+            $note .= "  \u{2022} Life processes are governed by complex biological systems and mechanisms.\n";
+            $note .= "  \u{2022} Classification helps organize the diversity of living organisms into manageable groups.\n";
+            $note .= "  \u{2022} Ecological relationships between organisms and their environment maintain balance in nature.\n";
+        } elseif (str_contains($subj, 'mathemat')) {
+            $note .= "  \u{2022} Mathematical problems require systematic approaches and careful calculations.\n";
+            $note .= "  \u{2022} Understanding formulae and knowing when to apply them is key to success.\n";
+            $note .= "  \u{2022} Regular practice with varied problems builds speed, accuracy, and confidence.\n";
+        } else {
+            $note .= "  \u{2022} Key concepts and definitions should be clearly understood before moving forward.\n";
+            $note .= "  \u{2022} Regular revision and practice help reinforce learning and improve retention.\n";
+            $note .= "  \u{2022} Applying knowledge to practical situations deepens understanding.\n";
+        }
+        $note .= "\n";
 
         $note .= "SUMMARY:\n";
-        $note .= "{$topic} is an important concept in {$subject} that encompasses various aspects including definition, characteristics, types, and applications. Mastery of this topic requires consistent practice and active engagement with the learning materials. Students should review their notes regularly and attempt all practice exercises.\n\n";
+        $note .= "This lesson covered the topic of {$topic} in {$subject}. Students explored the main concepts, worked through relevant examples, and engaged in learning activities designed to reinforce their understanding. Continued practice and revision will help consolidate these concepts and prepare students for the next stage of learning.\n\n";
 
         $note .= "EVALUATION:\n";
         $note .= "Students will be assessed through:\n";
-        $note .= "  • Oral questions during the lesson\n";
-        $note .= "  • Written exercises and worksheets\n";
-        $note .= "  • End-of-lesson quiz\n";
-        $note .= "  • Homework assignments\n\n";
+        $note .= "  \u{2022} Oral questions and class participation during the lesson\n";
+        $note .= "  \u{2022} Written exercises and problem-solving tasks\n";
+        $note .= "  \u{2022} End-of-lesson review questions\n";
+        $note .= "  \u{2022} Homework assignments for independent practice\n\n";
 
         $note .= "ASSIGNMENT:\n";
-        $note .= "  1. Write a comprehensive note on {$topic}\n";
-        $note .= "  2. Answer questions 1–5 in the textbook\n";
-        $note .= "  3. Research current developments related to {$topic}\n";
-        $note .= "  4. Prepare for a class presentation on {$topic}\n";
+        if (str_contains($subj, 'mathemat') || str_contains($subj, 'physic') || str_contains($subj, 'chemist')) {
+            $note .= "  1. Complete all practice problems related to this topic in your textbook\n";
+            $note .= "  2. Create a summary note of the key formulae and concepts covered\n";
+            $note .= "  3. Attempt the end-of-chapter review questions\n";
+            $note .= "  4. Prepare three of your own questions to ask in the next class\n";
+        } else {
+            $note .= "  1. Write a summary of the key points covered in today's lesson\n";
+            $note .= "  2. Answer the review questions at the end of the chapter\n";
+            $note .= "  3. Research and note down two real-life applications of this topic\n";
+            $note .= "  4. Prepare for a brief class discussion on this topic in the next lesson\n";
+        }
 
         return $note;
+    }
+
+    private static function generateDetailedSection(string $subject, string $class, string $topic, string $subtopic, string $subj, string $difficulty): string
+    {
+        if (str_contains($subj, 'chemist')) {
+            $sections = [
+                "This section examines the chemical nature of {$topic}, focusing on its composition, structure, and the principles that govern its behaviour in chemical reactions.",
+                "Here we explore the properties and characteristics of {$topic}, including how it interacts with other substances and the conditions that affect these interactions.",
+                "This part covers the quantitative aspects of {$topic}, including relevant calculations, measurements, and the application of chemical formulae and equations.",
+                "The practical importance of {$topic} is examined through its applications in industry, medicine, agriculture, and everyday life in Nigeria.",
+                "This section deals with laboratory procedures, observations, and experimental techniques related to the study of {$topic}.",
+            ];
+        } elseif (str_contains($subj, 'physic')) {
+            $sections = [
+                "This section introduces the fundamental principles of {$topic}, including the key definitions and physical laws that describe its behaviour.",
+                "Here we examine the mathematical relationships and formulae used to calculate and predict physical quantities related to {$topic}.",
+                "This part explores real-world applications and examples of {$topic}, demonstrating how physics principles operate in everyday situations.",
+                "Experimental methods for investigating {$topic} are covered, including measurement techniques, data collection, and analysis procedures.",
+                "The technological and industrial applications of {$topic} are discussed, highlighting the connection between physics and innovation.",
+            ];
+        } elseif (str_contains($subj, 'biology') || str_contains($subj, 'science')) {
+            $sections = [
+                "This section describes the basic structure and organization of {$topic}, including the key components and how they are arranged.",
+                "Here we examine the functions and processes associated with {$topic}, understanding how living systems operate and maintain life.",
+                "This part covers the different types and categories of {$topic}, providing a framework for understanding its diversity and complexity.",
+                "The ecological and environmental significance of {$topic} is explored, including its role in maintaining balance in nature.",
+                "Laboratory and field studies related to {$topic} are discussed, including observation techniques and practical investigations.",
+            ];
+        } elseif (str_contains($subj, 'mathemat')) {
+            $sections = [
+                "This section introduces the basic concepts and definitions of {$topic}, establishing the foundation for understanding more complex applications.",
+                "Here we learn the formulae and methods used to solve problems involving {$topic}, working through examples step by step.",
+                "This part provides worked examples with complete solutions, demonstrating the correct approach to solving problems on {$topic}.",
+                "Real-life applications of {$topic} are explored, showing how mathematical concepts are used in practical situations.",
+                "Advanced problems and challenges related to {$topic} are presented to develop higher-order thinking and problem-solving skills.",
+            ];
+        } elseif (str_contains($subj, 'english') || str_contains($subj, 'literature')) {
+            $sections = [
+                "This section defines and explains {$topic}, providing a clear understanding of its meaning and usage in English Language.",
+                "Here we examine the rules and conventions that govern {$topic}, including guidelines for correct usage in writing and speech.",
+                "Examples and illustrations of {$topic} are provided to demonstrate how it is correctly used in different contexts.",
+                "Common errors related to {$topic} are identified and explained, helping students avoid mistakes in their own work.",
+                "Practical exercises and activities help students practise and apply their knowledge of {$topic} in meaningful ways.",
+            ];
+        } else {
+            $sections = [
+                "This section provides an overview of the key concepts and ideas related to this topic in {$subject}.",
+                "Here we examine the main features and characteristics that define this area of study.",
+                "The practical applications and real-world relevance of this topic are explored with relevant examples.",
+                "This section covers important facts, data, and information that students need to master.",
+            ];
+        }
+
+        $key = abs(crc32($subtopic)) % count($sections);
+        return $sections[$key];
     }
 
     private static function generateSingleQuestion(string $subject, string $topic, int $num): array

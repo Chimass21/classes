@@ -108,6 +108,7 @@
                             </form>
                         </div>
                         <div>
+                            <div class="flex items-center space-x-2 overflow-x-auto pb-2 mb-3" id="plans-subjects-scroll"></div>
                             <h4 class="text-sm font-bold text-slate-800 mb-3">Saved Lesson Plans</h4>
                             <div id="plans-list" class="space-y-2 max-h-[500px] overflow-y-auto">
                                 <div class="text-center py-8 text-sm text-slate-400">No lesson plans yet. Generate one!</div>
@@ -174,6 +175,7 @@
                             </form>
                         </div>
                         <div>
+                            <div class="flex items-center space-x-2 overflow-x-auto pb-2 mb-3" id="notes-subjects-scroll"></div>
                             <h4 class="text-sm font-bold text-slate-800 mb-3">Saved Lesson Notes</h4>
                             <div id="notes-list" class="space-y-2 max-h-[500px] overflow-y-auto"></div>
                         </div>
@@ -237,6 +239,7 @@
                             </div>
                         </div>
                         <div>
+                            <div class="flex items-center space-x-2 overflow-x-auto pb-2 mb-3" id="qs-subjects-scroll"></div>
                             <h4 class="text-sm font-bold text-slate-800 mb-3">Saved Question Sets</h4>
                             <div id="q-sets-list" class="space-y-2 max-h-[500px] overflow-y-auto"></div>
                         </div>
@@ -433,6 +436,7 @@
 let teacherData = { plans: [], notes: [], exams: [], results: [], questionSets: [] };
 let currentPlanId = null, currentNoteId = null, currentQsId = null;
 let currentQuestions = null;
+let plansFilter = '', notesFilter = '', qsFilter = '';
 
 // ====== CURRICULUM DATA LOADING ======
 async function loadCurriculumSelects() {
@@ -477,10 +481,15 @@ async function loadTeacherData() {
         teacherData.notes = (statsRes.lessonNotes || []).filter(n => n.teacherId === userId);
         teacherData.exams = (statsRes.exams || []).filter(e => e.creatorId === userId);
         teacherData.results = (statsRes.results || []).filter(r => r.studentId);
+        teacherData.questionSets = (statsRes.questionSets || []).filter(q => q.teacherId === userId);
         renderPlans();
         renderNotes();
         renderExams();
         renderResults();
+        renderQuestionSets();
+        renderPlanFilters();
+        renderNoteFilters();
+        renderQsFilters();
 
         // Auto-display the most recent lesson note and switch to its tab
         if (teacherData.notes.length > 0) {
@@ -926,17 +935,37 @@ function shareQuestions() {
 }
 function printQuestions() { window.print(); }
 
+// ====== SUBJECT FILTERS ======
+function renderSubjectFilter(containerId, allItems, currentFilter, setFilter, renderFn) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    const subs = [...new Set(allItems.map(i => i.subject).filter(Boolean))];
+    const allBtn = `<button onclick="setFilter('');${renderFn}()" class="py-1.5 px-3 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer border ${!currentFilter ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">All</button>`;
+    const btns = subs.map(s => `<button onclick="setFilter('${s}');${renderFn}()" class="py-1.5 px-3 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer border ${currentFilter === s ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">${s}</button>`);
+    container.innerHTML = allBtn + btns.join('');
+}
+
+function setPlansFilter(s) { plansFilter = s; }
+function setNotesFilter(s) { notesFilter = s; }
+function setQsFilter(s) { qsFilter = s; }
+
+function renderPlanFilters() { renderSubjectFilter('plans-subjects-scroll', teacherData.plans, plansFilter, 'setPlansFilter', 'renderPlans'); }
+function renderNoteFilters() { renderSubjectFilter('notes-subjects-scroll', teacherData.notes, notesFilter, 'setNotesFilter', 'renderNotes'); }
+function renderQsFilters() { renderSubjectFilter('qs-subjects-scroll', teacherData.questionSets, qsFilter, 'setQsFilter', 'renderQuestionSets'); }
+
 // ====== RENDER SAVED ITEMS ======
 function renderPlans() {
     const container = document.getElementById('plans-list');
-    if (!teacherData.plans.length) {
+    const filtered = plansFilter ? teacherData.plans.filter(p => p.subject === plansFilter) : teacherData.plans;
+    if (!filtered.length) {
         container.innerHTML = '<div class="text-center py-4 text-sm text-slate-400">No lesson plans yet.</div>';
         return;
     }
-    container.innerHTML = teacherData.plans.slice().reverse().map(p => `
+    container.innerHTML = filtered.slice().reverse().map(p => `
         <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:border-indigo-300 transition" onclick="viewPlan('${p.id}')">
             <div class="font-medium text-sm text-slate-900">${p.topic || 'Lesson Plan'}</div>
             <div class="text-xs text-slate-400">${p.subject || ''} | ${p.class || ''} | Week ${p.week || ''} | ${p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''}</div>
+            ${(p.behaviouralObjectives && p.behaviouralObjectives.length) ? `<div class="text-xs text-slate-400 mt-1 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>${p.behaviouralObjectives.length} objectives</div>` : ''}
         </div>
     `).join('');
 }
@@ -948,21 +977,53 @@ function viewPlan(id) {
 
 function renderNotes() {
     const container = document.getElementById('notes-list');
-    if (!teacherData.notes.length) {
+    const filtered = notesFilter ? teacherData.notes.filter(n => n.subject === notesFilter) : teacherData.notes;
+    if (!filtered.length) {
         container.innerHTML = '<div class="text-center py-4 text-sm text-slate-400">No lesson notes yet.</div>';
         return;
     }
-    container.innerHTML = teacherData.notes.slice().reverse().map(n => `
+    container.innerHTML = filtered.slice().reverse().map(n => {
+        const subs = n.subtopics || [];
+        const subHtml = subs.length ? `<div class="flex flex-wrap gap-1 mt-1.5">${subs.slice(0, 3).map(s => `<span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full border border-slate-150">${s}</span>`).join('')}${subs.length > 3 ? `<span class="text-[10px] text-slate-400">+${subs.length - 3} more</span>` : ''}</div>` : '';
+        return `
         <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:border-emerald-300 transition" onclick="viewNote('${n.id}')">
             <div class="font-medium text-sm text-slate-900">${n.topic || 'Lesson Note'}</div>
             <div class="text-xs text-slate-400">${n.subject || ''} | ${n.class || ''} | ${n.createdAt ? new Date(n.createdAt).toLocaleDateString() : ''}</div>
-        </div>
-    `).join('');
+            ${subHtml}
+        </div>`;
+    }).join('');
 }
 
 function viewNote(id) {
     const note = teacherData.notes.find(n => n.id === id);
     if (note) { currentNoteId = id; displayLessonNote(note); }
+}
+
+function renderQuestionSets() {
+    const container = document.getElementById('q-sets-list');
+    const filtered = qsFilter ? teacherData.questionSets.filter(q => q.subject === qsFilter) : teacherData.questionSets;
+    if (!filtered.length) {
+        container.innerHTML = '<div class="text-center py-4 text-sm text-slate-400">No question sets saved yet.</div>';
+        return;
+    }
+    container.innerHTML = filtered.slice().reverse().map(q => `
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:border-pink-300 transition" onclick="viewQuestionSet('${q.id}')">
+            <div class="font-medium text-sm text-slate-900">${q.topic || 'Question Set'}</div>
+            <div class="text-xs text-slate-400">${q.subject || ''} | ${(q.questions || []).length} questions | ${q.createdAt ? new Date(q.createdAt).toLocaleDateString() : ''}</div>
+        </div>
+    `).join('');
+}
+
+function viewQuestionSet(id) {
+    const qs = teacherData.questionSets.find(q => q.id === id);
+    if (!qs) return;
+    currentQsId = id;
+    const data = qs.questions || [];
+    if (Array.isArray(data) && data.length && !data.objectives) {
+        displayQuestions({ objectives: data });
+    } else {
+        displayQuestions(data);
+    }
 }
 
 function renderExams() {

@@ -264,15 +264,62 @@
                 <div class="flex items-end justify-between border-b border-slate-100 pb-2">
                     <div>
                         <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Subject Lesson Notes</h1>
-                        <p class="text-xs text-slate-500 font-medium">Browse standard detailed lesson notes by subject.</p>
+                        <p class="text-xs text-slate-500 font-medium">Browse or generate detailed lesson notes by subject.</p>
                     </div>
                 </div>
                 <div id="lesson-notes-content">
-                    <div class="bg-white p-4 rounded-3xl border border-slate-150 shadow-sm space-y-3">
+                    <div class="bg-gradient-to-br from-indigo-900 via-indigo-950 to-slate-900 text-white rounded-3xl p-6 border border-slate-800 space-y-4">
+                        <div class="flex items-center gap-2">
+                            <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                            <h3 class="text-lg font-black">Generate Lesson Note</h3>
+                        </div>
+                        <form id="student-note-form" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-900">
+                            <div>
+                                <label class="text-xs font-bold text-indigo-200 block mb-1">Subject</label>
+                                <select id="student-note-subject" required class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full font-semibold focus:outline-none"></select>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-indigo-200 block mb-1">Class</label>
+                                <select id="student-note-class" required class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full font-semibold focus:outline-none">
+                                    <option value="Primary 1">Primary 1</option>
+                                    <option value="Primary 2">Primary 2</option>
+                                    <option value="Primary 3">Primary 3</option>
+                                    <option value="Primary 4">Primary 4</option>
+                                    <option value="Primary 5">Primary 5</option>
+                                    <option value="Primary 6">Primary 6</option>
+                                    <option value="JSS1">JSS1</option>
+                                    <option value="JSS2">JSS2</option>
+                                    <option value="JSS3">JSS3</option>
+                                    <option value="SS1" selected>SS1</option>
+                                    <option value="SS2">SS2</option>
+                                    <option value="SS3">SS3</option>
+                                </select>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="text-xs font-bold text-indigo-200 block mb-1">Topic</label>
+                                <input type="text" id="student-note-topic" required placeholder="e.g. Algebra, Photosynthesis" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full focus:outline-none" />
+                            </div>
+                            <div class="sm:col-span-2">
+                                <label class="text-xs font-bold text-indigo-200 block mb-1">Sub-topics (optional — one per line)</label>
+                                <textarea id="student-note-subtopics" rows="3" placeholder="e.g.&#10;Definition and types of algebra&#10;Algebraic expressions&#10;Solving linear equations" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full focus:outline-none resize-none"></textarea>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-indigo-200 block mb-1">Difficulty</label>
+                                <select id="student-note-difficulty" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full font-semibold focus:outline-none">
+                                    <option value="Easy">Simple</option>
+                                    <option value="Medium" selected>Standard</option>
+                                    <option value="Hard">Deep</option>
+                                </select>
+                            </div>
+                            <button type="submit" class="mt-1 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800 font-extrabold text-sm rounded-xl transition shadow-lg cursor-pointer border-none">Generate Lesson Note</button>
+                        </form>
+                    </div>
+                    <div id="student-note-result" class="hidden mt-4"></div>
+                    <div class="bg-white p-4 rounded-3xl border border-slate-150 shadow-sm space-y-3 mt-4">
                         <div class="flex items-center justify-between border-b border-slate-100 pb-2">
                             <div class="flex items-center space-x-2">
                                 <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-                                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700">Select Subject to Study</h2>
+                                <h2 class="text-sm font-bold uppercase tracking-wider text-slate-700">Browse Existing Notes</h2>
                             </div>
                         </div>
                         <div class="flex items-center space-x-2 overflow-x-auto pb-2" id="subjects-scroll"></div>
@@ -341,10 +388,11 @@
                             <div class="sm:col-span-2">
                                 <label class="text-xs font-bold text-indigo-200 block mb-1">Questions count</label>
                                 <select id="practice-count" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full sm:w-48 font-semibold text-slate-800 focus:outline-none">
-                                    <option value="5">5 Standard questions</option>
-                                    <option value="10">10 Detailed questions</option>
-                                    <option value="25">25 Intensive questions</option>
+                                    <option value="10">10 Standard questions</option>
+                                    <option value="20">20 Detailed questions</option>
+                                    <option value="30">30 Intensive questions</option>
                                     <option value="50">50 Exam simulation</option>
+                                    <option value="100">100 Full exam</option>
                                 </select>
                             </div>
                             <button type="submit" class="sm:col-span-2 mt-2 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800 font-extrabold text-sm rounded-xl transition shadow-lg cursor-pointer border-none">Generate Revision Questions</button>
@@ -684,10 +732,70 @@ function viewNote(id) {
     `;
 }
 
+// Student generate lesson note
+document.getElementById('student-note-form')?.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const btn = this.querySelector('button[type="submit"]');
+    const subj = document.getElementById('student-note-subject').value;
+    const cls = document.getElementById('student-note-class').value;
+    const topic = document.getElementById('student-note-topic').value;
+    const subtopics = document.getElementById('student-note-subtopics').value.trim();
+    const difficulty = document.getElementById('student-note-difficulty').value;
+    const container = document.getElementById('student-note-result');
+    container.classList.remove('hidden');
+    container.innerHTML = '<div class="p-8 text-center"><div class="animate-spin w-8 h-8 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto"></div><p class="text-xs text-slate-400 mt-3 font-bold">Generating lesson note...</p></div>';
+    btn.disabled = true;
+    btn.textContent = 'Generating...';
+    try {
+        const body = { subject: subj, topic, class: cls, difficulty };
+        if (subtopics) body.subtopics = subtopics;
+        const res = await fetch('/api/ai/lesson-note', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body)
+        });
+        const data = await res.json();
+        if (data.success) {
+            renderStudentNote(data.note);
+            loadData();
+        } else {
+            container.innerHTML = '<div class="p-6 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 font-bold">Failed to generate lesson note.</div>';
+        }
+    } catch(e) {
+        container.innerHTML = '<div class="p-6 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 font-bold">Connection error.</div>';
+    }
+    btn.disabled = false;
+    btn.textContent = 'Generate Lesson Note';
+});
+
+function renderStudentNote(note) {
+    const container = document.getElementById('student-note-result');
+    const examples = note.examples || [];
+    const activities = note.classroomActivities || [];
+    const evaluation = note.evaluationQuestions || [];
+
+    container.innerHTML = `
+        <div class="bg-white border border-slate-150 rounded-3xl p-6 sm:p-8 space-y-6">
+            <div class="text-center border-b-2 border-indigo-200 pb-4 mb-2">
+                <span class="text-[10px] bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg font-black uppercase">${escapeHtml(note.subject)}</span>
+                <h2 class="text-xl font-black text-slate-900 mt-2">${escapeHtml(note.topic)}</h2>
+                <p class="text-xs text-slate-400 mt-1">${escapeHtml(note.class || '')}${note.class ? ' | ' : ''}${escapeHtml(note.term || '')}${note.term ? ' | ' : ''}Week ${note.week || ''}</p>
+            </div>
+            ${note.content || ''}
+            ${examples.length ? `<div class="mt-6"><h3 class="text-base font-bold text-slate-800 mb-3">Examples</h3>${examples.map(ex => `<div class="p-4 bg-slate-50 border-l-4 border-indigo-400 rounded-xl mb-2"><strong class="text-sm text-slate-900">${escapeHtml(ex.title || 'Example')}</strong><p class="text-xs mt-1 text-slate-600">${escapeHtml(ex.description || '')}</p></div>`).join('')}</div>` : ''}
+            ${activities.length ? `<div class="mt-6"><h3 class="text-base font-bold text-slate-800 mb-3">Classroom Activities</h3>${activities.map(a => `<div class="mb-3"><strong class="text-sm text-slate-900">${escapeHtml(a.title || 'Activity')}:</strong><p class="text-xs mt-1 text-slate-600">${escapeHtml(a.description || '')}</p></div>`).join('')}</div>` : ''}
+            ${evaluation.length ? `<div class="mt-6"><h3 class="text-base font-bold text-slate-800 mb-3">Evaluation Questions</h3><ol class="text-sm pl-5 space-y-1 text-slate-700 list-decimal">${evaluation.map(eq => `<li>${escapeHtml(eq)}</li>`).join('')}</ol></div>` : ''}
+            ${note.summary ? `<div class="mt-6 p-4 bg-indigo-50 rounded-2xl border border-indigo-100"><h3 class="text-sm font-bold text-indigo-800 mb-2">Summary</h3><p class="text-xs text-indigo-700">${escapeHtml(note.summary)}</p></div>` : ''}
+            ${note.assignment ? `<div class="mt-6"><h3 class="text-base font-bold text-slate-800 mb-2">Assignment</h3><div class="text-sm whitespace-pre-wrap text-slate-700 p-4 bg-slate-50 rounded-2xl border">${escapeHtml(note.assignment)}</div></div>` : ''}
+        </div>
+    `;
+}
+
 // Render Practice form
 function renderPractice() {
     const sel = document.getElementById('practice-subject');
     sel.innerHTML = state.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+    const noteSel = document.getElementById('student-note-subject');
+    if (noteSel) noteSel.innerHTML = state.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
 }
 
 // Render Report Cards
