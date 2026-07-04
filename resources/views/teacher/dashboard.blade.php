@@ -181,6 +181,13 @@
                         </div>
                     </div>
 
+                    <div id="note-preview" class="hidden mt-6 bg-white border border-slate-200 rounded-xl p-6">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-4 border-b border-slate-200 pb-4">
+                            <h3 class="text-lg font-bold text-slate-900">Lesson Note Preview</h3>
+                            <div class="flex flex-wrap gap-2" id="note-action-buttons"></div>
+                        </div>
+                        <div id="note-content" class="prose max-w-none text-sm"></div>
+                    </div>
                 </div>
 
                 {{-- === QUESTION POOL TAB === --}}
@@ -419,14 +426,6 @@
                     </div>
                 </div>
 
-                {{-- Persistent previews (always visible) --}}
-                <div id="note-preview" class="hidden mt-6 bg-white border border-slate-200 rounded-xl p-6">
-                    <div class="flex flex-wrap items-center justify-between gap-2 mb-4 border-b border-slate-200 pb-4">
-                        <h3 class="text-lg font-bold text-slate-900">Lesson Note Preview</h3>
-                        <div class="flex flex-wrap gap-2" id="note-action-buttons"></div>
-                    </div>
-                    <div id="note-content" class="prose max-w-none text-sm"></div>
-                </div>
             </div>
         </div>
     </div>
