@@ -83,23 +83,18 @@
               </button>
             </div>
           </div>
-        </div>
-
-        <!-- Right: Navigation Panel -->
-        <div class="space-y-4">
-          <!-- Question Palette -->
-          <div class="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl sm:rounded-2xl shadow-xs">
-            <div class="flex items-center justify-between mb-3">
-              <h4 class="text-xs font-extrabold uppercase tracking-wider text-slate-500">Question Palette</h4>
+          <!-- Question Numbers Bar -->
+          <div class="p-3 sm:p-4 bg-white border border-slate-200 rounded-2xl sm:rounded-2xl shadow-xs">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-[10px] font-extrabold uppercase tracking-wider text-slate-500">Questions</h4>
               <span id="answered-count" class="text-[10px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">0/{{ count($exam->questions) }}</span>
             </div>
-            <div id="nav-grid" class="grid grid-cols-5 gap-1.5"></div>
-            <!-- Legend -->
-            <div class="mt-4 pt-3 border-t border-slate-100 grid grid-cols-2 gap-y-2 gap-x-1 text-[10px] text-slate-500 font-semibold leading-tight">
-              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 bg-indigo-600 rounded border border-indigo-700 shrink-0"></span><span>Current</span></div>
-              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 bg-emerald-400 rounded shrink-0"></span><span>Answered</span></div>
-              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 bg-slate-100 rounded border border-slate-300 shrink-0"></span><span>Unanswered</span></div>
-              <div class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 bg-amber-400 rounded shrink-0"></span><span>Flagged</span></div>
+            <div id="nav-grid" class="flex flex-wrap gap-1"></div>
+            <div class="mt-3 pt-2 border-t border-slate-100 flex flex-wrap gap-x-3 gap-y-1 text-[9px] text-slate-500 font-semibold leading-tight">
+              <div class="flex items-center gap-1"><span class="w-2 h-2 bg-indigo-600 rounded border border-indigo-700 shrink-0"></span><span>Current</span></div>
+              <div class="flex items-center gap-1"><span class="w-2 h-2 bg-emerald-400 rounded shrink-0"></span><span>Answered</span></div>
+              <div class="flex items-center gap-1"><span class="w-2 h-2 bg-slate-100 rounded border border-slate-300 shrink-0"></span><span>Unanswered</span></div>
+              <div class="flex items-center gap-1"><span class="w-2 h-2 bg-amber-400 rounded shrink-0"></span><span>Flagged</span></div>
             </div>
           </div>
 
@@ -222,17 +217,17 @@ function buildNavGrid() {
     const isAnswered = selectedAnswers[i] !== undefined;
     const isActive = currentIndex === i;
     const isFlagged = flaggedQuestions[i] === true;
-    let cls = 'nav-btn h-9 text-xs font-mono font-bold rounded-lg border flex items-center justify-center transition-all cursor-pointer shadow-xs ';
+    let cls = 'nav-btn w-7 h-7 text-[10px] font-extrabold rounded border flex items-center justify-center transition-all cursor-pointer ';
     if (isActive) {
-      cls += 'bg-indigo-600 border-indigo-600 text-white ring-2 ring-indigo-300 scale-105';
+      cls += 'bg-indigo-600 border-indigo-600 text-white scale-110 shadow-sm';
     } else if (isAnswered) {
       cls += 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100';
     } else if (isFlagged) {
       cls += 'bg-amber-50 border-amber-300 text-amber-700 hover:bg-amber-100';
     } else {
-      cls += 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50 hover:border-slate-300';
+      cls += 'bg-white border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300';
     }
-    return `<button onclick="goToQuestion(${i})" class="${cls}">${i + 1}${isFlagged ? '<span class="absolute -top-0.5 -right-0.5 w-2 h-2 bg-amber-500 rounded-full border border-white"></span>' : ''}</button>`;
+    return `<button onclick="goToQuestion(${i})" class="${cls}">${i + 1}</button>`;
   }).join('');
   grid.querySelectorAll('button').forEach((btn, i) => {
     if (currentIndex === i) btn.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
