@@ -964,12 +964,24 @@ function renderPlans() {
         const objs = p.behaviouralObjectives || [];
         const subHtml = objs.length ? `<div class="flex flex-wrap gap-1 mt-1.5">${objs.slice(0, 3).map(o => `<span class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100">${o.replace(/^By the end of the lesson, students should be able to /i, '').replace(/^Students will /i, '').substring(0, 40)}</span>`).join('')}${objs.length > 3 ? `<span class="text-[10px] text-slate-400">+${objs.length - 3} more</span>` : ''}</div>` : '';
         return `
-        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:border-indigo-300 transition" onclick="viewPlan('${p.id}')">
-            <div class="font-medium text-sm text-slate-900">${p.topic || 'Lesson Plan'}</div>
-            <div class="text-xs text-slate-400">${p.subject || ''} | ${p.class || ''} | Week ${p.week || ''} | ${p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''}</div>
-            ${subHtml}
+        <div class="flex items-start gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:border-indigo-300 transition" onclick="viewPlan('${p.id}')">
+            <div class="flex-1 min-w-0">
+                <div class="font-medium text-sm text-slate-900">${p.topic || 'Lesson Plan'}</div>
+                <div class="text-xs text-slate-400">${p.subject || ''} | ${p.class || ''} | Week ${p.week || ''} | ${p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''}</div>
+                ${subHtml}
+            </div>
+            <button onclick="event.stopPropagation();deletePlan('${p.id}')" class="shrink-0 p-1.5 bg-white border border-slate-200 rounded-lg hover:bg-red-50 hover:border-red-300 hover:text-red-600 text-slate-400 transition cursor-pointer" title="Delete">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
         </div>`;
     }).join('');
+}
+
+function deletePlan(id) {
+    if (!confirm('Delete this lesson plan?')) return;
+    fetch('/api/lesson-plans/' + id, { method: 'DELETE' }).then(r => r.json()).then(d => {
+        if (d.success) { teacherData.plans = teacherData.plans.filter(p => p.id !== id); renderPlans(); }
+    }).catch(() => alert('Failed to delete.'));
 }
 
 function viewPlan(id) {
@@ -988,12 +1000,24 @@ function renderNotes() {
         const subs = n.subtopics || [];
         const subHtml = subs.length ? `<div class="flex flex-wrap gap-1 mt-1.5">${subs.slice(0, 3).map(s => `<span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full border border-slate-150">${s}</span>`).join('')}${subs.length > 3 ? `<span class="text-[10px] text-slate-400">+${subs.length - 3} more</span>` : ''}</div>` : '';
         return `
-        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:border-emerald-300 transition" onclick="viewNote('${n.id}')">
-            <div class="font-medium text-sm text-slate-900">${n.topic || 'Lesson Note'}</div>
-            <div class="text-xs text-slate-400">${n.subject || ''} | ${n.class || ''} | ${n.createdAt ? new Date(n.createdAt).toLocaleDateString() : ''}</div>
-            ${subHtml}
+        <div class="flex items-start gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:border-emerald-300 transition" onclick="viewNote('${n.id}')">
+            <div class="flex-1 min-w-0">
+                <div class="font-medium text-sm text-slate-900">${n.topic || 'Lesson Note'}</div>
+                <div class="text-xs text-slate-400">${n.subject || ''} | ${n.class || ''} | ${n.createdAt ? new Date(n.createdAt).toLocaleDateString() : ''}</div>
+                ${subHtml}
+            </div>
+            <button onclick="event.stopPropagation();deleteNote('${n.id}')" class="shrink-0 p-1.5 bg-white border border-slate-200 rounded-lg hover:bg-red-50 hover:border-red-300 hover:text-red-600 text-slate-400 transition cursor-pointer" title="Delete">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+            </button>
         </div>`;
     }).join('');
+}
+
+function deleteNote(id) {
+    if (!confirm('Delete this lesson note?')) return;
+    fetch('/api/lesson-notes/' + id, { method: 'DELETE' }).then(r => r.json()).then(d => {
+        if (d.success) { teacherData.notes = teacherData.notes.filter(n => n.id !== id); renderNotes(); }
+    }).catch(() => alert('Failed to delete.'));
 }
 
 function viewNote(id) {
