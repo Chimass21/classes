@@ -272,6 +272,76 @@
                                 Import Questions (CSV)
                             </button>
                         </div>
+                        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+                            <button onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-4 text-xs font-bold text-slate-500 hover:text-slate-700 transition cursor-pointer border-b border-slate-100 bg-slate-50">
+                                <span class="flex items-center gap-2">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    CSV Format Reference
+                                </span>
+                                <svg class="w-4 h-4 transition" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div class="hidden p-4 text-xs space-y-3">
+                                <p class="text-slate-600 font-medium">Your CSV file must have these columns (header row required):</p>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-xs border-collapse">
+                                        <thead>
+                                            <tr class="bg-slate-100 text-slate-700 font-bold">
+                                                <th class="p-2 border border-slate-200 text-left">Question</th>
+                                                <th class="p-2 border border-slate-200 text-left">Option A</th>
+                                                <th class="p-2 border border-slate-200 text-left">Option B</th>
+                                                <th class="p-2 border border-slate-200 text-left">Option C</th>
+                                                <th class="p-2 border border-slate-200 text-left">Option D</th>
+                                                <th class="p-2 border border-slate-200 text-left">Correct Answer</th>
+                                                <th class="p-2 border border-slate-200 text-left">Explanation</th>
+                                                <th class="p-2 border border-slate-200 text-left">Marks</th>
+                                                <th class="p-2 border border-slate-200 text-left">Difficulty</th>
+                                                <th class="p-2 border border-slate-200 text-left">Topic</th>
+                                                <th class="p-2 border border-slate-200 text-left">Image URL</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr class="bg-white text-slate-600">
+                                                <td class="p-2 border border-slate-200 font-medium text-slate-800">What is the capital of Nigeria?</td>
+                                                <td class="p-2 border border-slate-200">Lagos</td>
+                                                <td class="p-2 border border-slate-200">Abuja</td>
+                                                <td class="p-2 border border-slate-200">Kano</td>
+                                                <td class="p-2 border border-slate-200">Ibadan</td>
+                                                <td class="p-2 border border-slate-200 font-bold text-emerald-700">B</td>
+                                                <td class="p-2 border border-slate-200">Abuja is the capital city of Nigeria.</td>
+                                                <td class="p-2 border border-slate-200">1</td>
+                                                <td class="p-2 border border-slate-200">Easy</td>
+                                                <td class="p-2 border border-slate-200">Geography</td>
+                                                <td class="p-2 border border-slate-200 text-slate-400">—</td>
+                                            </tr>
+                                            <tr class="bg-slate-50 text-slate-600">
+                                                <td class="p-2 border border-slate-200 font-medium text-slate-800">Which planet is known as the Red Planet?</td>
+                                                <td class="p-2 border border-slate-200">Earth</td>
+                                                <td class="p-2 border border-slate-200">Mars</td>
+                                                <td class="p-2 border border-slate-200">Venus</td>
+                                                <td class="p-2 border border-slate-200">Jupiter</td>
+                                                <td class="p-2 border border-slate-200 font-bold text-emerald-700">B</td>
+                                                <td class="p-2 border border-slate-200">Mars is called the Red Planet due to its reddish appearance.</td>
+                                                <td class="p-2 border border-slate-200">1</td>
+                                                <td class="p-2 border border-slate-200">Easy</td>
+                                                <td class="p-2 border border-slate-200">Space</td>
+                                                <td class="p-2 border border-slate-200 text-slate-400">—</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="flex flex-wrap gap-4 text-slate-500">
+                                    <span><strong class="text-slate-700">Correct Answer:</strong> Letter (A, B, C, D)</span>
+                                    <span><strong class="text-slate-700">Difficulty:</strong> Easy, Medium, or Hard</span>
+                                    <span><strong class="text-slate-700">Explanation, Marks, Topic, Image URL</strong> are optional</span>
+                                </div>
+                                <div class="flex items-center gap-3 text-slate-500">
+                                    <span>Download a <button type="button" onclick="downloadCsvTemplate()" class="text-indigo-600 hover:underline font-medium cursor-pointer">CSV template</button> to get started.</span>
+                                    <button onclick="navigator.clipboard.writeText('Question,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Marks,Difficulty,Topic,Image URL');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Headers',2000)" class="px-2.5 py-1 bg-slate-100 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md font-medium transition cursor-pointer text-xs">
+                                        Copy Headers
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="bg-white border border-slate-200 rounded-xl p-5">
                             <div id="cbt-exams-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div class="text-center py-8 text-sm text-slate-400 col-span-2">No exams created yet.</div>
