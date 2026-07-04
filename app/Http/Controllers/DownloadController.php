@@ -101,6 +101,15 @@ class DownloadController extends Controller
         ');
     }
 
+    protected function truncate(string $text, int $limit = 200): string
+    {
+        $clean = strip_tags($text);
+        if (mb_strlen($clean) <= $limit) return $clean;
+        $trimmed = mb_substr($clean, 0, $limit);
+        $lastSpace = mb_strrpos($trimmed, ' ');
+        return mb_substr($trimmed, 0, $lastSpace ?: $limit) . '...';
+    }
+
     protected function downloadPlanDocx(array $plan, string $filename)
     {
         $topic = $plan['topic'] ?? 'Lesson Plan';
@@ -125,175 +134,147 @@ class DownloadController extends Controller
 
         $phpWord = new PhpWord();
         $phpWord->setDefaultFontName('Arial');
-        $phpWord->setDefaultFontSize(8);
+        $phpWord->setDefaultFontSize(7);
 
         $section = $phpWord->addSection([
             'pageSizeW' => 11906,
             'pageSizeH' => 16838,
-            'marginLeft' => 567,
-            'marginRight' => 567,
-            'marginTop' => 454,
-            'marginBottom' => 454,
+            'marginLeft' => 454,
+            'marginRight' => 454,
+            'marginTop' => 283,
+            'marginBottom' => 283,
         ]);
 
+        $pStyle = ['spaceBefore' => 0, 'spaceAfter' => 0, 'lineHeight' => 1.0];
+        $pStyleSmall = ['spaceBefore' => 0, 'spaceAfter' => 0, 'lineHeight' => 0.9];
+
         $border = ['borderSize' => 6, 'borderColor' => '000000'];
-        $cellMargin = 30;
+        $cm = 15;
 
         $table = $section->addTable(array_merge($border, [
-            'cellMargin' => $cellMargin,
-            'cellMarginTop' => $cellMargin,
-            'cellMarginLeft' => $cellMargin,
-            'cellMarginRight' => $cellMargin,
-            'cellMarginBottom' => $cellMargin,
+            'cellMargin' => $cm,
+            'cellMarginTop' => $cm,
+            'cellMarginLeft' => $cm,
+            'cellMarginRight' => $cm,
+            'cellMarginBottom' => $cm,
         ]));
 
-        // Title row
-        $table->addRow();
-        $titleCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'valign' => 'center']));
-        $titleCell->addText('LESSON PLAN', ['bold' => true, 'size' => 11, 'align' => 'center'], ['align' => 'center']);
+        $titleCell = $table->addRow()->addCell(9000, array_merge($border, ['gridSpan' => 4, 'valign' => 'center']));
+        $titleCell->addText('LESSON PLAN', ['bold' => true, 'size' => 9], $pStyle);
+
+        $labels = ['bold' => true, 'size' => 7];
+        $vals = ['size' => 7];
 
         // School / Teacher
         $table->addRow();
-        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('School:');
-        $table->addCell(3420, $border)->addText($schoolName);
-        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Teacher:');
-        $table->addCell(3420, $border)->addText($teacherName);
+        $table->addCell(1080, array_merge($border, $labels))->addText('School:', $labels, $pStyle);
+        $table->addCell(3420, $border)->addText($schoolName, $vals, $pStyle);
+        $table->addCell(1080, array_merge($border, $labels))->addText('Teacher:', $labels, $pStyle);
+        $table->addCell(3420, $border)->addText($teacherName, $vals, $pStyle);
 
         // Subject / Class
         $table->addRow();
-        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Subject:');
-        $table->addCell(3420, $border)->addText($subject);
-        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Class:');
-        $table->addCell(3420, $border)->addText($class . ($ageRange ? ' (' . $ageRange . ')' : ''));
+        $table->addCell(1080, array_merge($border, $labels))->addText('Subject:', $labels, $pStyle);
+        $table->addCell(3420, $border)->addText($subject, $vals, $pStyle);
+        $table->addCell(1080, array_merge($border, $labels))->addText('Class:', $labels, $pStyle);
+        $table->addCell(3420, $border)->addText($class . ($ageRange ? ' (' . $ageRange . ')' : ''), $vals, $pStyle);
 
         // Term / Week
         $table->addRow();
-        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Term:');
-        $table->addCell(3420, $border)->addText($term);
-        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Week:');
-        $table->addCell(3420, $border)->addText((string)$week);
+        $table->addCell(1080, array_merge($border, $labels))->addText('Term:', $labels, $pStyle);
+        $table->addCell(3420, $border)->addText($term, $vals, $pStyle);
+        $table->addCell(1080, array_merge($border, $labels))->addText('Week:', $labels, $pStyle);
+        $table->addCell(3420, $border)->addText((string)$week, $vals, $pStyle);
 
         // Date / Duration
         $table->addRow();
-        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Date:');
-        $table->addCell(3420, $border)->addText($date);
-        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Duration:');
-        $table->addCell(3420, $border)->addText($duration);
+        $table->addCell(1080, array_merge($border, $labels))->addText('Date:', $labels, $pStyle);
+        $table->addCell(3420, $border)->addText($date, $vals, $pStyle);
+        $table->addCell(1080, array_merge($border, $labels))->addText('Duration:', $labels, $pStyle);
+        $table->addCell(3420, $border)->addText($duration, $vals, $pStyle);
 
         // Topic
         $table->addRow();
-        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Topic:');
-        $topicCell = $table->addCell(7920, array_merge($border, ['gridSpan' => 3]));
-        $topicCell->addText($topic);
+        $table->addCell(1080, array_merge($border, $labels))->addText('Topic:', $labels, $pStyle);
+        $table->addCell(7920, array_merge($border, ['gridSpan' => 3]))->addText($topic, $vals, $pStyle);
 
         // Behavioural Objectives header
         $table->addRow();
-        $objHeader = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
-        $objHeader->addText('Behavioural Objectives');
-
-        // Objectives
+        $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]))->addText('Behavioural Objectives', $labels, $pStyle);
         foreach ($objectives as $obj) {
             $table->addRow();
-            $c = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
-            $c->addText('• ' . $obj);
+            $table->addCell(9000, array_merge($border, ['gridSpan' => 4]))->addText('• ' . $this->truncate($obj, 150), $vals, $pStyleSmall);
         }
 
         // Instructional Materials
         if (!empty($materials)) {
             $table->addRow();
-            $matHeader = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
-            $matHeader->addText('Instructional Materials');
+            $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]))->addText('Instructional Materials', $labels, $pStyle);
             $table->addRow();
-            $matCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
-            $matCell->addText(implode('; ', $materials));
+            $table->addCell(9000, array_merge($border, ['gridSpan' => 4]))->addText($this->truncate(implode('; ', $materials), 200), $vals, $pStyleSmall);
         }
 
         // Previous Knowledge
         if ($previousKnowledge) {
             $table->addRow();
-            $pkHeader = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
-            $pkHeader->addText('Previous Knowledge');
+            $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]))->addText('Previous Knowledge', $labels, $pStyle);
             $table->addRow();
-            $pkCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
-            $pkCell->addText($previousKnowledge);
+            $table->addCell(9000, array_merge($border, ['gridSpan' => 4]))->addText($this->truncate($previousKnowledge, 200), $vals, $pStyleSmall);
         }
 
         // Steps header
         $table->addRow();
-        $stepHdr = $table->addCell(900, array_merge($border, ['bold' => true]));
-        $stepHdr->addText('Step', null, ['align' => 'center']);
-        $taHdr = $table->addCell(2700, array_merge($border, ['bold' => true]));
-        $taHdr->addText("Teacher's Activities");
-        $laHdr = $table->addCell(2700, array_merge($border, ['bold' => true]));
-        $laHdr->addText("Learners' Activities");
-        $lpHdr = $table->addCell(2700, array_merge($border, ['bold' => true]));
-        $lpHdr->addText('Learning Points');
+        $table->addCell(900, array_merge($border, $labels))->addText('Step', $labels, $pStyle);
+        $table->addCell(2700, array_merge($border, $labels))->addText("Teacher's Activities", $labels, $pStyle);
+        $table->addCell(2700, array_merge($border, $labels))->addText("Learners' Activities", $labels, $pStyle);
+        $table->addCell(2700, array_merge($border, $labels))->addText('Learning Points', $labels, $pStyle);
 
         foreach ($steps as $s) {
             $table->addRow();
             $sn = $table->addCell(900, array_merge($border, ['valign' => 'top']));
-            $sn->addText($s['step'] ?? '', null, ['align' => 'center']);
-            $table->addCell(2700, array_merge($border, ['valign' => 'top']))->addText($s['teacherActivities'] ?? '');
-            $table->addCell(2700, array_merge($border, ['valign' => 'top']))->addText($s['learnerActivities'] ?? '');
-            $table->addCell(2700, array_merge($border, ['valign' => 'top']))->addText($s['learningPoints'] ?? '');
+            $sn->addText($s['step'] ?? '', $vals, ['align' => 'center', 'spaceBefore' => 0, 'spaceAfter' => 0]);
+            $table->addCell(2700, array_merge($border, ['valign' => 'top']))->addText($this->truncate($s['teacherActivities'] ?? '', 200), $vals, $pStyleSmall);
+            $table->addCell(2700, array_merge($border, ['valign' => 'top']))->addText($this->truncate($s['learnerActivities'] ?? '', 200), $vals, $pStyleSmall);
+            $table->addCell(2700, array_merge($border, ['valign' => 'top']))->addText($this->truncate($s['learningPoints'] ?? '', 150), $vals, $pStyleSmall);
         }
 
         // Evaluation
         if ($evaluation) {
             $table->addRow();
-            $evalHdr = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
-            $evalHdr->addText('Evaluation / Assessment');
+            $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]))->addText('Evaluation / Assessment', $labels, $pStyle);
             $table->addRow();
-            $evalCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
-            $evalCell->addText(strip_tags($evaluation));
+            $table->addCell(9000, array_merge($border, ['gridSpan' => 4]))->addText($this->truncate(strip_tags($evaluation), 300), $vals, $pStyleSmall);
         }
 
         // Assignment
         if ($assignment) {
             $table->addRow();
-            $assignHdr = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
-            $assignHdr->addText('Assignment / Homework');
+            $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]))->addText('Assignment / Homework', $labels, $pStyle);
             $table->addRow();
-            $assignCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
-            $assignCell->addText(strip_tags($assignment));
+            $table->addCell(9000, array_merge($border, ['gridSpan' => 4]))->addText($this->truncate(strip_tags($assignment), 200), $vals, $pStyleSmall);
         }
 
         // Summary
         if ($summary) {
             $table->addRow();
-            $sumHdr = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
-            $sumHdr->addText('Summary');
+            $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]))->addText('Summary', $labels, $pStyle);
             $table->addRow();
-            $sumCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
-            $sumCell->addText($summary);
+            $table->addCell(9000, array_merge($border, ['gridSpan' => 4]))->addText($this->truncate($summary, 200), $vals, $pStyleSmall);
         }
 
         // Conclusion
         if ($conclusion) {
             $table->addRow();
-            $conHdr = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
-            $conHdr->addText('Conclusion');
+            $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]))->addText('Conclusion', $labels, $pStyle);
             $table->addRow();
-            $conCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
-            $conCell->addText($conclusion);
+            $table->addCell(9000, array_merge($border, ['gridSpan' => 4]))->addText($this->truncate($conclusion, 200), $vals, $pStyleSmall);
         }
 
-        // Remarks header
-        $table->addRow();
-        $remHdr = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
-        $remHdr->addText('Remarks');
-
-        // Remarks blank space
-        $table->addRow();
-        $remCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
-        $remCell->addText(' ');
-
-        // Signature row
-        $table->addRow();
-        $table->addCell(2250, $border)->addText("Teacher's Signature: _______________");
-        $table->addCell(2250, $border)->addText("Date: _______________");
-        $table->addCell(2250, $border)->addText("Head Teacher's Signature: _______________");
-        $table->addCell(2250, $border)->addText("Date: _______________");
+        // Remarks + Signature (combined in one row to save space)
+        $table->addRow(200);
+        $sigCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
+        $sigCell->addText("Remarks: ____________________________________________________________________", $vals, $pStyle);
+        $sigCell->addText("Teacher's Signature: _______________   Date: _______________   Head Teacher's Signature: _______________   Date: _______________", $vals, $pStyle);
 
         $tempFile = tempnam(sys_get_temp_dir(), 'docx');
         $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
