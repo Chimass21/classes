@@ -37,9 +37,13 @@ class DownloadController extends Controller
         }
         if (!$plan) return abort(404);
 
-        $html = $this->buildPlanHtml($plan);
-        if ($format === 'pdf') return $this->downloadPdf($html, 'lesson_plan_' . $id);
-        if ($format === 'docx') return $this->downloadDocx($html, 'lesson_plan_' . $id);
+        if ($format === 'pdf') {
+            $html = $this->buildPlanHtml($plan);
+            return $this->downloadPdf($html, 'lesson_plan_' . $id);
+        }
+        if ($format === 'docx') {
+            return $this->downloadPlanDocx($plan, 'lesson_plan_' . $id);
+        }
         return abort(400);
     }
 
@@ -95,6 +99,206 @@ class DownloadController extends Controller
                 ' . ($detailedNote ? '<h3>Detailed Note</h3><div class="detailed-note">' . nl2br(e($detailedNote)) . '</div>' : '') . '
             </div>
         ');
+    }
+
+    protected function downloadPlanDocx(array $plan, string $filename)
+    {
+        $topic = $plan['topic'] ?? 'Lesson Plan';
+        $subject = $plan['subject'] ?? '';
+        $class = $plan['class'] ?? '';
+        $term = $plan['term'] ?? '';
+        $week = $plan['week'] ?? '';
+        $schoolName = $plan['schoolName'] ?? '';
+        $teacherName = $plan['teacherName'] ?? '';
+        $duration = $plan['duration'] ?? '40 Minutes';
+        $ageRange = $plan['ageRange'] ?? '';
+        $date = $plan['date'] ?? now()->format('l, F j, Y');
+
+        $objectives = $plan['behaviouralObjectives'] ?? [];
+        $materials = $plan['instructionalMaterials'] ?? [];
+        $previousKnowledge = $plan['previousKnowledge'] ?? '';
+        $steps = $plan['lessonSteps'] ?? [];
+        $evaluation = $plan['evaluation'] ?? '';
+        $assignment = $plan['assignment'] ?? '';
+        $summary = $plan['summary'] ?? '';
+        $conclusion = $plan['conclusion'] ?? '';
+
+        $phpWord = new PhpWord();
+        $phpWord->setDefaultFontName('Arial');
+        $phpWord->setDefaultFontSize(8);
+
+        $section = $phpWord->addSection([
+            'pageSizeW' => 11906,
+            'pageSizeH' => 16838,
+            'marginLeft' => 567,
+            'marginRight' => 567,
+            'marginTop' => 454,
+            'marginBottom' => 454,
+        ]);
+
+        $border = ['borderSize' => 6, 'borderColor' => '000000'];
+        $cellMargin = 30;
+
+        $table = $section->addTable(array_merge($border, [
+            'cellMargin' => $cellMargin,
+            'cellMarginTop' => $cellMargin,
+            'cellMarginLeft' => $cellMargin,
+            'cellMarginRight' => $cellMargin,
+            'cellMarginBottom' => $cellMargin,
+        ]));
+
+        // Title row
+        $table->addRow();
+        $titleCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'valign' => 'center']));
+        $titleCell->addText('LESSON PLAN', ['bold' => true, 'size' => 11, 'align' => 'center'], ['align' => 'center']);
+
+        // School / Teacher
+        $table->addRow();
+        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('School:');
+        $table->addCell(3420, $border)->addText($schoolName);
+        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Teacher:');
+        $table->addCell(3420, $border)->addText($teacherName);
+
+        // Subject / Class
+        $table->addRow();
+        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Subject:');
+        $table->addCell(3420, $border)->addText($subject);
+        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Class:');
+        $table->addCell(3420, $border)->addText($class . ($ageRange ? ' (' . $ageRange . ')' : ''));
+
+        // Term / Week
+        $table->addRow();
+        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Term:');
+        $table->addCell(3420, $border)->addText($term);
+        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Week:');
+        $table->addCell(3420, $border)->addText((string)$week);
+
+        // Date / Duration
+        $table->addRow();
+        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Date:');
+        $table->addCell(3420, $border)->addText($date);
+        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Duration:');
+        $table->addCell(3420, $border)->addText($duration);
+
+        // Topic
+        $table->addRow();
+        $table->addCell(1080, array_merge($border, ['bold' => true]))->addText('Topic:');
+        $topicCell = $table->addCell(7920, array_merge($border, ['gridSpan' => 3]));
+        $topicCell->addText($topic);
+
+        // Behavioural Objectives header
+        $table->addRow();
+        $objHeader = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
+        $objHeader->addText('Behavioural Objectives');
+
+        // Objectives
+        foreach ($objectives as $obj) {
+            $table->addRow();
+            $c = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
+            $c->addText('• ' . $obj);
+        }
+
+        // Instructional Materials
+        if (!empty($materials)) {
+            $table->addRow();
+            $matHeader = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
+            $matHeader->addText('Instructional Materials');
+            $table->addRow();
+            $matCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
+            $matCell->addText(implode('; ', $materials));
+        }
+
+        // Previous Knowledge
+        if ($previousKnowledge) {
+            $table->addRow();
+            $pkHeader = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
+            $pkHeader->addText('Previous Knowledge');
+            $table->addRow();
+            $pkCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
+            $pkCell->addText($previousKnowledge);
+        }
+
+        // Steps header
+        $table->addRow();
+        $stepHdr = $table->addCell(900, array_merge($border, ['bold' => true]));
+        $stepHdr->addText('Step', null, ['align' => 'center']);
+        $taHdr = $table->addCell(2700, array_merge($border, ['bold' => true]));
+        $taHdr->addText("Teacher's Activities");
+        $laHdr = $table->addCell(2700, array_merge($border, ['bold' => true]));
+        $laHdr->addText("Learners' Activities");
+        $lpHdr = $table->addCell(2700, array_merge($border, ['bold' => true]));
+        $lpHdr->addText('Learning Points');
+
+        foreach ($steps as $s) {
+            $table->addRow();
+            $sn = $table->addCell(900, array_merge($border, ['valign' => 'top']));
+            $sn->addText($s['step'] ?? '', null, ['align' => 'center']);
+            $table->addCell(2700, array_merge($border, ['valign' => 'top']))->addText($s['teacherActivities'] ?? '');
+            $table->addCell(2700, array_merge($border, ['valign' => 'top']))->addText($s['learnerActivities'] ?? '');
+            $table->addCell(2700, array_merge($border, ['valign' => 'top']))->addText($s['learningPoints'] ?? '');
+        }
+
+        // Evaluation
+        if ($evaluation) {
+            $table->addRow();
+            $evalHdr = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
+            $evalHdr->addText('Evaluation / Assessment');
+            $table->addRow();
+            $evalCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
+            $evalCell->addText(strip_tags($evaluation));
+        }
+
+        // Assignment
+        if ($assignment) {
+            $table->addRow();
+            $assignHdr = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
+            $assignHdr->addText('Assignment / Homework');
+            $table->addRow();
+            $assignCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
+            $assignCell->addText(strip_tags($assignment));
+        }
+
+        // Summary
+        if ($summary) {
+            $table->addRow();
+            $sumHdr = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
+            $sumHdr->addText('Summary');
+            $table->addRow();
+            $sumCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
+            $sumCell->addText($summary);
+        }
+
+        // Conclusion
+        if ($conclusion) {
+            $table->addRow();
+            $conHdr = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
+            $conHdr->addText('Conclusion');
+            $table->addRow();
+            $conCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
+            $conCell->addText($conclusion);
+        }
+
+        // Remarks header
+        $table->addRow();
+        $remHdr = $table->addCell(9000, array_merge($border, ['gridSpan' => 4, 'bold' => true]));
+        $remHdr->addText('Remarks');
+
+        // Remarks blank space
+        $table->addRow();
+        $remCell = $table->addCell(9000, array_merge($border, ['gridSpan' => 4]));
+        $remCell->addText(' ');
+
+        // Signature row
+        $table->addRow();
+        $table->addCell(2250, $border)->addText("Teacher's Signature: _______________");
+        $table->addCell(2250, $border)->addText("Date: _______________");
+        $table->addCell(2250, $border)->addText("Head Teacher's Signature: _______________");
+        $table->addCell(2250, $border)->addText("Date: _______________");
+
+        $tempFile = tempnam(sys_get_temp_dir(), 'docx');
+        $objWriter = IOFactory::createWriter($phpWord, 'Word2007');
+        $objWriter->save($tempFile);
+        return response()->download($tempFile, $filename . '.docx')->deleteFileAfterSend(true);
     }
 
     protected function buildPlanHtml(array $plan): string
