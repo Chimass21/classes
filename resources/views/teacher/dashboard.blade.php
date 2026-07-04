@@ -90,9 +90,15 @@
                                         <input type="text" id="plan-duration" value="40 Minutes" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
                                     </div>
                                 </div>
-                                <div>
-                                    <label class="text-xs font-semibold text-slate-600 block mb-1">Topic</label>
-                                    <input type="text" id="plan-topic" required placeholder="e.g., Addition of Whole Numbers" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Topic</label>
+                                        <input type="text" id="plan-topic" required placeholder="e.g., Addition of Whole Numbers" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Sub-topic (Optional)</label>
+                                        <input type="text" id="plan-subtopic" placeholder="e.g., Addition of 3-digit numbers" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                    </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
@@ -159,9 +165,15 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div>
-                                    <label class="text-xs font-semibold text-slate-600 block mb-1">Topic</label>
-                                    <input type="text" id="note-topic" required placeholder="e.g., Fractions and Decimals" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Topic</label>
+                                        <input type="text" id="note-topic" required placeholder="e.g., Linear Equations" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Sub-topic (Optional)</label>
+                                        <input type="text" id="note-subtopic" placeholder="e.g., Solving by Substitution" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                    </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
@@ -227,9 +239,15 @@
                                         </select>
                                     </div>
                                 </div>
-                                <div>
-                                    <label class="text-xs font-semibold text-slate-600 block mb-1">Topic</label>
-                                    <input type="text" id="q-topic" required placeholder="e.g., Algebra" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Topic</label>
+                                        <input type="text" id="q-topic" required placeholder="e.g. Algebra" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Sub-topic (Optional)</label>
+                                        <input type="text" id="q-subtopic" placeholder="e.g., Quadratic Equations" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                    </div>
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <input type="checkbox" id="q-theory" class="rounded border-slate-300">
@@ -296,6 +314,7 @@
                                                 <th class="p-2 border border-slate-200 text-left">Marks</th>
                                                 <th class="p-2 border border-slate-200 text-left">Difficulty</th>
                                                 <th class="p-2 border border-slate-200 text-left">Topic</th>
+                                                <th class="p-2 border border-slate-200 text-left">Sub Topic</th>
                                                 <th class="p-2 border border-slate-200 text-left">Image URL</th>
                                             </tr>
                                         </thead>
@@ -637,6 +656,7 @@ document.getElementById('lesson-plan-form')?.addEventListener('submit', async fu
                 term: document.getElementById('plan-term').value,
                 week: parseInt(document.getElementById('plan-week').value),
                 topic: document.getElementById('plan-topic').value,
+                subTopic: document.getElementById('plan-subtopic').value,
                 schoolName: document.getElementById('plan-school').value,
                 teacherName: document.getElementById('plan-teacher').value,
                 duration: document.getElementById('plan-duration').value,
@@ -814,6 +834,7 @@ document.getElementById('lesson-note-form')?.addEventListener('submit', async fu
                 term: document.getElementById('note-term').value,
                 week: parseInt(document.getElementById('note-week').value),
                 topic: document.getElementById('note-topic').value,
+                subTopic: document.getElementById('note-subtopic').value,
                 periods: document.getElementById('note-periods').value,
                 difficulty: document.getElementById('note-difficulty').value,
             })
@@ -932,6 +953,7 @@ document.getElementById('questions-form')?.addEventListener('submit', async func
             body: JSON.stringify({
                 subject: document.getElementById('q-subject').value,
                 topic: document.getElementById('q-topic').value,
+                subTopic: document.getElementById('q-subtopic').value,
                 class: document.getElementById('q-class').value,
                 term: document.getElementById('q-term').value,
                 week: parseInt(document.getElementById('q-week').value) || 1,
@@ -1005,6 +1027,7 @@ async function saveQuestions() {
             body: JSON.stringify({
                 subject: document.getElementById('q-subject').value,
                 topic: document.getElementById('q-topic').value,
+                subTopic: document.getElementById('q-subtopic').value,
                 questions: currentQuestions.objectives || [],
             })
         });
@@ -1442,6 +1465,7 @@ async function confirmCsvImport() {
     formData.append('session', document.getElementById('csv-session').value);
     formData.append('exam_type', document.getElementById('csv-exam-type').value);
     formData.append('topic', document.getElementById('csv-topic').value);
+    formData.append('subTopic', document.getElementById('csv-subtopic').value);
     formData.append('duration', document.getElementById('csv-duration').value);
     formData.append('defaultMarks', document.getElementById('csv-marks').value);
     formData.append('duplicate_handling', duplicateHandling);

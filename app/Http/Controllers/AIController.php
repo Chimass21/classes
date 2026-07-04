@@ -28,6 +28,7 @@ class AIController extends Controller
                 'term' => 'required|string',
                 'week' => 'required|integer|min:1|max:13',
                 'topic' => 'required|string',
+                'subTopic' => 'nullable|string',
                 'schoolName' => 'nullable|string',
                 'teacherName' => 'nullable|string',
                 'duration' => 'nullable|string',
@@ -83,6 +84,7 @@ class AIController extends Controller
             $plan['term'] = $data['term'];
             $plan['week'] = $data['week'];
             $plan['topic'] = $data['topic'];
+            $plan['subTopic'] = $data['subTopic'] ?? '';
             $plan['schoolName'] = $schoolName;
             $plan['teacherName'] = $teacherName;
             $plan['duration'] = $duration;
@@ -123,6 +125,7 @@ class AIController extends Controller
                 'term' => 'nullable|string',
                 'week' => 'nullable|integer|min:1|max:13',
                 'topic' => 'required|string',
+                'subTopic' => 'nullable|string',
                 'difficulty' => 'nullable|string',
                 'periods' => 'nullable|string',
                 'subtopics' => 'nullable|string',
@@ -181,6 +184,7 @@ class AIController extends Controller
             $note['term'] = $data['term'];
             $note['week'] = $data['week'];
             $note['topic'] = $data['topic'];
+            $note['subTopic'] = $data['subTopic'] ?? '';
             $note['difficulty'] = $difficulty;
             $note['periods'] = $periods;
             $note['ageRange'] = $ageRange;
@@ -216,6 +220,7 @@ class AIController extends Controller
             $data = $request->validate([
                 'subject' => 'required|string',
                 'topic' => 'required|string',
+                'subTopic' => 'nullable|string',
                 'class' => 'nullable|string',
                 'term' => 'nullable|string',
                 'week' => 'nullable|integer',
@@ -308,6 +313,7 @@ class AIController extends Controller
         $data = $request->validate([
             'subject' => 'required|string',
             'topic' => 'required|string',
+            'subTopic' => 'nullable|string',
             'questions' => 'required|array',
             'questions.*.question' => 'required|string',
         ]);
@@ -325,6 +331,7 @@ class AIController extends Controller
             'questions' => $request->input('questions'),
             'subject' => $data['subject'],
             'topic' => $data['topic'],
+            'subTopic' => $data['subTopic'] ?? '',
             'createdAt' => now()->toIso8601String(),
         ];
         $db['questionSets'][] = $qs;
@@ -383,6 +390,8 @@ class AIController extends Controller
             'title' => $data['title'] ?? ($qs['subject'] ?? 'Generated') . ' CBT Exam',
             'subject' => $qs['subject'] ?? 'General',
             'level' => 'Mixed',
+            'topic' => $qs['topic'] ?? '',
+            'subTopic' => $qs['subTopic'] ?? '',
             'duration' => $duration,
             'defaultMarks' => $defaultMarks,
             'totalMarks' => $totalMarks,

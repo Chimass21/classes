@@ -20,19 +20,19 @@ class CsvImportController extends Controller
 
         $columns = [
             'Question', 'Option A', 'Option B', 'Option C', 'Option D',
-            'Correct Answer', 'Explanation', 'Marks', 'Difficulty', 'Topic', 'Image URL'
+            'Correct Answer', 'Explanation', 'Marks', 'Difficulty', 'Topic', 'Sub Topic', 'Image URL'
         ];
 
         $sample = [
             'What is the capital of Nigeria?',
             'Lagos', 'Abuja', 'Kano', 'Ibadan',
-            'B', 'Abuja is the capital city of Nigeria.', '1', 'Easy', 'Geography', ''
+            'B', 'Abuja is the capital city of Nigeria.', '1', 'Easy', 'Geography', '', ''
         ];
 
         $sample2 = [
             'Which planet is known as the Red Planet?',
             'Earth', 'Mars', 'Venus', 'Jupiter',
-            'B', 'Mars is called the Red Planet due to its reddish appearance.', '1', 'Easy', 'Space', ''
+            'B', 'Mars is called the Red Planet due to its reddish appearance.', '1', 'Easy', 'Space', '', ''
         ];
 
         $callback = function () use ($columns, $sample, $sample2) {
@@ -57,6 +57,7 @@ class CsvImportController extends Controller
             'session' => 'required|string',
             'exam_type' => 'required|string',
             'topic' => 'nullable|string',
+            'subTopic' => 'nullable|string',
         ]);
 
         $file = $request->file('file');
@@ -194,6 +195,7 @@ class CsvImportController extends Controller
             'session' => 'required|string',
             'exam_type' => 'required|string',
             'topic' => 'nullable|string',
+            'subTopic' => 'nullable|string',
             'duplicate_handling' => 'required|in:skip,replace,import_all',
         ]);
 
@@ -318,6 +320,7 @@ class CsvImportController extends Controller
                 'session' => $request->session,
                 'examType' => $request->exam_type,
                 'topic' => $request->topic ?: 'General',
+                'subTopic' => $request->subTopic ?: '',
                 'duration' => $request->duration ? (int)$request->duration : max(10, min(120, intdiv(count($imported), 2))),
                 'defaultMarks' => $request->defaultMarks ? (int)$request->defaultMarks : 1,
                 'totalMarks' => count($imported) * ($request->defaultMarks ? (int)$request->defaultMarks : 1),

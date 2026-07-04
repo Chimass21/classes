@@ -29,6 +29,16 @@
                         <input type="number" name="duration" required class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                     </div>
                 </div>
+                <div class="grid gap-4 mb-4 md:grid-cols-2">
+                    <div>
+                        <label class="block text-slate-700 mb-2">Topic</label>
+                        <input type="text" name="topic" placeholder="e.g., Algebra" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-slate-700 mb-2">Sub-topic (Optional)</label>
+                        <input type="text" name="subTopic" placeholder="e.g., Quadratic Equations" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                    </div>
+                </div>
                 <div class="mb-4">
                     <label class="block text-slate-700 mb-2">Default Marks Per Question</label>
                     <input type="number" name="defaultMarks" value="5" min="1" max="100" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">

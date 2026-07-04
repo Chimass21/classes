@@ -295,9 +295,13 @@
                                     <option value="SS3">SS3</option>
                                 </select>
                             </div>
-                            <div class="sm:col-span-2">
+                            <div>
                                 <label class="text-xs font-bold text-indigo-200 block mb-1">Topic</label>
                                 <input type="text" id="student-note-topic" required placeholder="e.g. Algebra, Photosynthesis" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full focus:outline-none" />
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-indigo-200 block mb-1">Sub-topic (Optional)</label>
+                                <input type="text" id="student-note-subtopic" placeholder="e.g., Quadratic Equations" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full focus:outline-none" />
                             </div>
                             <div class="sm:col-span-2">
                                 <label class="text-xs font-bold text-indigo-200 block mb-1">Sub-topics (optional — one per line)</label>
@@ -384,6 +388,10 @@
                                     <input required type="text" id="practice-topic" placeholder="e.g. 'Algebra', 'Calculus'" class="bg-white border-none rounded-xl py-2.5 pl-3 pr-10 text-xs w-full focus:outline-none" />
                                     <div class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center text-slate-700 voice-btn-container" data-input="practice-topic"></div>
                                 </div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-bold text-indigo-200 block mb-1">Sub-topic (Optional)</label>
+                                <input type="text" id="practice-subtopic" placeholder="e.g., Solving by Substitution" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full focus:outline-none" />
                             </div>
                             <div class="sm:col-span-2">
                                 <label class="text-xs font-bold text-indigo-200 block mb-1">Questions count</label>
@@ -747,7 +755,7 @@ document.getElementById('student-note-form')?.addEventListener('submit', async f
     btn.disabled = true;
     btn.textContent = 'Generating...';
     try {
-        const body = { subject: subj, topic, class: cls, difficulty };
+        const body = { subject: subj, topic, class: cls, subTopic: document.getElementById('student-note-subtopic').value, difficulty };
         if (subtopics) body.subtopics = subtopics;
         const res = await fetch('/api/ai/lesson-note', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -884,7 +892,7 @@ document.getElementById('practice-form')?.addEventListener('submit', async funct
     try {
         const res = await fetch('/api/ai/generate-questions', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ subject: subj, topic, classLevel: 'Grade 1', count, difficulty: 'Medium' })
+            body: JSON.stringify({ subject: subj, topic, subTopic: document.getElementById('practice-subtopic').value, classLevel: 'Grade 1', count, difficulty: 'Medium' })
         });
         const data = await res.json();
         if (res.ok && data.questions) {
