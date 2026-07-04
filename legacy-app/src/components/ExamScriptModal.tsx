@@ -623,20 +623,20 @@ export default function ExamScriptModal({ result, userRole = 'student', onClose,
                         </div>
                       </div>
 
-                      <p className="font-bold text-slate-900 leading-relaxed bg-slate-50/50 p-3 rounded-lg border border-slate-100">{q.question}</p>
+                      <p className="font-bold text-slate-900 leading-relaxed bg-slate-50/50 p-3 rounded-lg border border-slate-100 break-words">{q.question}</p>
 
                       {q.type === 'theory' ? (
                         <div className="space-y-3 pt-1">
                           <div>
                             <span className="text-[10px] text-slate-400 font-bold block mb-1">Candidate Theory Answer:</span>
-                            <div className="p-3 bg-slate-100 text-slate-700 rounded-xl border border-slate-200 select-all leading-normal whitespace-pre-line font-medium italic">
+                            <div className="p-3 bg-slate-100 text-slate-700 rounded-xl border border-slate-200 select-all leading-normal whitespace-pre-line font-medium italic break-words">
                               {q.selectedAnswer || '[No response submitted]'}
                             </div>
                           </div>
 
                           <div>
                             <span className="text-[10px] text-slate-400 font-bold block mb-1">Expected Standard Grading Answer Schemes / Target Content:</span>
-                            <div className="p-3 bg-emerald-500/5 text-emerald-800 rounded-xl border border-emerald-100 leading-normal">
+                            <div className="p-3 bg-emerald-500/5 text-emerald-800 rounded-xl border border-emerald-100 leading-normal break-words">
                               {q.correctAnswer}
                             </div>
                           </div>
@@ -644,18 +644,35 @@ export default function ExamScriptModal({ result, userRole = 'student', onClose,
                       ) : (
                         <div className="space-y-2.5">
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-slate-600 font-semibold">
-                            <p className="p-2 border border-slate-100 rounded-lg">Option A: {q.optionA || 'N/A'}</p>
-                            <p className="p-2 border border-slate-100 rounded-lg">Option B: {q.optionB || 'N/A'}</p>
-                            <p className="p-2 border border-slate-100 rounded-lg">Option C: {q.optionC || 'N/A'}</p>
-                            <p className="p-2 border border-slate-100 rounded-lg">Option D: {q.optionD || 'N/A'}</p>
+                          {[
+                            { key: 'A', label: q.optionA },
+                            { key: 'B', label: q.optionB },
+                            { key: 'C', label: q.optionC },
+                            { key: 'D', label: q.optionD },
+                          ].map((opt) => {
+                            const isCorrectOpt = opt.key === q.correctAnswer;
+                            const isSelectedOpt = opt.key === q.selectedAnswer;
+                            let borderCls = 'border-slate-100';
+                            let bgCls = 'bg-slate-50';
+                            let textCls = 'text-slate-700';
+                            if (isCorrectOpt) { borderCls = 'border-emerald-300'; bgCls = 'bg-emerald-50'; textCls = 'text-emerald-800'; }
+                            else if (isSelectedOpt) { borderCls = 'border-rose-300'; bgCls = 'bg-rose-50'; textCls = 'text-rose-800'; }
+                            return (
+                              <p key={opt.key} className={`p-2.5 rounded-lg border break-words ${borderCls} ${bgCls} ${textCls}`}>
+                                <span className="font-bold">Option {opt.key}:</span> {opt.label || 'N/A'}
+                              </p>
+                            );
+                          })}
                           </div>
 
-                          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 pt-1">
-                            <div className="text-slate-500 text-[11px]">
-                              Candidate Choice: <strong className={q.isCorrect ? "text-emerald-700 font-black" : "text-rose-600 font-black"}>Option {q.selectedAnswer || '[No answer]'}</strong>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1 text-[11px]">
+                            <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                              <span className="text-slate-400 font-bold block mb-0.5">Candidate Choice</span>
+                              <strong className={q.isCorrect ? "text-emerald-700 font-black break-words" : "text-rose-600 font-black break-words"}>Option {q.selectedAnswer || '[No answer]'}</strong>
                             </div>
-                            <div className="text-slate-500 text-[11px] sm:border-l sm:pl-3">
-                              Expected Correct Choice: <strong className="text-emerald-750 font-black">Option {q.correctAnswer}</strong>
+                            <div className="p-2.5 bg-slate-50 rounded-lg border border-slate-100">
+                              <span className="text-slate-400 font-bold block mb-0.5">Expected Correct</span>
+                              <strong className="text-emerald-750 font-black break-words">Option {q.correctAnswer}</strong>
                             </div>
                           </div>
                         </div>
