@@ -55,6 +55,42 @@ class AuthController extends Controller
         ])->onlyInput('login');
     }
 
+    public function showAdminLogin()
+    {
+        $user = Session::get('user');
+        if ($user && $user['role'] === 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+        \App\Http\Controllers\AdminController::ensureAdminExists();
+        return view('admin.login');
+    }
+
+    public function adminLogin(Request $request)
+    {
+        $credentials = $request->validate([
+            'login' => 'required',
+            'password' => 'required',
+        ]);
+
+        JsonDb::init();
+        \App\Http\Controllers\AdminController::ensureAdminExists();
+        $db = JsonDb::get();
+
+        $user = JsonDb::findUserByLogin($credentials['login']);
+
+        if ($user && $this->checkPassword($credentials['password'], $user)) {
+            if ($user['role'] !== 'admin') {
+                return back()->withErrors(['login' => 'Access denied. Admin credentials required.'])->onlyInput('login');
+            }
+            Session::put('user', $user);
+            return redirect()->route('admin.dashboard');
+        }
+
+        return back()->withErrors([
+            'login' => 'Invalid admin credentials.',
+        ])->onlyInput('login');
+    }
+
     public function register(Request $request)
     {
         $request->validate([

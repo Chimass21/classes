@@ -50,6 +50,11 @@ Route::prefix('teacher')->middleware(['json.auth', 'role:teacher'])->group(funct
 });
 
 // Admin Routes
+Route::prefix('admin')->group(function () {
+    Route::get('/login', [AuthController::class, 'showAdminLogin'])->name('admin.login');
+    Route::post('/login', [AuthController::class, 'adminLogin'])->name('admin.login.post');
+});
+
 Route::prefix('admin')->middleware(['json.auth', 'role:admin'])->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('admin.dashboard');
 });

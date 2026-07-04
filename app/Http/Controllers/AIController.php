@@ -46,6 +46,14 @@ class AIController extends Controller
             );
 
             $response = $this->gemini->generate($prompt);
+
+            if ($this->isRefusal($response)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $response,
+                ], 422);
+            }
+
             $plan = json_decode($response, true);
 
             if (!is_array($plan) || empty($plan)) {
@@ -53,14 +61,14 @@ class AIController extends Controller
                     $data['subject'], $data['class'], $data['term'], $data['week'],
                     $data['topic'], $schoolName, $teacherName, $duration, $ageRange
                 );
-                if ($this->isGenericTemplateContent($plan, 'lesson_plan')) {
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'AI generation produced generic content. Please try again with a more specific topic.',
-                    ], 422);
-                }
             } elseif (!$this->isRelevantToTopic($plan, 'lesson_plan', $data['subject'], $data['topic'], $data['class'])) {
                 $retryResponse = $this->retryWithStrictPrompt($prompt, $data['subject'], $data['topic'], $data['class']);
+                if ($this->isRefusal($retryResponse)) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => $retryResponse,
+                    ], 422);
+                }
                 $plan = json_decode($retryResponse, true);
                 if (!is_array($plan) || empty($plan) || !$this->isRelevantToTopic($plan, 'lesson_plan', $data['subject'], $data['topic'], $data['class'])) {
                     $plan = $this->fallbackLessonPlan(
@@ -136,6 +144,14 @@ class AIController extends Controller
             );
 
             $response = $this->gemini->generate($prompt);
+
+            if ($this->isRefusal($response)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $response,
+                ], 422);
+            }
+
             $note = json_decode($response, true);
 
             if (!is_array($note) || empty($note)) {
@@ -143,14 +159,14 @@ class AIController extends Controller
                     $data['subject'], $data['class'], $data['term'], $data['week'],
                     $data['topic'], $periods, $difficulty, $ageRange
                 );
-                if ($this->isGenericTemplateContent($note, 'lesson_note')) {
-                    return response()->json([
-                        'success' => false,
-                        'error' => 'AI generation produced generic content. Please try again with a more specific topic.',
-                    ], 422);
-                }
             } elseif (!$this->isRelevantToTopic($note, 'lesson_note', $data['subject'], $data['topic'], $data['class'])) {
                 $retryResponse = $this->retryWithStrictPrompt($prompt, $data['subject'], $data['topic'], $data['class']);
+                if ($this->isRefusal($retryResponse)) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => $retryResponse,
+                    ], 422);
+                }
                 $note = json_decode($retryResponse, true);
                 if (!is_array($note) || empty($note) || !$this->isRelevantToTopic($note, 'lesson_note', $data['subject'], $data['topic'], $data['class'])) {
                     $note = $this->fallbackLessonNote(
@@ -227,6 +243,14 @@ class AIController extends Controller
             );
 
             $response = $this->gemini->generate($prompt);
+
+            if ($this->isRefusal($response)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $response,
+                ], 422);
+            }
+
             $questions = json_decode($response, true);
 
             if (!is_array($questions) || empty($questions)) {
@@ -241,6 +265,12 @@ class AIController extends Controller
                     $questions = $this->fallbackQuestions($data['subject'], $data['topic'], $data['count'], $data['includeTheory'] ?? false);
                 } elseif (!$this->isRelevantToTopic($questions, 'questions', $data['subject'], $data['topic'], $data['class'] ?? 'SS1')) {
                     $retryResponse = $this->retryWithStrictPrompt($prompt, $data['subject'], $data['topic'], $data['class'] ?? 'SS1');
+                    if ($this->isRefusal($retryResponse)) {
+                        return response()->json([
+                            'success' => false,
+                            'error' => $retryResponse,
+                        ], 422);
+                    }
                     $questions = json_decode($retryResponse, true);
                     if (!is_array($questions) || empty($questions)) {
                         $questions = $this->fallbackQuestions($data['subject'], $data['topic'], $data['count'], $data['includeTheory'] ?? false);
@@ -707,6 +737,43 @@ PROMPT;
         }
 
         return $pass;
+    }
+
+    private function isRefusal(string $response): bool
+    {
+        $lower = strtolower(trim($response));
+
+        if (str_starts_with($lower, 'i cannot') && (str_contains($lower, 'generate') || str_contains($lower, 'provide') || str_contains($lower, 'write') || str_contains($lower, 'answer'))) {
+            return true;
+        }
+
+        $refusalPhrases = [
+            'cannot generate content',
+            'cannot provide content',
+            "can't generate content",
+            "can't provide content",
+            'outside my knowledge',
+            'outside your knowledge',
+            'outside my expertise',
+            'i am not able to generate',
+            'i am not able to provide',
+            'i don\'t have information about',
+            'i do not have information about',
+            'not within my knowledge',
+            'beyond my capabilities',
+            'unable to generate content',
+            'unable to provide content',
+            'sorry, but i cannot',
+            'i apologize, but i cannot',
+            'as an ai, i cannot generate',
+            'as an ai language model, i cannot',
+        ];
+        foreach ($refusalPhrases as $phrase) {
+            if (str_contains($lower, $phrase)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private function retryWithStrictPrompt(string $originalPrompt, string $subject, string $topic, string $class): string
