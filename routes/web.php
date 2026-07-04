@@ -13,6 +13,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AIController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\CsvImportController;
+use App\Http\Controllers\SchemeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -125,6 +126,12 @@ Route::prefix('api')->group(function () {
     Route::get('/download/exam/{id}/{format}', [DownloadController::class, 'downloadExam']);
     Route::delete('/lesson-notes/{id}', [AIController::class, 'deleteLessonNote']);
     Route::delete('/lesson-plans/{id}', [AIController::class, 'deleteLessonPlan']);
+
+    // Schemes of Work
+    Route::post('/schemes/upload', [SchemeController::class, 'upload']);
+    Route::get('/schemes/list', [SchemeController::class, 'list']);
+    Route::delete('/schemes/{id}', [SchemeController::class, 'delete']);
+    Route::get('/schemes/get-topics', [SchemeController::class, 'getTopics']);
 
     // CSV Import
     Route::get('/csv-import/template', [CsvImportController::class, 'downloadTemplate']);
