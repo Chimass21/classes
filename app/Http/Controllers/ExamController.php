@@ -29,17 +29,20 @@ class ExamController extends Controller
 
         $questions = array_values($request->questions);
 
+        $defaultMarks = $request->defaultMarks ?? 5;
         $exam = [
             'id' => 'exam_' . uniqid(),
             'title' => $request->title,
             'subject' => $request->subject,
             'level' => 'Senior Secondary School',
             'duration' => $request->duration,
-            'totalMarks' => count($questions) * 5,
+            'totalMarks' => count($questions) * $defaultMarks,
+            'defaultMarks' => $defaultMarks,
             'instructions' => $request->instructions,
             'questions' => $questions,
             'creatorId' => $user['id'],
             'creatorName' => $user['name'],
+            'defaultMarks' => $request->defaultMarks ?? 5,
             'isPublished' => false,
             'createdAt' => now()->toIso8601String(),
         ];
@@ -85,13 +88,15 @@ class ExamController extends Controller
         $db = JsonDb::get();
         $user = Session::get('user');
 
+        $defaultMarks = $request->defaultMarks ?? 5;
         $exam = [
             'id' => 'exam_' . uniqid(),
             'title' => $request->title,
             'subject' => $request->subject,
             'level' => $request->level ?? 'Senior Secondary School',
             'duration' => $request->duration,
-            'totalMarks' => $request->totalMarks ?? count($request->questions) * 5,
+            'totalMarks' => $request->totalMarks ?? count($request->questions) * $defaultMarks,
+            'defaultMarks' => $defaultMarks,
             'instructions' => $request->instructions ?? '',
             'questions' => array_values($request->questions),
             'creatorId' => $user['id'] ?? 'unknown',
@@ -102,6 +107,34 @@ class ExamController extends Controller
         $db['exams'][] = $exam;
         JsonDb::save($db);
         return response()->json(['success' => true, 'exam' => $exam]);
+    }
+
+    public function apiUpdateSettings(Request $request, $examId)
+    {
+        $request->validate([
+            'duration' => 'required|integer|min:1',
+            'defaultMarks' => 'required|integer|min:1|max:100',
+            'title' => 'nullable|string|max:255',
+            'instructions' => 'nullable|string',
+        ]);
+
+        JsonDb::init();
+        $db = JsonDb::get();
+        $updated = false;
+        foreach ($db['exams'] as &$exam) {
+            if ($exam['id'] === $examId) {
+                $exam['duration'] = (int)$request->duration;
+                $exam['defaultMarks'] = (int)$request->defaultMarks;
+                if ($request->title) $exam['title'] = $request->title;
+                if ($request->has('instructions')) $exam['instructions'] = $request->instructions;
+                $updated = true;
+                break;
+            }
+        }
+        unset($exam);
+        JsonDb::save($db);
+
+        return response()->json(['success' => $updated]);
     }
 
     public function apiPublish($examId)
@@ -173,7 +206,8 @@ class ExamController extends Controller
         $failedQuestions = [];
         $totalMarks = 0;
 
-        $qTypecast = fn($q) => $q + ['marks' => 5, 'correctAnswer' => $q['correctAnswer'] ?? $q['answer'] ?? '', 'explanation' => $q['explanation'] ?? ''];
+        $defaultMarks = $exam['defaultMarks'] ?? 5;
+        $qTypecast = fn($q) => $q + ['marks' => $defaultMarks, 'correctAnswer' => $q['correctAnswer'] ?? $q['answer'] ?? '', 'explanation' => $q['explanation'] ?? ''];
         foreach ($exam['questions'] as $index => $q) {
             $q = $qTypecast($q);
             $marks = (int)($q['marks'] ?? 5);

@@ -339,6 +339,7 @@ class AIController extends Controller
             'questionSetId' => 'required|string',
             'title' => 'nullable|string',
             'duration' => 'nullable|integer|min:1|max:180',
+            'defaultMarks' => 'nullable|integer|min:1|max:100',
         ]);
 
         $user = Session::get('user');
@@ -373,8 +374,9 @@ class AIController extends Controller
             ];
         }
 
-        $totalMarks = count($formattedQuestions);
-        $duration = $data['duration'] ?? min(30, max(10, intdiv($totalMarks, 2)));
+        $defaultMarks = $data['defaultMarks'] ?? 1;
+        $totalMarks = count($formattedQuestions) * $defaultMarks;
+        $duration = $data['duration'] ?? min(30, max(10, intdiv(count($formattedQuestions), 2)));
 
         $exam = [
             'id' => $examId,
@@ -382,8 +384,9 @@ class AIController extends Controller
             'subject' => $qs['subject'] ?? 'General',
             'level' => 'Mixed',
             'duration' => $duration,
+            'defaultMarks' => $defaultMarks,
             'totalMarks' => $totalMarks,
-            'instructions' => 'Answer all questions. Each question carries 1 mark. No negative marking.',
+            'instructions' => 'Answer all questions. Each question carries ' . $defaultMarks . ' mark(s). No negative marking.',
             'questions' => $formattedQuestions,
             'creatorId' => $user['id'] ?? 'unknown',
             'creatorName' => $user['name'] ?? 'AI System',

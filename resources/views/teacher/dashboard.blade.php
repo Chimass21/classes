@@ -387,7 +387,7 @@
                                     <input type="text" id="csv-session" value="<?php echo date('Y') . '/' . (date('Y') + 1); ?>" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500">
                                 </div>
                             </div>
-                            <div class="grid grid-cols-2 gap-3">
+                            <div class="grid grid-cols-3 gap-3">
                                 <div>
                                     <label class="text-xs font-semibold text-slate-600 block mb-1">Exam Type *</label>
                                     <select id="csv-exam-type" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
@@ -396,9 +396,20 @@
                                     </select>
                                 </div>
                                 <div>
+                                    <label class="text-xs font-semibold text-slate-600 block mb-1">Duration (min)</label>
+                                    <input type="number" id="csv-duration" value="30" min="1" max="180" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-semibold text-slate-600 block mb-1">Marks Per Q</label>
+                                    <input type="number" id="csv-marks" value="1" min="1" max="100" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500">
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
                                     <label class="text-xs font-semibold text-slate-600 block mb-1">Topic (Optional)</label>
                                     <input type="text" id="csv-topic" placeholder="e.g., Algebra" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500">
                                 </div>
+                                <div></div>
                             </div>
                             <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-emerald-400 transition" id="csv-drop-zone">
                                 <input type="file" id="csv-file-input" accept=".csv" class="hidden" onchange="handleCsvFile(this)">
@@ -484,6 +495,43 @@
                                 <button onclick="closeCsvImport()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Close</button>
                                 <button onclick="csvGoBack(1); closeCsvImport(); openCsvImport();" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition cursor-pointer">Import Another</button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- === Exam Settings Modal === --}}
+                <div id="exam-settings-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4" onclick="event.stopPropagation()">
+                        <div class="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                            <h3 class="text-lg font-bold text-slate-900">Exam Settings</h3>
+                            <button onclick="closeExamSettings()" class="p-2 hover:bg-slate-100 rounded-lg transition cursor-pointer">
+                                <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                            </button>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <div>
+                                <label class="text-xs font-semibold text-slate-600 block mb-1">Exam Title</label>
+                                <input type="text" id="exam-settings-title" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-purple-500">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-xs font-semibold text-slate-600 block mb-1">Duration (minutes)</label>
+                                    <input type="number" id="exam-settings-duration" min="1" max="180" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-purple-500">
+                                </div>
+                                <div>
+                                    <label class="text-xs font-semibold text-slate-600 block mb-1">Marks Per Question</label>
+                                    <input type="number" id="exam-settings-marks" min="1" max="100" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-purple-500">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-slate-600 block mb-1">Instructions</label>
+                                <textarea id="exam-settings-instructions" rows="3" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-purple-500"></textarea>
+                            </div>
+                            <div id="exam-settings-status" class="hidden text-xs font-semibold text-emerald-600 bg-emerald-50 p-3 rounded-lg"></div>
+                        </div>
+                        <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
+                            <button onclick="closeExamSettings()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Cancel</button>
+                            <button id="exam-settings-save-btn" onclick="saveExamSettings()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg transition cursor-pointer">Save Settings</button>
                         </div>
                     </div>
                 </div>
@@ -977,12 +1025,17 @@ async function convertToCBT() {
     }
     if (!qsId) { alert('Please save questions first.'); return; }
     try {
+        const duration = prompt('Exam duration in minutes:', Math.max(10, Math.min(60, Math.floor((currentQuestions?.objectives?.length || 20) / 2))));
+        if (!duration) return;
+        const marks = prompt('Default marks per question:', '1');
+        if (!marks) return;
         const res = await fetch('/api/questions/convert-to-exam', {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({
                 questionSetId: qsId,
                 title: document.getElementById('q-subject').value + ' CBT Exam',
-                duration: Math.max(10, Math.min(60, Math.floor((currentQuestions?.objectives?.length || 20) / 2))),
+                duration: parseInt(duration),
+                defaultMarks: parseInt(marks),
             })
         });
         const data = await res.json();
@@ -1130,17 +1183,19 @@ function renderExams() {
     }
     container.innerHTML = teacherData.exams.slice().reverse().map(e => {
         const examLink = window.location.origin + '/student/exam/' + e.id;
+        const marks = e.defaultMarks || 5;
         return `<div class="p-4 bg-white border border-slate-200 rounded-xl">
             <div class="flex justify-between items-start">
                 <div>
                     <h5 class="font-semibold text-slate-900">${e.title || 'Exam'}</h5>
-                    <p class="text-xs text-slate-500">${e.subject || ''} | ${e.questions?.length || 0} questions | ${e.duration || 0} min</p>
+                    <p class="text-xs text-slate-500">${e.subject || ''} | ${e.questions?.length || 0} questions | ${e.duration || 0} min | ${marks} mark(s) per Q</p>
                 </div>
                 <span class="px-2 py-0.5 rounded text-xs font-semibold ${e.isPublished ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">${e.isPublished ? 'Live' : 'Draft'}</span>
             </div>
             <div class="mt-3 flex flex-wrap gap-1.5">
                 <button onclick="publishExam('${e.id}')" class="px-2 py-1 bg-emerald-600 text-white text-[10px] font-bold rounded hover:bg-emerald-700 cursor-pointer">${e.isPublished ? 'Unpublish' : 'Publish'}</button>
                 <button onclick="copyExamLink('${examLink}')" class="px-2 py-1 bg-indigo-600 text-white text-[10px] font-bold rounded hover:bg-indigo-700 cursor-pointer">Copy Link</button>
+                <button onclick="openExamSettings('${e.id}')" class="px-2 py-1 bg-purple-600 text-white text-[10px] font-bold rounded hover:bg-purple-700 cursor-pointer">Settings</button>
                 <button onclick="window.open('/api/download/exam/${e.id}/pdf','_blank')" class="px-2 py-1 bg-red-600 text-white text-[10px] font-bold rounded hover:bg-red-700 cursor-pointer">PDF</button>
                 <button onclick="window.open('/api/download/exam/${e.id}/docx','_blank')" class="px-2 py-1 bg-blue-600 text-white text-[10px] font-bold rounded hover:bg-blue-700 cursor-pointer">DOCX</button>
                 <button onclick="deleteExam('${e.id}')" class="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded hover:bg-red-600 cursor-pointer">Delete</button>
@@ -1387,6 +1442,8 @@ async function confirmCsvImport() {
     formData.append('session', document.getElementById('csv-session').value);
     formData.append('exam_type', document.getElementById('csv-exam-type').value);
     formData.append('topic', document.getElementById('csv-topic').value);
+    formData.append('duration', document.getElementById('csv-duration').value);
+    formData.append('defaultMarks', document.getElementById('csv-marks').value);
     formData.append('duplicate_handling', duplicateHandling);
 
     try {
@@ -1473,6 +1530,60 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// ====== EXAM SETTINGS ======
+let examSettingsId = null;
+
+function openExamSettings(id) {
+    const exam = teacherData.exams.find(e => e.id === id);
+    if (!exam) return;
+    examSettingsId = id;
+    document.getElementById('exam-settings-title').value = exam.title || '';
+    document.getElementById('exam-settings-duration').value = exam.duration || 30;
+    document.getElementById('exam-settings-marks').value = exam.defaultMarks || 5;
+    document.getElementById('exam-settings-instructions').value = exam.instructions || '';
+    document.getElementById('exam-settings-status').classList.add('hidden');
+    document.getElementById('exam-settings-modal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeExamSettings() {
+    document.getElementById('exam-settings-modal').classList.add('hidden');
+    document.body.style.overflow = '';
+    examSettingsId = null;
+}
+
+async function saveExamSettings() {
+    const title = document.getElementById('exam-settings-title').value.trim();
+    const duration = document.getElementById('exam-settings-duration').value;
+    const marks = document.getElementById('exam-settings-marks').value;
+    const instructions = document.getElementById('exam-settings-instructions').value.trim();
+
+    if (!duration || duration < 1) { alert('Duration must be at least 1 minute.'); return; }
+    if (!marks || marks < 1 || marks > 100) { alert('Marks must be between 1 and 100.'); return; }
+
+    const btn = document.getElementById('exam-settings-save-btn');
+    btn.disabled = true; btn.textContent = 'Saving...';
+
+    try {
+        const res = await fetch('/api/exams/' + examSettingsId + '/settings', {
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+            body: JSON.stringify({ title, duration: parseInt(duration), defaultMarks: parseInt(marks), instructions })
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('exam-settings-status').className = 'text-xs font-semibold text-emerald-600 bg-emerald-50 p-3 rounded-lg';
+            document.getElementById('exam-settings-status').textContent = 'Settings saved successfully!';
+            document.getElementById('exam-settings-status').classList.remove('hidden');
+            loadTeacherData();
+        } else {
+            alert('Failed to save settings.');
+        }
+    } catch(e) {
+        alert('Network error.');
+    }
+    btn.disabled = false; btn.textContent = 'Save Settings';
+}
 
 // ====== TAB SWITCHING ======
 function switchTab(tab) {

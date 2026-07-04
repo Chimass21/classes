@@ -176,6 +176,7 @@ const examTitle = '{{ $exam->title }}';
 const examSubject = '{{ $exam->subject }}';
 const examLevel = '{{ $exam->level }}';
 const examDuration = {{ $exam->duration }};
+const examDefaultMarks = {{ $exam->defaultMarks ?? 5 }};
 const studentId = '{{ $studentUser['id'] }}';
 const studentName = '{{ $studentUser['name'] }}';
 
@@ -245,7 +246,7 @@ function renderQuestion() {
   document.getElementById('q-text').textContent = q.question;
   document.getElementById('q-counter').textContent = 'Question ' + (currentIndex + 1) + ' of ' + questions.length;
   document.getElementById('q-nav-counter').textContent = 'Question ' + (currentIndex + 1) + ' of ' + questions.length;
-  document.getElementById('q-marks').textContent = '+' + (q.marks || 5) + ' Mark';
+  document.getElementById('q-marks').textContent = '+' + (q.marks || examDefaultMarks) + ' Mark';
   document.getElementById('prev-btn').disabled = currentIndex === 0;
   document.getElementById('next-btn').disabled = currentIndex === questions.length - 1;
   const flagBtn = document.getElementById('flag-btn');
@@ -365,7 +366,7 @@ function computeLocalResult(timeSpent) {
   const failed = [];
   let totalMarks = 0;
   questions.forEach((q, i) => {
-    const m = q.marks || 5;
+    const m = q.marks || examDefaultMarks;
     totalMarks += m;
     const chosen = selectedAnswers[i] || null;
     const isCorrect = chosen === q.correctAnswer;
