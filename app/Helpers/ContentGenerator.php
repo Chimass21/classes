@@ -129,7 +129,7 @@ class ContentGenerator
                 : ['define', 'explain', 'analyse', 'evaluate', 'synthesise']);
 
         $contexts = self::getObjectiveContexts($subject, $class, $topic, $verbs);
-        return array_slice($contexts, 0, rand(3, 5));
+        return array_slice($contexts, 0, rand(3, 7));
     }
 
     private static function getObjectiveContexts(string $subject, string $class, string $topic, array $verbs): array
