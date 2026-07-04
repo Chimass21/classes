@@ -960,13 +960,16 @@ function renderPlans() {
         container.innerHTML = '<div class="text-center py-4 text-sm text-slate-400">No lesson plans yet.</div>';
         return;
     }
-    container.innerHTML = filtered.slice().reverse().map(p => `
+    container.innerHTML = filtered.slice().reverse().map(p => {
+        const objs = p.behaviouralObjectives || [];
+        const subHtml = objs.length ? `<div class="flex flex-wrap gap-1 mt-1.5">${objs.slice(0, 3).map(o => `<span class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100">${o.replace(/^By the end of the lesson, students should be able to /i, '').replace(/^Students will /i, '').substring(0, 40)}</span>`).join('')}${objs.length > 3 ? `<span class="text-[10px] text-slate-400">+${objs.length - 3} more</span>` : ''}</div>` : '';
+        return `
         <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:border-indigo-300 transition" onclick="viewPlan('${p.id}')">
             <div class="font-medium text-sm text-slate-900">${p.topic || 'Lesson Plan'}</div>
             <div class="text-xs text-slate-400">${p.subject || ''} | ${p.class || ''} | Week ${p.week || ''} | ${p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''}</div>
-            ${(p.behaviouralObjectives && p.behaviouralObjectives.length) ? `<div class="text-xs text-slate-400 mt-1 flex items-center gap-1"><svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>${p.behaviouralObjectives.length} objectives</div>` : ''}
-        </div>
-    `).join('');
+            ${subHtml}
+        </div>`;
+    }).join('');
 }
 
 function viewPlan(id) {
