@@ -11,6 +11,9 @@ coverage/
 /storage/*
 !/storage/.gitkeep
 /bootstrap/cache/*
+
+# Vite hot file (auto-generated when running vite dev server)
+/public/hot
 !/bootstrap/cache/.gitkeep
 
 # Zip archives
