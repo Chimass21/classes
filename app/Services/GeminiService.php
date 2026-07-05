@@ -20,11 +20,17 @@ class GeminiService
     public function generate(string $prompt): string
     {
         if (empty($this->apiKey)) {
-            return $this->fallbackGenerate($prompt);
+            Log::error('Gemini API key not configured. Set GEMINI_API_KEY in .env');
+            throw new \RuntimeException('Gemini API key is not configured. Please set GEMINI_API_KEY in your .env file.');
         }
 
         try {
-            $response = Http::timeout(60)->withOptions([
+            Log::debug('Gemini API Request', [
+                'prompt_length' => strlen($prompt),
+                'prompt_preview' => substr($prompt, 0, 1000),
+            ]);
+
+            $response = Http::timeout(120)->withOptions([
                 'verify' => false,
             ])->post($this->apiUrl . '?key=' . $this->apiKey, [
                 'contents' => [
@@ -35,9 +41,10 @@ class GeminiService
                     ]
                 ],
                 'generationConfig' => [
-                    'temperature' => 0.7,
-                    'maxOutputTokens' => 8192,
+                    'temperature' => 0.9,
+                    'maxOutputTokens' => 16384,
                     'topP' => 0.95,
+                    'topK' => 40,
                 ],
                 'safetySettings' => [
                     ['category' => 'HARM_CATEGORY_HARASSMENT', 'threshold' => 'BLOCK_NONE'],
@@ -50,15 +57,47 @@ class GeminiService
             if ($response->successful()) {
                 $data = $response->json();
                 $text = $data['candidates'][0]['content']['parts'][0]['text'] ?? '';
+
+                Log::debug('Gemini API Response', [
+                    'response_length' => strlen($text),
+                    'response_preview' => substr($text, 0, 500),
+                    'finish_reason' => $data['candidates'][0]['finishReason'] ?? 'unknown',
+                    'token_count' => $data['usageMetadata']['candidatesTokenCount'] ?? 'unknown',
+                    'prompt_token_count' => $data['usageMetadata']['promptTokenCount'] ?? 'unknown',
+                    'total_token_count' => $data['usageMetadata']['totalTokenCount'] ?? 'unknown',
+                ]);
+
+                if (($data['candidates'][0]['finishReason'] ?? '') === 'SAFETY') {
+                    Log::warning('Gemini response blocked by safety filters', [
+                        'safety_ratings' => $data['candidates'][0]['safetyRatings'] ?? [],
+                    ]);
+                    throw new \RuntimeException('Content generation was blocked by AI safety filters. Please rephrase your topic.');
+                }
+
+                if (empty(trim($text))) {
+                    Log::warning('Gemini returned empty response', ['full_response' => $data]);
+                    throw new \RuntimeException('The AI returned an empty response. Please try again.');
+                }
+
                 return $this->cleanJsonResponse($text);
             }
 
-            Log::error('Gemini API error: ' . $response->body());
-            return $this->fallbackGenerate($prompt);
+            $errorBody = $response->body();
+            Log::error('Gemini API HTTP error', [
+                'status' => $response->status(),
+                'body' => substr($errorBody, 0, 2000),
+            ]);
 
+            throw new \RuntimeException('Gemini API returned status ' . $response->status() . ': ' . substr($errorBody, 0, 500));
+
+        } catch (\RuntimeException $e) {
+            throw $e;
         } catch (\Exception $e) {
-            Log::error('Gemini API exception: ' . $e->getMessage());
-            return $this->fallbackGenerate($prompt);
+            Log::error('Gemini API connection error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            throw new \RuntimeException('Failed to connect to Gemini API: ' . $e->getMessage());
         }
     }
 
@@ -67,10 +106,5 @@ class GeminiService
         $text = preg_replace('/^```(?:json)?\s*/i', '', $text);
         $text = preg_replace('/\s*```$/', '', $text);
         return trim($text);
-    }
-
-    protected function fallbackGenerate(string $prompt): string
-    {
-        return '';
     }
 }

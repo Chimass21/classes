@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Helpers\ContentGenerator;
 use App\Helpers\CurriculumData;
 use App\Helpers\JsonDb;
 use App\Services\GeminiService;
@@ -13,6 +12,7 @@ use Illuminate\Support\Facades\Session;
 class AIController extends Controller
 {
     protected GeminiService $gemini;
+    protected const MAX_RETRIES = 1;
 
     public function __construct(GeminiService $gemini)
     {
@@ -46,69 +46,82 @@ class AIController extends Controller
                 $data['topic'], $schoolName, $teacherName, $duration, $ageRange, $scheme
             );
 
+            Log::info('Gemini Lesson Plan Request', [
+                'subject' => $data['subject'],
+                'class' => $data['class'],
+                'topic' => $data['topic'],
+                'subTopic' => $data['subTopic'] ?? '',
+                'prompt_length' => strlen($prompt),
+            ]);
+
             $response = $this->gemini->generate($prompt);
 
+            Log::info('Gemini Lesson Plan Response', [
+                'response_length' => strlen($response),
+                'response_preview' => substr($response, 0, 500),
+            ]);
+
             if ($this->isRefusal($response)) {
+                Log::warning('Gemini refused lesson plan request', ['topic' => $data['topic']]);
                 return response()->json([
                     'success' => false,
-                    'error' => $response,
+                    'error' => 'The AI model declined to generate content for this topic. Please rephrase your topic or try a different subject.',
                 ], 422);
             }
 
             $plan = json_decode($response, true);
 
             if (!is_array($plan) || empty($plan)) {
-                $plan = $this->fallbackLessonPlan(
-                    $data['subject'], $data['class'], $data['term'], $data['week'],
-                    $data['topic'], $schoolName, $teacherName, $duration, $ageRange
-                );
-            } elseif (!$this->isRelevantToTopic($plan, 'lesson_plan', $data['subject'], $data['topic'], $data['class'])) {
-                $retryResponse = $this->retryWithStrictPrompt($prompt, $data['subject'], $data['topic'], $data['class']);
-                if ($this->isRefusal($retryResponse)) {
-                    return response()->json([
-                        'success' => false,
-                        'error' => $retryResponse,
-                    ], 422);
-                }
-                $plan = json_decode($retryResponse, true);
-                if (!is_array($plan) || empty($plan) || !$this->isRelevantToTopic($plan, 'lesson_plan', $data['subject'], $data['topic'], $data['class'])) {
-                    $plan = $this->fallbackLessonPlan(
-                        $data['subject'], $data['class'], $data['term'], $data['week'],
-                        $data['topic'], $schoolName, $teacherName, $duration, $ageRange
-                    );
-                }
+                Log::warning('Gemini returned non-JSON response for lesson plan', [
+                    'response' => substr($response, 0, 1000),
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to generate a valid lesson plan. The AI response was not in the expected format. Please try again.',
+                ], 422);
             }
 
-            $plan['subject'] = $data['subject'];
-            $plan['class'] = $data['class'];
-            $plan['term'] = $data['term'];
-            $plan['week'] = $data['week'];
-            $plan['topic'] = $data['topic'];
-            $plan['subTopic'] = $data['subTopic'] ?? '';
-            $plan['schoolName'] = $schoolName;
-            $plan['teacherName'] = $teacherName;
-            $plan['duration'] = $duration;
-            $plan['ageRange'] = $ageRange;
-            $plan['date'] = now()->format('l, F j, Y');
+            if (!$this->isRelevantToTopic($plan, 'lesson_plan', $data['subject'], $data['topic'], $data['class'])) {
+                Log::warning('Lesson plan rejected - not relevant to topic', [
+                    'subject' => $data['subject'],
+                    'topic' => $data['topic'],
+                ]);
 
-            JsonDb::init();
-            $db = JsonDb::get();
-            $teacherId = $user['id'] ?? 'unknown';
-            $planId = 'plan_' . uniqid();
-            $db['lessonPlans'][] = array_merge($plan, [
-                'id' => $planId,
-                'teacherId' => $teacherId,
-                'createdAt' => now()->toIso8601String(),
-            ]);
-            JsonDb::save($db);
+                if (self::MAX_RETRIES > 0) {
+                    $retryResponse = $this->gemini->generate($this->buildStrictRetryPrompt($prompt, $data['subject'], $data['topic'], $data['class']));
 
-            return response()->json([
-                'success' => true,
-                'plan' => $plan,
-                'planId' => $planId,
-                'message' => 'Lesson plan generated successfully.',
-            ]);
+                    Log::info('Gemini Lesson Plan Retry Response', [
+                        'response_length' => strlen($retryResponse),
+                        'response_preview' => substr($retryResponse, 0, 500),
+                    ]);
+
+                    if ($this->isRefusal($retryResponse)) {
+                        return response()->json([
+                            'success' => false,
+                            'error' => 'The AI model declined to generate content for this topic. Please rephrase your topic.',
+                        ], 422);
+                    }
+
+                    $plan = json_decode($retryResponse, true);
+
+                    if (is_array($plan) && !empty($plan) && $this->isRelevantToTopic($plan, 'lesson_plan', $data['subject'], $data['topic'], $data['class'])) {
+                        return $this->storeAndReturnLessonPlan($plan, $data, $user, $teacherName, $schoolName, $duration, $ageRange);
+                    }
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'error' => 'The generated lesson plan did not focus on the requested topic. Please try again with a more specific topic.',
+                ], 422);
+            }
+
+            return $this->storeAndReturnLessonPlan($plan, $data, $user, $teacherName, $schoolName, $duration, $ageRange);
+
         } catch (\Exception $e) {
+            Log::error('Lesson plan generation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'success' => false,
                 'error' => 'Generation failed: ' . $e->getMessage(),
@@ -146,67 +159,82 @@ class AIController extends Controller
                 $data['topic'], $periods, $difficulty, $ageRange, $scheme, $userSubtopics
             );
 
+            Log::info('Gemini Lesson Note Request', [
+                'subject' => $data['subject'],
+                'class' => $data['class'],
+                'topic' => $data['topic'],
+                'difficulty' => $difficulty,
+                'prompt_length' => strlen($prompt),
+            ]);
+
             $response = $this->gemini->generate($prompt);
 
+            Log::info('Gemini Lesson Note Response', [
+                'response_length' => strlen($response),
+                'response_preview' => substr($response, 0, 500),
+            ]);
+
             if ($this->isRefusal($response)) {
+                Log::warning('Gemini refused lesson note request', ['topic' => $data['topic']]);
                 return response()->json([
                     'success' => false,
-                    'error' => $response,
+                    'error' => 'The AI model declined to generate content for this topic. Please rephrase your topic or try a different subject.',
                 ], 422);
             }
 
             $note = json_decode($response, true);
 
             if (!is_array($note) || empty($note)) {
-                $note = $this->fallbackLessonNote(
-                    $data['subject'], $data['class'], $data['term'], $data['week'],
-                    $data['topic'], $periods, $difficulty, $ageRange
-                );
-            } elseif (!$this->isRelevantToTopic($note, 'lesson_note', $data['subject'], $data['topic'], $data['class'])) {
-                $retryResponse = $this->retryWithStrictPrompt($prompt, $data['subject'], $data['topic'], $data['class']);
-                if ($this->isRefusal($retryResponse)) {
-                    return response()->json([
-                        'success' => false,
-                        'error' => $retryResponse,
-                    ], 422);
-                }
-                $note = json_decode($retryResponse, true);
-                if (!is_array($note) || empty($note) || !$this->isRelevantToTopic($note, 'lesson_note', $data['subject'], $data['topic'], $data['class'])) {
-                    $note = $this->fallbackLessonNote(
-                        $data['subject'], $data['class'], $data['term'], $data['week'],
-                        $data['topic'], $periods, $difficulty, $ageRange
-                    );
-                }
+                Log::warning('Gemini returned non-JSON response for lesson note', [
+                    'response' => substr($response, 0, 1000),
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to generate a valid lesson note. The AI response was not in the expected format. Please try again.',
+                ], 422);
             }
 
-            $note['subject'] = $data['subject'];
-            $note['class'] = $data['class'];
-            $note['term'] = $data['term'];
-            $note['week'] = $data['week'];
-            $note['topic'] = $data['topic'];
-            $note['subTopic'] = $data['subTopic'] ?? '';
-            $note['difficulty'] = $difficulty;
-            $note['periods'] = $periods;
-            $note['ageRange'] = $ageRange;
+            if (!$this->isRelevantToTopic($note, 'lesson_note', $data['subject'], $data['topic'], $data['class'])) {
+                Log::warning('Lesson note rejected - not relevant to topic', [
+                    'subject' => $data['subject'],
+                    'topic' => $data['topic'],
+                ]);
 
-            JsonDb::init();
-            $db = JsonDb::get();
-            $teacherId = $user['id'] ?? 'unknown';
-            $noteId = 'note_' . uniqid();
-            $db['lessonNotes'][] = array_merge($note, [
-                'id' => $noteId,
-                'teacherId' => $teacherId,
-                'createdAt' => now()->toIso8601String(),
-            ]);
-            JsonDb::save($db);
+                if (self::MAX_RETRIES > 0) {
+                    $retryResponse = $this->gemini->generate($this->buildStrictRetryPrompt($prompt, $data['subject'], $data['topic'], $data['class']));
 
-            return response()->json([
-                'success' => true,
-                'note' => $note,
-                'noteId' => $noteId,
-                'message' => 'Lesson note generated successfully.',
-            ]);
+                    Log::info('Gemini Lesson Note Retry Response', [
+                        'response_length' => strlen($retryResponse),
+                        'response_preview' => substr($retryResponse, 0, 500),
+                    ]);
+
+                    if ($this->isRefusal($retryResponse)) {
+                        return response()->json([
+                            'success' => false,
+                            'error' => 'The AI model declined to generate content for this topic. Please rephrase your topic.',
+                        ], 422);
+                    }
+
+                    $note = json_decode($retryResponse, true);
+
+                    if (is_array($note) && !empty($note) && $this->isRelevantToTopic($note, 'lesson_note', $data['subject'], $data['topic'], $data['class'])) {
+                        return $this->storeAndReturnLessonNote($note, $data, $user, $periods, $difficulty, $ageRange);
+                    }
+                }
+
+                return response()->json([
+                    'success' => false,
+                    'error' => 'The generated lesson note did not focus on the requested topic. Please try again with a more specific topic.',
+                ], 422);
+            }
+
+            return $this->storeAndReturnLessonNote($note, $data, $user, $periods, $difficulty, $ageRange);
+
         } catch (\Exception $e) {
+            Log::error('Lesson note generation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'success' => false,
                 'error' => 'Generation failed: ' . $e->getMessage(),
@@ -247,52 +275,104 @@ class AIController extends Controller
                 $data['week'] ?? 1, $data['includeTheory'] ?? false, $lessonNoteContent
             );
 
+            Log::info('Gemini Questions Request', [
+                'subject' => $data['subject'],
+                'topic' => $data['topic'],
+                'count' => $data['count'],
+                'includeTheory' => $data['includeTheory'] ?? false,
+                'hasLessonNote' => !empty($lessonNoteContent),
+                'prompt_length' => strlen($prompt),
+            ]);
+
             $response = $this->gemini->generate($prompt);
 
+            Log::info('Gemini Questions Response', [
+                'response_length' => strlen($response),
+                'response_preview' => substr($response, 0, 500),
+            ]);
+
             if ($this->isRefusal($response)) {
+                Log::warning('Gemini refused questions request', ['topic' => $data['topic']]);
                 return response()->json([
                     'success' => false,
-                    'error' => $response,
+                    'error' => 'The AI model declined to generate questions for this topic. Please rephrase your topic or try a different subject.',
                 ], 422);
             }
 
             $questions = json_decode($response, true);
 
             if (!is_array($questions) || empty($questions)) {
-                $questions = $this->fallbackQuestions($data['subject'], $data['topic'], $data['count'], $data['includeTheory'] ?? false);
-            } else {
-                $hasFormat = !empty($questions['objectives']) && (
-                    isset($questions['objectives'][0]['A']) ||
-                    isset($questions['objectives'][0]['options']) ||
-                    isset($questions['objectives'][0]['optionA'])
-                );
-                if (!$hasFormat) {
-                    $questions = $this->fallbackQuestions($data['subject'], $data['topic'], $data['count'], $data['includeTheory'] ?? false);
-                } elseif (!$this->isRelevantToTopic($questions, 'questions', $data['subject'], $data['topic'], $data['class'] ?? 'SS1')) {
-                    $retryResponse = $this->retryWithStrictPrompt($prompt, $data['subject'], $data['topic'], $data['class'] ?? 'SS1');
-                    if ($this->isRefusal($retryResponse)) {
-                        return response()->json([
-                            'success' => false,
-                            'error' => $retryResponse,
-                        ], 422);
-                    }
-                    $questions = json_decode($retryResponse, true);
-                    if (!is_array($questions) || empty($questions)) {
-                        $questions = $this->fallbackQuestions($data['subject'], $data['topic'], $data['count'], $data['includeTheory'] ?? false);
-                    } else {
-                        $hasFormatAfterRetry = !empty($questions['objectives']) && (
-                            isset($questions['objectives'][0]['A']) ||
-                            isset($questions['objectives'][0]['options']) ||
-                            isset($questions['objectives'][0]['optionA'])
-                        );
-                        if (!$hasFormatAfterRetry || !$this->isRelevantToTopic($questions, 'questions', $data['subject'], $data['topic'], $data['class'] ?? 'SS1')) {
-                            $questions = $this->fallbackQuestions($data['subject'], $data['topic'], $data['count'], $data['includeTheory'] ?? false);
-                        }
-                    }
-                }
+                Log::warning('Gemini returned non-JSON for questions', [
+                    'response' => substr($response, 0, 1000),
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to generate valid questions. The AI response was not in the expected format. Please try again.',
+                ], 422);
             }
 
             $questionsArray = $questions['objectives'] ?? $questions;
+            $hasValidFormat = is_array($questionsArray) && !empty($questionsArray) && isset($questionsArray[0]);
+
+            if (!$hasValidFormat) {
+                Log::warning('Questions rejected - invalid format');
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Failed to generate questions. The response format was invalid. Please try again.',
+                ], 422);
+            }
+
+            $questionItems = $questions['objectives'] ?? $questions;
+            $hasOptions = !empty($questionItems) && (
+                isset($questionItems[0]['A']) ||
+                isset($questionItems[0]['options']) ||
+                isset($questionItems[0]['optionA'])
+            );
+
+            if (!$hasOptions) {
+                Log::warning('Questions rejected - no options found in response');
+
+                if (self::MAX_RETRIES > 0) {
+                    $retryResponse = $this->gemini->generate($this->buildStrictRetryPrompt($prompt, $data['subject'], $data['topic'], $data['class'] ?? 'SS1'));
+
+                    Log::info('Gemini Questions Retry Response', [
+                        'response_length' => strlen($retryResponse),
+                        'response_preview' => substr($retryResponse, 0, 500),
+                    ]);
+
+                    if ($this->isRefusal($retryResponse)) {
+                        return response()->json([
+                            'success' => false,
+                            'error' => 'The AI model declined to generate questions. Please try again.',
+                        ], 422);
+                    }
+
+                    $questions = json_decode($retryResponse, true);
+                    if (is_array($questions) && !empty($questions)) {
+                        $questionItems = $questions['objectives'] ?? $questions;
+                        $hasOptionsAfterRetry = !empty($questionItems) && (
+                            isset($questionItems[0]['A']) ||
+                            isset($questionItems[0]['options']) ||
+                            isset($questionItems[0]['optionA'])
+                        );
+                        if ($hasOptionsAfterRetry) {
+                            $questionsArray = $questionItems;
+                            $hasValidFormat = true;
+                        }
+                    }
+                }
+
+                if (!$hasValidFormat) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'Failed to generate questions with proper options. Please try again.',
+                    ], 422);
+                }
+            }
+
+            if (isset($questions['objectives'])) {
+                $questionsArray = $questions['objectives'];
+            }
 
             return response()->json([
                 'success' => true,
@@ -300,7 +380,12 @@ class AIController extends Controller
                 'count' => $data['count'],
                 'message' => $data['count'] . ' questions generated with ' . ($data['includeTheory'] ? 'theory questions' : 'MCQ only') . '.',
             ]);
+
         } catch (\Exception $e) {
+            Log::error('Questions generation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json([
                 'success' => false,
                 'error' => 'Generation failed: ' . $e->getMessage(),
@@ -451,7 +536,7 @@ class AIController extends Controller
         return <<<PROMPT
 You are a Nigerian curriculum expert and professional lesson plan writer for the Nigerian (NERDC/UBEC) curriculum.
 
-CRITICAL — You MUST write ONLY about the EXACT topic specified. Do NOT change the topic or write about something else.
+CRITICAL — You MUST write ONLY about the EXACT topic specified below. Do NOT change the topic or write about anything else.
 
 TOPIC (do not deviate): {$topic}
 
@@ -513,7 +598,6 @@ PROMPT;
             $subtopicInstruction = "\n\nYOU MUST COVER THESE SPECIFIC SUB-TOPICS IN ORDER:\n" . $userSubtopics . "\n\nStructure the content section with each sub-topic as a separate <h4> heading followed by detailed <p> explanations and <ul>/<ol> lists.";
         }
 
-        $topicUpper = strtoupper($topic);
         return <<<PROMPT
 You are a Nigerian curriculum expert and experienced subject teacher. Your ONLY task is to write a DETAILED LESSON NOTE about the EXACT topic specified below. DO NOT write about any other topic.
 
@@ -617,42 +701,74 @@ RULES:
 PROMPT;
     }
 
-    // --- FALLBACK GENERATORS ---
+    // --- STORE HELPERS ---
 
-    protected function fallbackLessonPlan($subject, $class, $term, $week, $topic, $schoolName, $teacherName, $duration, $ageRange): array
+    protected function storeAndReturnLessonPlan(array $plan, array $data, $user, string $teacherName, string $schoolName, string $duration, string $ageRange)
     {
-        $gen = ContentGenerator::generateLessonPlan($subject, $class, $term, $week, $topic, $schoolName, $teacherName, $duration, $ageRange);
+        $plan['subject'] = $data['subject'];
+        $plan['class'] = $data['class'];
+        $plan['term'] = $data['term'];
+        $plan['week'] = $data['week'];
+        $plan['topic'] = $data['topic'];
+        $plan['subTopic'] = $data['subTopic'] ?? '';
+        $plan['schoolName'] = $schoolName;
+        $plan['teacherName'] = $teacherName;
+        $plan['duration'] = $duration;
+        $plan['ageRange'] = $ageRange;
+        $plan['date'] = now()->format('l, F j, Y');
 
-        return [
-            'behaviouralObjectives' => $gen['objectives'],
-            'instructionalMaterials' => $gen['materials'],
-            'previousKnowledge' => $gen['previousKnowledge'],
-            'lessonSteps' => $gen['steps'],
-            'evaluation' => $gen['evaluation'],
-            'assignment' => $gen['assignment'],
-            'summary' => $gen['summary'],
-            'conclusion' => $gen['conclusion'],
-        ];
+        JsonDb::init();
+        $db = JsonDb::get();
+        $teacherId = $user['id'] ?? 'unknown';
+        $planId = 'plan_' . uniqid();
+        $db['lessonPlans'][] = array_merge($plan, [
+            'id' => $planId,
+            'teacherId' => $teacherId,
+            'createdAt' => now()->toIso8601String(),
+        ]);
+        JsonDb::save($db);
+
+        Log::info('Lesson plan stored successfully', ['planId' => $planId, 'topic' => $data['topic']]);
+
+        return response()->json([
+            'success' => true,
+            'plan' => $plan,
+            'planId' => $planId,
+            'message' => 'Lesson plan generated successfully.',
+        ]);
     }
 
-    protected function fallbackLessonNote($subject, $class, $term, $week, $topic, $periods, $difficulty, $ageRange): array
+    protected function storeAndReturnLessonNote(array $note, array $data, $user, string $periods, string $difficulty, string $ageRange)
     {
-        $gen = ContentGenerator::generateLessonNote($subject, $class, $term, $week, $topic, $periods, $difficulty, $ageRange);
+        $note['subject'] = $data['subject'];
+        $note['class'] = $data['class'];
+        $note['term'] = $data['term'];
+        $note['week'] = $data['week'];
+        $note['topic'] = $data['topic'];
+        $note['subTopic'] = $data['subTopic'] ?? '';
+        $note['difficulty'] = $difficulty;
+        $note['periods'] = $periods;
+        $note['ageRange'] = $ageRange;
 
-        return [
-            'topic' => $gen['topic'],
-            'subtopics' => $gen['subtopics'],
-            'learningObjectives' => $gen['learningObjectives'],
-            'introduction' => $gen['introduction'],
-            'content' => $gen['content'],
-            'examples' => $gen['examples'],
-            'classroomActivities' => $gen['activities'],
-            'summary' => $gen['summary'],
-            'conclusion' => $gen['conclusion'],
-            'evaluationQuestions' => $gen['evaluationQuestions'],
-            'assignment' => $gen['assignment'],
-            'detailedNote' => $gen['detailedNote'],
-        ];
+        JsonDb::init();
+        $db = JsonDb::get();
+        $teacherId = $user['id'] ?? 'unknown';
+        $noteId = 'note_' . uniqid();
+        $db['lessonNotes'][] = array_merge($note, [
+            'id' => $noteId,
+            'teacherId' => $teacherId,
+            'createdAt' => now()->toIso8601String(),
+        ]);
+        JsonDb::save($db);
+
+        Log::info('Lesson note stored successfully', ['noteId' => $noteId, 'topic' => $data['topic']]);
+
+        return response()->json([
+            'success' => true,
+            'note' => $note,
+            'noteId' => $noteId,
+            'message' => 'Lesson note generated successfully.',
+        ]);
     }
 
     public function deleteLessonNote($noteId)
@@ -673,18 +789,12 @@ PROMPT;
         return response()->json(['success' => true, 'message' => 'Lesson plan deleted.']);
     }
 
-    protected function fallbackQuestions($subject, $topic, $count, $includeTheory): array
-    {
-        return ContentGenerator::generateQuestions($subject, $topic, $count, $includeTheory);
-    }
-
-    // --- RELEVANCE VALIDATOR ---
+    // --- VALIDATION ---
 
     private function isRelevantToTopic(array $content, string $type, string $subject, string $topic, string $class): bool
     {
         $topicLower = strtolower(trim($topic));
         $subjectLower = strtolower(trim($subject));
-        $classLower = strtolower(trim($class));
 
         $allText = '';
 
@@ -700,13 +810,6 @@ PROMPT;
                        ($content['summary'] ?? '') . ' ' .
                        ($content['detailedNote'] ?? '') . ' ' .
                        implode(' ', is_array($content['subtopics'] ?? []) ? $content['subtopics'] : []);
-        } elseif ($type === 'questions') {
-            $items = $content['objectives'] ?? $content;
-            if (is_array($items)) {
-                foreach ($items as $q) {
-                    $allText .= ($q['question'] ?? '') . ' ' . ($q['A'] ?? '') . ' ' . ($q['B'] ?? '') . ' ' . ($q['C'] ?? '') . ' ' . ($q['D'] ?? '');
-                }
-            }
         }
 
         $allText = strtolower($allText);
@@ -788,77 +891,8 @@ PROMPT;
         return false;
     }
 
-    private function retryWithStrictPrompt(string $originalPrompt, string $subject, string $topic, string $class): string
+    protected function buildStrictRetryPrompt(string $originalPrompt, string $subject, string $topic, string $class): string
     {
-        $strictSuffix = <<<STRICT
-
-
---- STRICT CORRECTION ---
-
-Your previous response was REJECTED because it was NOT about the requested topic.
-
-CRITICAL — READ CAREFULLY:
-- You MUST write ONLY about "{$topic}" in {$subject} for {$class}.
-- EVERY sentence must directly relate to "{$topic}".
-- Do NOT write about anything else.
-- Include the exact phrase "{$topic}" throughout your response.
-STRICT;
-        return $this->gemini->generate($originalPrompt . $strictSuffix);
-    }
-
-    private function isGenericTemplateContent(array $content, string $type): bool
-    {
-        $allText = '';
-
-        if ($type === 'lesson_plan') {
-            $allText = implode(' ', $content['behaviouralObjectives'] ?? []) . ' ' .
-                       ($content['previousKnowledge'] ?? '') . ' ' .
-                       ($content['evaluation'] ?? '') . ' ' .
-                       ($content['summary'] ?? '');
-        } elseif ($type === 'lesson_note') {
-            $allText = ($content['content'] ?? '') . ' ' .
-                       ($content['introduction'] ?? '') . ' ' .
-                       ($content['summary'] ?? '') . ' ' .
-                       ($content['detailedNote'] ?? '');
-        } elseif ($type === 'questions') {
-            $items = $content['objectives'] ?? $content;
-            if (is_array($items)) {
-                foreach ($items as $q) {
-                    $allText .= ($q['question'] ?? '') . ' ';
-                }
-            }
-        }
-
-        $allText = strtolower($allText);
-
-        if (empty(trim($allText))) {
-            return false;
-        }
-
-        $genericPatterns = [
-            '/is an important concept that helps us understand/i',
-            '/is a fundamental concept in/i',
-            '/that every student should understand/i',
-            '/when studying \w+ in \w+, it is important/i',
-            '/plays a vital role in \w+ education/i',
-            '/mastery of this topic helps students perform better/i',
-            '/mastery of \w+ helps students/i',
-            '/the principles of \w+ apply to many/i',
-            '/this knowledge will be built upon in subsequent lessons/i',
-            '/essential for academic success in/i',
-            '/develops analytical and problem-solving skills/i',
-            '/connects to other important topics in/i',
-            '/building from basic definitions to more complex/i',
-            '/engaging introduction paragraph connecting to prior knowledge/i',
-        ];
-
-        foreach ($genericPatterns as $pattern) {
-            if (preg_match($pattern, $allText)) {
-                Log::warning("Generic template detected [{$type}]: matched pattern", ['pattern' => $pattern]);
-                return true;
-            }
-        }
-
-        return false;
+        return $originalPrompt . "\n\n--- STRICT CORRECTION ---\n\nYour previous response was REJECTED because it was NOT about the requested topic.\n\nCRITICAL — READ CAREFULLY:\n- You MUST write ONLY about \"{$topic}\" in {$subject} for {$class}.\n- EVERY sentence must directly relate to \"{$topic}\".\n- Do NOT write about anything else.\n- Include the exact phrase \"{$topic}\" throughout your response.\n";
     }
 }

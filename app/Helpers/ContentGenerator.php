@@ -2,6 +2,10 @@
 
 namespace App\Helpers;
 
+/**
+ * @deprecated All content generation is now handled by GeminiService via AIController.
+ * This class is retained only for reference and is no longer called by any code.
+ */
 class ContentGenerator
 {
     private static array $subjectQuestionBanks = [];
