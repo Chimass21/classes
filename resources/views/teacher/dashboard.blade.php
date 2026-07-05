@@ -54,7 +54,6 @@
                         <button onclick="switchTab('questions')" id="tab-questions-btn" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition cursor-pointer whitespace-nowrap">Question Pool</button>
                         <button onclick="switchTab('cbt-engine')" id="tab-cbt-engine-btn" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition cursor-pointer whitespace-nowrap">CBT Engine</button>
                         <button onclick="switchTab('results')" id="tab-results-btn" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition cursor-pointer whitespace-nowrap">Results</button>
-                        <button onclick="switchTab('schemes')" id="tab-schemes-btn" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition cursor-pointer whitespace-nowrap">Scheme of Work</button>
                     </div>
                 </div>
 
@@ -564,70 +563,7 @@
                     </div>
                 </div>
 
-                {{-- === SCHEME OF WORK TAB === --}}
-                <div id="tab-schemes" class="tab-panel p-5 hidden">
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="space-y-4">
-                            <h3 class="text-lg font-bold text-slate-900">Upload Scheme of Work</h3>
-                            <p class="text-sm text-slate-500">Upload a PDF or Word file containing your scheme of work, organized by class, subject, and term.</p>
-                            <form id="scheme-upload-form" class="space-y-3" enctype="multipart/form-data">
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Subject</label>
-                                        <select id="scheme-subject" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"><option value="">Select subject...</option></select>
-                                    </div>
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Class</label>
-                                        <select id="scheme-class" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"></select>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Term</label>
-                                        <select id="scheme-term" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"></select>
-                                    </div>
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">File (PDF or Word)</label>
-                                        <input type="file" id="scheme-file" accept=".pdf,.doc,.docx" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none">
-                                    </div>
-                                </div>
-                                <div>
-                                    <label class="text-xs font-semibold text-slate-600 block mb-1">Week-by-Week Topics <span class="text-slate-400 font-normal">(one per line, e.g. "1: Counting Numbers" or "Week 2: Algebra")</span></label>
-                                    <textarea id="scheme-topics" rows="6" placeholder="1: Counting and Writing Numbers 1-100&#10;2: Addition of Whole Numbers&#10;3: Subtraction of Whole Numbers&#10;..." class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500 resize-none"></textarea>
-                                </div>
-                                <button type="submit" id="scheme-upload-btn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition cursor-pointer">Upload Scheme of Work</button>
-                            </form>
-                            <div id="scheme-upload-result" class="hidden p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-sm text-emerald-800 font-medium"></div>
 
-                            <div class="border-t border-slate-200 pt-4">
-                                <h4 class="text-sm font-bold text-slate-800 mb-3">Browse Topics</h4>
-                                <p class="text-xs text-slate-500 mb-3">Select subject, class, and term to view topics from your uploaded scheme (or built-in curriculum).</p>
-                                <div class="grid grid-cols-3 gap-2 mb-2">
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Subject</label>
-                                        <select id="browse-scheme-subject" class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500"><option value="">Select...</option></select>
-                                    </div>
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Class</label>
-                                        <select id="browse-scheme-class" class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500"></select>
-                                    </div>
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Term</label>
-                                        <select id="browse-scheme-term" class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-indigo-500"></select>
-                                    </div>
-                                </div>
-                                <button onclick="showSchemeTopics()" id="show-topics-btn" class="w-full py-2 bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-bold text-xs rounded-lg transition cursor-pointer">Show Topics</button>
-                                <div id="browse-topics-result" class="hidden mt-3"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <h4 class="text-sm font-bold text-slate-800 mb-3">Uploaded Schemes</h4>
-                            <div id="schemes-list" class="space-y-2 max-h-[500px] overflow-y-auto">
-                                <div class="text-center py-8 text-sm text-slate-400">No schemes uploaded yet.</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
             </div>
         </div>
@@ -657,17 +593,14 @@ async function loadCurriculumSelects() {
         document.querySelectorAll('select[id$="-subject"], select[id$="-subject"], #q-subject, #plan-subject, #note-subject').forEach(sel => {
             sel.innerHTML = '<option value="">Select subject...</option>' + subjects.map(s => `<option value="${s}">${s}</option>`).join('');
         });
-        document.querySelectorAll('#plan-class, #note-class, #q-class, #scheme-class, #browse-scheme-class').forEach(sel => {
+        document.querySelectorAll('#plan-class, #note-class, #q-class').forEach(sel => {
             sel.innerHTML = classes.map(c => `<option value="${c}">${c}</option>`).join('');
         });
-        document.querySelectorAll('#plan-term, #note-term, #q-term, #scheme-term, #browse-scheme-term').forEach(sel => {
+        document.querySelectorAll('#plan-term, #note-term, #q-term').forEach(sel => {
             sel.innerHTML = terms.map(t => `<option value="${t}">${t}</option>`).join('');
         });
         document.querySelectorAll('#plan-week, #note-week, #q-week').forEach(sel => {
             sel.innerHTML = weeks.map(w => `<option value="${w}">Week ${w}</option>`).join('');
-        });
-        document.querySelectorAll('#scheme-subject, #browse-scheme-subject').forEach(sel => {
-            sel.innerHTML = '<option value="">Select subject...</option>' + subjects.map(s => `<option value="${s}">${s}</option>`).join('');
         });
     } catch(e) { console.error('Failed to load curriculum data:', e); }
 }
@@ -695,8 +628,6 @@ async function loadTeacherData() {
         renderPlanFilters();
         renderNoteFilters();
         renderQsFilters();
-
-        loadSchemes();
 
         // Auto-display the most recent lesson note and switch to its tab
         if (teacherData.notes.length > 0) {
@@ -1681,151 +1612,6 @@ async function saveExamSettings() {
 }
 
 // ====== SCHEME OF WORK ======
-document.getElementById('scheme-upload-form')?.addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const btn = document.getElementById('scheme-upload-btn');
-    btn.disabled = true; btn.textContent = 'Uploading...';
-    const formData = new FormData();
-    formData.append('subject', document.getElementById('scheme-subject').value);
-    formData.append('class', document.getElementById('scheme-class').value);
-    formData.append('term', document.getElementById('scheme-term').value);
-    formData.append('file', document.getElementById('scheme-file').files[0]);
-    formData.append('topics', document.getElementById('scheme-topics').value);
-    try {
-        const res = await fetch('/api/schemes/upload', { method: 'POST', body: formData });
-        const data = await res.json();
-        if (data.success) {
-            document.getElementById('scheme-upload-result').classList.remove('hidden');
-            document.getElementById('scheme-upload-result').textContent = data.message;
-            this.reset();
-            loadSchemes();
-        } else { alert(data.error || 'Upload failed.'); }
-    } catch(e) { alert('Network error.'); }
-    btn.disabled = false; btn.textContent = 'Upload Scheme of Work';
-});
-
-async function loadSchemes() {
-    try {
-        const res = await fetch('/api/schemes/list');
-        const data = await res.json();
-        const container = document.getElementById('schemes-list');
-        const schemes = data.schemes || [];
-        if (!schemes.length) {
-            container.innerHTML = '<div class="text-center py-8 text-sm text-slate-400">No schemes uploaded yet.</div>';
-            return;
-        }
-        container.innerHTML = schemes.map(s => {
-            const topics = s.topics || [];
-            const topicPreview = topics.slice(0, 3).map(t => `<span class="inline-block px-2 py-0.5 bg-slate-100 rounded text-xs">W${t.week}: ${t.topic.length > 30 ? t.topic.slice(0, 30) + '...' : t.topic}</span>`).join(' ');
-            return `<div class="p-3 bg-white border border-slate-200 rounded-xl hover:shadow-sm transition">
-                <div class="flex items-start justify-between gap-2">
-                    <div class="min-w-0 flex-1">
-                        <div class="flex items-center gap-2 flex-wrap">
-                            <span class="text-xs font-bold text-slate-900">${s.subject}</span>
-                            <span class="text-[10px] px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded font-bold">${s.class}</span>
-                            <span class="text-[10px] px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded font-bold">${s.term}</span>
-                        </div>
-                        <p class="text-xs text-slate-500 mt-1">${s.fileName} (${(s.fileSize / 1024).toFixed(0)} KB) &middot; by ${s.uploadedBy}</p>
-                        <div class="flex flex-wrap gap-1 mt-1.5">${topicPreview}${topics.length > 3 ? `<span class="text-xs text-slate-400">+${topics.length - 3} more</span>` : ''}</div>
-                    </div>
-                    <button onclick="deleteScheme('${s.id}')" class="p-1.5 hover:bg-red-50 rounded-lg text-red-400 hover:text-red-600 transition cursor-pointer" title="Delete">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                    </button>
-                </div>
-            </div>`;
-        }).join('');
-    } catch(e) { console.error('Failed to load schemes:', e); }
-}
-
-async function deleteScheme(id) {
-    if (!confirm('Delete this Scheme of Work?')) return;
-    try {
-        const res = await fetch('/api/schemes/' + id, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) loadSchemes();
-        else alert(data.error || 'Delete failed.');
-    } catch(e) { alert('Network error.'); }
-}
-
-async function showSchemeTopics() {
-    const subject = document.getElementById('browse-scheme-subject').value;
-    const classLevel = document.getElementById('browse-scheme-class').value;
-    const term = document.getElementById('browse-scheme-term').value;
-    const container = document.getElementById('browse-topics-result');
-    const btn = document.getElementById('show-topics-btn');
-
-    if (!subject || !classLevel || !term) {
-        alert('Please select subject, class, and term.');
-        return;
-    }
-
-    container.innerHTML = '<div class="text-center py-4"><div class="animate-spin w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto"></div><p class="text-xs text-slate-400 mt-2">Loading topics...</p></div>';
-    container.classList.remove('hidden');
-    btn.disabled = true;
-
-    try {
-        const res = await fetch('/api/schemes/get-topics?subject=' + encodeURIComponent(subject) + '&class=' + encodeURIComponent(classLevel) + '&term=' + encodeURIComponent(term));
-        const data = await res.json();
-        if (!data.success) { container.innerHTML = '<div class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700 font-bold">Failed to load topics.</div>'; return; }
-
-        const topics = data.topics || [];
-        if (!topics.length) {
-            container.innerHTML = '<div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs text-amber-700 font-bold">No topics found for this selection.</div>';
-            return;
-        }
-
-        const source = data.schemeName ? '<span class="text-emerald-600">from <strong>' + data.schemeName + '</strong></span>' : '<span class="text-slate-400">from built-in curriculum</span>';
-        container.innerHTML = '<div class="bg-white border border-slate-200 rounded-xl overflow-hidden">' +
-            '<div class="px-3 py-2 bg-slate-50 border-b border-slate-200 flex items-center justify-between">' +
-            '<span class="text-xs font-bold text-slate-700">' + subject + ' &middot; ' + classLevel + ' &middot; ' + term + '</span>' +
-            '<span class="text-[10px] text-slate-500">' + source + '</span>' +
-            '</div><div class="divide-y divide-slate-100">' +
-            topics.map(t => '<div class="flex items-center gap-3 px-3 py-1.5 hover:bg-slate-50 transition">' +
-                '<span class="w-6 h-6 flex items-center justify-center bg-indigo-100 text-indigo-700 rounded-full text-[10px] font-bold shrink-0">' + t.week + '</span>' +
-                '<span class="text-xs text-slate-700">' + t.topic + '</span>' +
-            '</div>').join('') +
-            '</div></div>';
-    } catch(e) {
-        container.innerHTML = '<div class="p-3 bg-rose-50 border border-rose-200 rounded-lg text-xs text-rose-700 font-bold">Connection error.</div>';
-    }
-    btn.disabled = false;
-}
-
-// ====== AUTO-POPULATE TOPIC FROM SCHEME ======
-function setupSchemeAutoFill(formId, topicId, subtopicId, subjectId, classId, termId, weekId) {
-    const subjectEl = document.getElementById(subjectId);
-    const classEl = document.getElementById(classId);
-    const termEl = document.getElementById(termId);
-    const weekEl = document.getElementById(weekId);
-    const topicEl = document.getElementById(topicId);
-    const subtopicEl = subtopicId ? document.getElementById(subtopicId) : null;
-    if (!subjectEl || !classEl || !termEl || !weekEl || !topicEl) return;
-
-    async function fetchAndFill() {
-        const sub = subjectEl.value;
-        const cls = classEl.value;
-        const term = termEl.value;
-        const week = weekEl.value;
-        if (!sub || !cls || !term || !week) return;
-        try {
-            const res = await fetch('/api/schemes/get-topics?subject=' + encodeURIComponent(sub) + '&class=' + encodeURIComponent(cls) + '&term=' + encodeURIComponent(term) + '&week=' + encodeURIComponent(week));
-            const data = await res.json();
-            if (data.success && data.topic) {
-                if (!topicEl.dataset.userEdited) topicEl.value = data.topic;
-            }
-        } catch(e) {}
-    }
-
-    [subjectEl, classEl, termEl, weekEl].forEach(el => {
-        el.addEventListener('change', () => { topicEl.dataset.userEdited = ''; fetchAndFill(); });
-    });
-    topicEl.addEventListener('input', () => { topicEl.dataset.userEdited = '1'; });
-}
-
-setupSchemeAutoFill('lesson-plan-form', 'plan-topic', 'plan-subtopic', 'plan-subject', 'plan-class', 'plan-term', 'plan-week');
-setupSchemeAutoFill('lesson-note-form', 'note-topic', 'note-subtopic', 'note-subject', 'note-class', 'note-term', 'note-week');
-setupSchemeAutoFill('questions-form', 'q-topic', 'q-subtopic', 'q-subject', 'q-class', 'q-term', 'q-week');
-
 // ====== TAB SWITCHING ======
 function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(btn => {

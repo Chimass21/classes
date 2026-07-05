@@ -31,10 +31,6 @@
                 <svg class="w-4 h-4 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                 <span class="flex-1">Study Revision</span>
             </button>
-            <button onclick="switchTab('scheme')" data-tab="scheme" class="tab-btn w-full flex items-center space-x-3 p-3 rounded-lg text-xs font-bold transition text-left cursor-pointer text-indigo-300 hover:bg-indigo-800 hover:text-white">
-                <svg class="w-4 h-4 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
-                <span class="flex-1">Scheme of Work</span>
-            </button>
             <button onclick="switchTab('library')" data-tab="library" class="tab-btn w-full flex items-center space-x-3 p-3 rounded-lg text-xs font-bold transition text-left cursor-pointer text-indigo-300 hover:bg-indigo-800 hover:text-white">
                 <svg class="w-4 h-4 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 19a2 2 0 01-2-2V7a2 2 0 012-2h4l3 3h7a2 2 0 012 2v7a2 2 0 01-2 2H5z"/></svg>
                 <span class="flex-1">My Library Portal</span>
@@ -410,21 +406,6 @@
                 </div>
             </div>
 
-            <!-- TAB: SCHEME -->
-            <div id="tab-scheme" class="tab-content hidden space-y-6">
-                <div class="flex items-end justify-between border-b border-slate-100 pb-2">
-                    <div>
-                        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">Curriculum Scheme of Work</h1>
-                        <p class="text-xs text-slate-500 font-medium">Read terminal subjects outlines and track weekly topics.</p>
-                    </div>
-                </div>
-                <div id="scheme-content">
-                    <div class="bg-white border border-slate-150 rounded-3xl p-6 space-y-4">
-                        <p class="text-xs text-slate-400">Loading scheme of work...</p>
-                    </div>
-                </div>
-            </div>
-
             <!-- TAB: LIBRARY -->
             <div id="tab-library" class="tab-content hidden space-y-6">
                 <div class="flex items-end justify-between border-b border-slate-100 pb-2">
@@ -542,21 +523,20 @@ function createVoiceInput(inputId) {
 }
 
 // Data state
-let state = { exams: [], results: [], notifications: [], notes: [], subjects: [], reportSheets: [], schemes: [] };
+let state = { exams: [], results: [], notifications: [], notes: [], subjects: [], reportSheets: [] };
 
 function escapeHtml(t) { if (!t) return ''; var d = document.createElement('div'); d.appendChild(document.createTextNode(t)); return d.innerHTML; }
 
 // Load all data
 async function loadData() {
     try {
-        const [exRes, resRes, notifRes, notesRes, subRes, reportRes, schemeRes] = await Promise.all([
+        const [exRes, resRes, notifRes, notesRes, subRes, reportRes] = await Promise.all([
             fetch('/api/exams').then(r => r.json()),
-            fetch('/api/results/student/' + (STUDENT_USER?.id || '')).then(r => r.json()),
-            fetch('/api/notifications/user/' + (STUDENT_USER?.id || '')).then(r => r.json()),
+            fetch('/api/results').then(r => r.json()),
+            fetch('/api/notifications/user/' + userId).then(r => r.json()),
             fetch('/api/lesson-notes').then(r => r.json()),
             fetch('/api/subjects').then(r => r.json()),
             fetch('/api/report-sheets').then(r => r.json()),
-            fetch('/api/schemes').then(r => r.json()),
         ]);
         state.exams = exRes.exams || [];
         state.results = resRes.results || [];
@@ -564,7 +544,6 @@ async function loadData() {
         state.notes = notesRes.lessonNotes || [];
         state.subjects = subRes.subjects || ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English Language', 'Accounting', 'Economics', 'Government', 'ICT', 'Literature', 'Commerce', 'Agriculture', 'Civic Education'];
         state.reportSheets = reportRes.reportSheets || [];
-        state.schemes = schemeRes.schemes || [];
     } catch(e) { console.error('Data load error:', e); }
     renderAll();
 }

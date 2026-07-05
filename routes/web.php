@@ -13,7 +13,6 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AIController;
 use App\Http\Controllers\DownloadController;
 use App\Http\Controllers\CsvImportController;
-use App\Http\Controllers\SchemeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -88,16 +87,12 @@ Route::prefix('api')->group(function () {
     Route::get('/curriculum/classes', function () { return response()->json(['classes' => \App\Helpers\CurriculumData::getClasses()]); });
     Route::get('/curriculum/terms', function () { return response()->json(['terms' => \App\Helpers\CurriculumData::getTerms()]); });
     Route::get('/curriculum/weeks', function () { return response()->json(['weeks' => \App\Helpers\CurriculumData::getWeeks()]); });
-    Route::get('/curriculum/scheme/{subject}/{class}/{term}', function ($subject, $class, $term) {
-        return response()->json(['scheme' => \App\Helpers\CurriculumData::getSchemeOfWork($subject, $class, $term)]);
-    });
     Route::get('/results', [ResultController::class, 'apiIndex']);
     Route::get('/report-sheets', [ReportSheetController::class, 'apiIndex']);
     Route::post('/report-sheets', [ReportSheetController::class, 'store']);
     Route::post('/report-sheets/collate', [ReportSheetController::class, 'collate']);
     Route::post('/report-sheets/delete', [ReportSheetController::class, 'delete']);
     Route::get('/users', [AdminController::class, 'apiUsers']);
-    Route::get('/schemes', [HomeController::class, 'schemes']);
     Route::get('/questions/sets', [AIController::class, 'getQuestionSets']);
     Route::get('/questions/sets/{id}', [AIController::class, 'getQuestionSet']);
     Route::post('/questions/save', [AIController::class, 'saveGeneratedQuestions']);
@@ -126,12 +121,6 @@ Route::prefix('api')->group(function () {
     Route::get('/download/exam/{id}/{format}', [DownloadController::class, 'downloadExam']);
     Route::delete('/lesson-notes/{id}', [AIController::class, 'deleteLessonNote']);
     Route::delete('/lesson-plans/{id}', [AIController::class, 'deleteLessonPlan']);
-
-    // Schemes of Work
-    Route::post('/schemes/upload', [SchemeController::class, 'upload']);
-    Route::get('/schemes/list', [SchemeController::class, 'list']);
-    Route::delete('/schemes/{id}', [SchemeController::class, 'delete']);
-    Route::get('/schemes/get-topics', [SchemeController::class, 'getTopics']);
 
     // CSV Import
     Route::get('/csv-import/template', [CsvImportController::class, 'downloadTemplate']);
