@@ -5,8 +5,10 @@
   @media print {
     body { background-color: white !important; color: black !important; }
     header, .print-hidden, button, nav, footer, .floating-support, #cbt-header { display: none !important; }
-    #print-section-certificate, #printable-result-slip { display: block !important; visibility: visible !important; width: 100% !important; }
+    #print-section-certificate, #printable-result-slip, #printable-graded-script { display: block !important; visibility: visible !important; width: 100% !important; }
     #print-section-certificate { page-break-after: always !important; page-break-inside: avoid !important; }
+    body:not(.printing-graded) #printable-graded-script { display: none !important; }
+    body.printing-graded #print-section-certificate, body.printing-graded #printable-result-slip { display: none !important; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   }
   .nav-btn { transition: all 0.15s ease; }
@@ -165,6 +167,11 @@
           <div class="text-right"><p class="font-bold text-xs">Principal's Signature</p><p class="font-serif italic text-base text-indigo-600 my-1">Austin Nwaigbo</p><div class="h-px bg-slate-300 w-48 ml-auto"></div></div>
         </div>
       </div>
+    </div>
+
+    <!-- Printable Graded Script -->
+    <div id="printable-graded-script" class="hidden print:block p-6 sm:p-10 bg-white font-sans min-h-[297mm]">
+      <div id="graded-script-content" class="max-w-5xl mx-auto space-y-6"></div>
     </div>
   </div>
 </div>
@@ -492,6 +499,50 @@ function showResults() {
     '</div>';
   }).join('');
 
+  // Graded script HTML (for printable download)
+  const gradedScriptHtml = `
+    <div class="border-b-2 border-slate-900 pb-4 mb-6">
+      <h1 class="text-xl font-black uppercase text-slate-900">${examTitle}</h1>
+      <p class="text-xs uppercase font-extrabold text-slate-500">${examSubject} &bull; Graded Script</p>
+      <p class="text-xs text-slate-400 mt-1">Student: ${result.studentName} &bull; Score: ${result.score}/${result.totalPossibleMarks} (${result.percentage}%) &bull; Date: ${new Date(result.date).toLocaleDateString()}</p>
+    </div>
+    ${result.failedQuestions.map((item, idx) => {
+      const isCorrect = item.selectedAnswer === item.correctAnswer;
+      const isNotAnswered = !item.selectedAnswer;
+      const statusBadge = isCorrect ? '<span style="color:#059669;font-weight:800">✓ Correct</span>' : (isNotAnswered ? '<span style="color:#d97706;font-weight:800">— Not Answered</span>' : '<span style="color:#e11d48;font-weight:800">✗ Wrong</span>');
+      const optLabels = [
+        { k: 'A', v: item.optionA || (item.options?.A) || item.A || '' },
+        { k: 'B', v: item.optionB || (item.options?.B) || item.B || '' },
+        { k: 'C', v: item.optionC || (item.options?.C) || item.C || '' },
+        { k: 'D', v: item.optionD || (item.options?.D) || item.D || '' },
+      ];
+      return '<div style="border:1px solid #e2e8f0;border-radius:8px;padding:12px;margin-bottom:12px;page-break-inside:avoid">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+          '<span style="font-size:11px;font-weight:800;color:#64748b">Question ' + (idx + 1) + '</span>' +
+          statusBadge +
+        '</div>' +
+        '<p style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:8px;line-height:1.4">' + item.question + '</p>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">' +
+        optLabels.map(opt => {
+          const isCorrectOpt = opt.k === item.correctAnswer;
+          const isSelectedOpt = opt.k === item.selectedAnswer;
+          let bg = '#fff', border = '#e2e8f0', marker = '#f1f5f9';
+          if (isCorrectOpt) { bg = '#f0fdf4'; border = '#86efac'; marker = '#22c55e'; }
+          else if (isSelectedOpt && !isCorrectOpt) { bg = '#fff1f2'; border = '#fda4af'; marker = '#e11d48'; }
+          const mark = isCorrectOpt ? ' ✓' : (isSelectedOpt && !isCorrectOpt ? ' ✗' : '');
+          const markColor = isCorrectOpt ? '#059669' : (isSelectedOpt && !isCorrectOpt ? '#e11d48' : 'transparent');
+          return '<div style="padding:6px 10px;border:1px solid ' + border + ';border-radius:6px;background:' + bg + ';font-size:12px;font-weight:600;color:#334155;display:flex;align-items:center;gap:6px">' +
+            '<span style="width:20px;height:20px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;background:' + marker + ';border:1px solid ' + border + '">' + opt.k + '</span>' +
+            '<span style="flex:1">' + opt.v + '</span>' +
+            (mark ? '<span style="font-size:11px;font-weight:800;color:' + markColor + '">' + mark + '</span>' : '') +
+          '</div>';
+        }).join('') + '</div>' +
+        '<div style="margin-top:8px;padding:8px 12px;background:#eef2ff;border:1px solid #e0e7ff;border-radius:6px;font-size:11px;color:#334155;line-height:1.4"><strong style="color:#4338ca">Explanation:</strong> ' + (item.explanation || 'The correct answer is Option ' + item.correctAnswer + '.') + '</div>' +
+      '</div>';
+    }).join('')}
+  `;
+  document.getElementById('graded-script-content').innerHTML = gradedScriptHtml;
+
   const resultContainer = document.getElementById('exam-results');
   resultContainer.innerHTML = `
     <!-- Hero Score Banner -->
@@ -562,6 +613,10 @@ function showResults() {
         <button onclick="handlePrintResultSlip()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
           <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           Download Result Slip (PDF)
+        </button>
+        <button onclick="handlePrintGradedScript()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+          Download Graded Script (PDF)
         </button>
         <button onclick="window.open('/api/download/exam/${examId}/pdf', '_blank')" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"/></svg>
@@ -663,6 +718,13 @@ function handlePrintCertificate() {
 function handlePrintResultSlip() {
   alert('To Save as PDF:\n1. Change destination to \'Save as PDF\'.\n2. Set Layout to \'Portrait\'.\n3. Click Save.');
   window.print();
+}
+
+function handlePrintGradedScript() {
+  document.body.classList.add('printing-graded');
+  alert('To Save as PDF:\n1. Change destination to \'Save as PDF\'.\n2. Set Layout to \'Portrait\'.\n3. Click Save.');
+  window.print();
+  setTimeout(() => document.body.classList.remove('printing-graded'), 500);
 }
 
 function handleRetake() {
