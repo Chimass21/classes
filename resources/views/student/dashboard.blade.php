@@ -545,6 +545,9 @@ async function loadData() {
         state.subjects = subRes.subjects || ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English Language', 'Accounting', 'Economics', 'Government', 'ICT', 'Literature', 'Commerce', 'Agriculture', 'Civic Education'];
         state.reportSheets = reportRes.reportSheets || [];
     } catch(e) { console.error('Data load error:', e); }
+    if (!state.subjects) {
+        state.subjects = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English Language', 'Accounting', 'Economics', 'Government', 'ICT', 'Literature', 'Commerce', 'Agriculture', 'Civic Education'];
+    }
     renderAll();
 }
 
@@ -669,6 +672,10 @@ function renderSubjects() {
 }
 
 function renderNotes() {
+    const noteSel = document.getElementById('student-note-subject');
+    if (noteSel && !noteSel.options.length) {
+        noteSel.innerHTML = state.subjects.map(s => `<option value="${s}">${s}</option>`).join('');
+    }
     const list = document.getElementById('notes-list');
     const filtered = state.notes.filter(n => n.subject === (state.selectedSubject || 'Mathematics'));
     if (filtered.length === 0) {
