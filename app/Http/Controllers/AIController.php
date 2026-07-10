@@ -378,7 +378,7 @@ class AIController extends Controller
                 'success' => true,
                 'questions' => $questionsArray,
                 'count' => $data['count'],
-                'message' => $data['count'] . ' questions generated with ' . ($data['includeTheory'] ? 'theory questions' : 'MCQ only') . '.',
+                'message' => $data['count'] . ' questions generated with ' . (($data['includeTheory'] ?? false) ? 'theory questions' : 'MCQ only') . '.',
             ]);
 
         } catch (\Exception $e) {
