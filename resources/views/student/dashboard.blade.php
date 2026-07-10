@@ -269,49 +269,55 @@
                             <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                             <h3 class="text-lg font-black">Generate Lesson Note</h3>
                         </div>
-                        <form id="student-note-form" class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-slate-900">
-                            <div>
-                                <label class="text-xs font-bold text-indigo-200 block mb-1">Subject</label>
-                                <select id="student-note-subject" required class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full font-semibold focus:outline-none"></select>
+                        <form id="student-note-form" class="space-y-3 text-slate-900">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-xs font-bold text-indigo-200 block mb-1">Subject</label>
+                                    <select id="student-note-subject" required class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full font-semibold focus:outline-none"></select>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-indigo-200 block mb-1">Class</label>
+                                    <select id="student-note-class" required class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full font-semibold focus:outline-none">
+                                        <option value="Primary 1">Primary 1</option>
+                                        <option value="Primary 2">Primary 2</option>
+                                        <option value="Primary 3">Primary 3</option>
+                                        <option value="Primary 4">Primary 4</option>
+                                        <option value="Primary 5">Primary 5</option>
+                                        <option value="Primary 6">Primary 6</option>
+                                        <option value="JSS1">JSS1</option>
+                                        <option value="JSS2">JSS2</option>
+                                        <option value="JSS3">JSS3</option>
+                                        <option value="SS1" selected>SS1</option>
+                                        <option value="SS2">SS2</option>
+                                        <option value="SS3">SS3</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-xs font-bold text-indigo-200 block mb-1">Topic</label>
+                                    <input type="text" id="student-note-topic" required placeholder="e.g. Algebra, Photosynthesis" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full focus:outline-none" />
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-indigo-200 block mb-1">Sub-topic (Optional)</label>
+                                    <input type="text" id="student-note-subtopic" placeholder="e.g., Quadratic Equations" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full focus:outline-none" />
+                                </div>
                             </div>
                             <div>
-                                <label class="text-xs font-bold text-indigo-200 block mb-1">Class</label>
-                                <select id="student-note-class" required class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full font-semibold focus:outline-none">
-                                    <option value="Primary 1">Primary 1</option>
-                                    <option value="Primary 2">Primary 2</option>
-                                    <option value="Primary 3">Primary 3</option>
-                                    <option value="Primary 4">Primary 4</option>
-                                    <option value="Primary 5">Primary 5</option>
-                                    <option value="Primary 6">Primary 6</option>
-                                    <option value="JSS1">JSS1</option>
-                                    <option value="JSS2">JSS2</option>
-                                    <option value="JSS3">JSS3</option>
-                                    <option value="SS1" selected>SS1</option>
-                                    <option value="SS2">SS2</option>
-                                    <option value="SS3">SS3</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-indigo-200 block mb-1">Topic</label>
-                                <input type="text" id="student-note-topic" required placeholder="e.g. Algebra, Photosynthesis" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full focus:outline-none" />
-                            </div>
-                            <div>
-                                <label class="text-xs font-bold text-indigo-200 block mb-1">Sub-topic (Optional)</label>
-                                <input type="text" id="student-note-subtopic" placeholder="e.g., Quadratic Equations" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full focus:outline-none" />
-                            </div>
-                            <div class="sm:col-span-2">
                                 <label class="text-xs font-bold text-indigo-200 block mb-1">Sub-topics (optional — one per line)</label>
                                 <textarea id="student-note-subtopics" rows="3" placeholder="e.g.&#10;Definition and types of algebra&#10;Algebraic expressions&#10;Solving linear equations" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full focus:outline-none resize-none"></textarea>
                             </div>
-                            <div>
-                                <label class="text-xs font-bold text-indigo-200 block mb-1">Difficulty</label>
-                                <select id="student-note-difficulty" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full font-semibold focus:outline-none">
-                                    <option value="Easy">Simple</option>
-                                    <option value="Medium" selected>Standard</option>
-                                    <option value="Hard">Deep</option>
-                                </select>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <div>
+                                    <label class="text-xs font-bold text-indigo-200 block mb-1">Difficulty</label>
+                                    <select id="student-note-difficulty" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full font-semibold focus:outline-none">
+                                        <option value="Easy">Simple</option>
+                                        <option value="Medium" selected>Standard</option>
+                                        <option value="Hard">Deep</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="mt-1 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800 font-extrabold text-sm rounded-xl transition shadow-lg cursor-pointer border-none">Generate Lesson Note</button>
                             </div>
-                            <button type="submit" class="mt-1 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800 font-extrabold text-sm rounded-xl transition shadow-lg cursor-pointer border-none">Generate Lesson Note</button>
                         </form>
                     </div>
                     <div id="student-note-result" class="hidden mt-4"></div>
