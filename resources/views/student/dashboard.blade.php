@@ -415,17 +415,30 @@
                                     <input type="text" id="practice-subtopic" placeholder="e.g., Solving by Substitution" class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full focus:outline-none" />
                                 </div>
                             </div>
-                            <div class="sm:col-span-2">
-                                <label class="text-xs font-bold text-indigo-200 block mb-1">Questions count</label>
-                                <select id="practice-count" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full sm:w-48 font-semibold text-slate-800 focus:outline-none">
-                                    <option value="10">10 Standard questions</option>
-                                    <option value="20">20 Detailed questions</option>
-                                    <option value="30">30 Intensive questions</option>
-                                    <option value="50">50 Exam simulation</option>
-                                    <option value="100">100 Full exam</option>
-                                </select>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs font-bold text-indigo-200 block mb-1">Questions count</label>
+                                    <select id="practice-count" class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full font-semibold focus:outline-none">
+                                        <option value="10">10 Standard questions</option>
+                                        <option value="20">20 Detailed questions</option>
+                                        <option value="30">30 Intensive questions</option>
+                                        <option value="50">50 Exam simulation</option>
+                                        <option value="100">100 Full exam</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-indigo-200 block mb-1">Time limit</label>
+                                    <select id="practice-time" class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full font-semibold focus:outline-none">
+                                        <option value="0">No limit</option>
+                                        <option value="5">5 minutes</option>
+                                        <option value="10" selected>10 minutes</option>
+                                        <option value="15">15 minutes</option>
+                                        <option value="30">30 minutes</option>
+                                        <option value="60">1 hour</option>
+                                    </select>
+                                </div>
                             </div>
-                            <button type="submit" class="sm:col-span-2 mt-2 py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800 font-extrabold text-sm rounded-xl transition shadow-lg cursor-pointer border-none">Generate Revision Questions</button>
+                            <button type="submit" class="py-3 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 text-white hover:from-indigo-700 hover:to-indigo-800 font-extrabold text-sm rounded-xl transition shadow-lg cursor-pointer border-none">Generate Revision Questions</button>
                         </form>
                     </div>
                     <div id="practice-questions" class="hidden mt-6"></div>
@@ -912,19 +925,37 @@ document.getElementById('practice-form')?.addEventListener('submit', async funct
     container.classList.remove('hidden');
     container.innerHTML = '<div class="p-6 text-center text-slate-400"><div class="animate-spin w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full mx-auto"></div><p class="text-xs mt-2">Generating questions...</p></div>';
     try {
+        const timeLimit = parseInt(document.getElementById('practice-time').value) || 0;
         const res = await fetch('/api/ai/generate-questions', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ subject: subj, topic, subTopic: document.getElementById('practice-subtopic').value, class: document.getElementById('practice-class').value, count, difficulty: 'Medium' })
         });
         const data = await res.json();
         if (res.ok && data.success && data.questions) {
-            container.innerHTML = renderPracticeQuiz(data.questions);
+            container.innerHTML = renderPracticeQuiz(data.questions, timeLimit);
         } else { container.innerHTML = '<div class="p-6 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 font-bold">' + (data.error || 'Failed to generate questions.') + '</div>'; }
     } catch(e) { container.innerHTML = '<div class="p-6 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 font-bold">Connection error.</div>'; }
 });
 
-function renderPracticeQuiz(questions) {
+function renderPracticeQuiz(questions, timeLimitMinutes) {
     let idx = 0, answers = {}, completed = false, score = 0;
+    let timeLeft = timeLimitMinutes > 0 ? timeLimitMinutes * 60 : 0;
+    let timerInterval = null;
+
+    function finishQuiz() {
+        if (completed) return;
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+        score = questions.filter((q,i) => answers[i] === (q.correctAnswer || q.answer)).length;
+        completed = true;
+        document.getElementById('practice-questions').innerHTML = render();
+    }
+
+    function formatTime(secs) {
+        const m = Math.floor(secs / 60);
+        const s = secs % 60;
+        return m + ':' + (s < 10 ? '0' : '') + s;
+    }
+
     function render() {
         if (completed) {
             const pct = Math.round((score / questions.length) * 100);
@@ -936,9 +967,11 @@ function renderPracticeQuiz(questions) {
             </div>`;
         }
         const q = questions[idx];
+        const timerHtml = timeLimitMinutes > 0 ? `<span class="text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full ${timeLeft <= 60 ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}">${formatTime(timeLeft)}</span>` : '';
         return `<div class="bg-white border border-slate-150 rounded-3xl p-6 space-y-4">
             <div class="flex justify-between items-center border-b pb-3">
                 <span class="text-[10px] bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full font-bold">Q ${idx+1} of ${questions.length}</span>
+                ${timerHtml}
             </div>
             <p class="text-base font-extrabold text-slate-800">${escapeHtml(q.question)}</p>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -958,10 +991,25 @@ function renderPracticeQuiz(questions) {
             </div>
         </div>`;
     }
+
+    if (timeLimitMinutes > 0) {
+        timerInterval = setInterval(function() {
+            timeLeft--;
+            const timerEl = document.querySelector('#practice-questions .font-mono.font-bold');
+            if (timerEl) {
+                const m = Math.floor(timeLeft / 60);
+                const s = timeLeft % 60;
+                timerEl.textContent = m + ':' + (s < 10 ? '0' : '') + s;
+                if (timeLeft <= 60) timerEl.className = 'text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-rose-100 text-rose-700';
+            }
+            if (timeLeft <= 0) { clearInterval(timerInterval); timerInterval = null; finishQuiz(); }
+        }, 1000);
+    }
+
     window.practiceSelect = function(k) { answers[idx] = k; document.getElementById('practice-questions').innerHTML = render(); };
     window.practiceNext = function() { if (idx < questions.length - 1) { idx++; document.getElementById('practice-questions').innerHTML = render(); } };
     window.practicePrev = function() { if (idx > 0) { idx--; document.getElementById('practice-questions').innerHTML = render(); } };
-    window.practiceSubmit = function() { score = questions.filter((q,i) => answers[i] === (q.correctAnswer || q.answer)).length; completed = true; document.getElementById('practice-questions').innerHTML = render(); };
+    window.practiceSubmit = function() { if (timerInterval) { clearInterval(timerInterval); timerInterval = null; } score = questions.filter((q,i) => answers[i] === (q.correctAnswer || q.answer)).length; completed = true; document.getElementById('practice-questions').innerHTML = render(); };
     return render();
 }
 
