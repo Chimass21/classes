@@ -965,7 +965,7 @@ function renderPracticeQuiz(questions) {
     window.practiceSelect = function(k) { answers[idx] = k; document.getElementById('practice-questions').innerHTML = render(); };
     window.practiceNext = function() { if (idx < questions.length - 1) { idx++; document.getElementById('practice-questions').innerHTML = render(); } };
     window.practicePrev = function() { if (idx > 0) { idx--; document.getElementById('practice-questions').innerHTML = render(); } };
-    window.practiceSubmit = function() { score = questions.filter((q,i) => answers[i] === q.correctAnswer).length; completed = true; document.getElementById('practice-questions').innerHTML = render(); };
+    window.practiceSubmit = function() { score = questions.filter((q,i) => answers[i] === (q.correctAnswer || q.answer)).length; completed = true; document.getElementById('practice-questions').innerHTML = render(); };
     return render();
 }
 
