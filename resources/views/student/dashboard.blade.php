@@ -570,12 +570,12 @@ function escapeHtml(t) { if (!t) return ''; var d = document.createElement('div'
 async function loadData() {
     try {
         const [exRes, resRes, notifRes, notesRes, subRes, reportRes] = await Promise.all([
-            fetch('/api/exams').then(r => r.json()),
-            fetch('/api/results').then(r => r.json()),
-            fetch('/api/notifications/user/' + userId).then(r => r.json()),
-            fetch('/api/lesson-notes').then(r => r.json()),
-            fetch('/api/subjects').then(r => r.json()),
-            fetch('/api/report-sheets').then(r => r.json()),
+            fetch('/api/exams').then(r => r.json()).catch(() => ({ exams: [] })),
+            fetch('/api/results').then(r => r.json()).catch(() => ({ results: [] })),
+            (STUDENT_USER?.id ? fetch('/api/notifications/user/' + STUDENT_USER.id).then(r => r.json()) : Promise.resolve({ notifications: [] })).catch(() => ({ notifications: [] })),
+            fetch('/api/lesson-notes').then(r => r.json()).catch(() => ({ lessonNotes: [] })),
+            fetch('/api/subjects').then(r => r.json()).catch(() => ({ subjects: [] })),
+            fetch('/api/report-sheets').then(r => r.json()).catch(() => ({ reportSheets: [] })),
         ]);
         state.exams = exRes.exams || [];
         state.results = resRes.results || [];
