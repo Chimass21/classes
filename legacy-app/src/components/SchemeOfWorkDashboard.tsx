@@ -32,6 +32,12 @@ export interface SchemeOfWorkDashboardProps {
   userPerspective: "teacher" | "student" | "admin";
 }
 
+function mapDifficulty(val: string | undefined): string {
+  if (!val) return "Standard";
+  const map: Record<string, string> = { Easy: "Simple", Medium: "Standard", Hard: "Deep" };
+  return map[val] || val;
+}
+
 export default function SchemeOfWorkDashboard({ user, userPerspective }: SchemeOfWorkDashboardProps) {
   // 1. SELECTOR STATES
   const [selectedLevelId, setSelectedLevelId] = useState<string>("junior_secondary");
@@ -361,6 +367,7 @@ export default function SchemeOfWorkDashboard({ user, userPerspective }: SchemeO
   // --- AI GENERATION ENGINE & STATE ---
   const [isGenerating, setIsGenerating] = useState<boolean>(false);
   const [generatingType, setGeneratingType] = useState<"lesson_note" | "lesson_plan" | "exam" | null>(null);
+  const [generationDifficulty, setGenerationDifficulty] = useState<string>("Standard");
   const [generatingWeek, setGeneratingWeek] = useState<number | null>(null);
   const [generatedNote, setGeneratedNote] = useState<any | null>(null);
   const [generatedPlan, setGeneratedPlan] = useState<any | null>(null);
@@ -393,7 +400,7 @@ export default function SchemeOfWorkDashboard({ user, userPerspective }: SchemeO
           topic: weekUnit.topic,
           subTopic: weekUnit.subtopic || weekUnit.topic,
           periods: "2 Periods",
-          difficulty: "Medium",
+          difficulty: generationDifficulty,
           teacherId: user?.id || "usr_teacher",
           week: weekUnit.week,
           date: new Date().toLocaleDateString("en-NG")
@@ -413,7 +420,8 @@ export default function SchemeOfWorkDashboard({ user, userPerspective }: SchemeO
           numberOfPupils: "35",
           teacherId: user?.id || "usr_teacher",
           week: weekUnit.week,
-          term: selectedTerm
+          term: selectedTerm,
+          difficulty: generationDifficulty
         };
       } else if (type === "exam") {
         endpoint = "/api/ai/generate-questions";
@@ -422,7 +430,7 @@ export default function SchemeOfWorkDashboard({ user, userPerspective }: SchemeO
           topic: weekUnit.topic,
           classLevel: selectedClass,
           count: 10,
-          difficulty: "Medium"
+          difficulty: generationDifficulty
         };
       }
 
@@ -506,7 +514,7 @@ export default function SchemeOfWorkDashboard({ user, userPerspective }: SchemeO
         <h1 style="color: #1e3a8a; border-bottom: 2px solid #1e3a8a; padding-bottom: 8px;">${noteTitle}</h1>
         <p><strong>Subtopic Focus:</strong> ${note.subTopic}</p>
         <p><strong>Periods Assigned:</strong> ${note.periods}</p>
-        <p><strong>Evaluated Difficulty:</strong> ${note.difficulty}</p>
+        <p><strong>Evaluated Difficulty:</strong> ${mapDifficulty(note.difficulty)}</p>
         <p><strong>Regulatory Standard:</strong> Fully aligned with NERDC Approved School Syllabuses</p>
         <hr style="border-top: 1px solid #e2e8f0;"/>
         <h2 style="color: #0f172a;">1. Detailed Lesson Notes</h2>
@@ -1259,7 +1267,7 @@ export default function SchemeOfWorkDashboard({ user, userPerspective }: SchemeO
                               Quickly generate customized lesson plans, comprehensive notes, or interactive school board examinations based on the approved NERDC topic <strong className="text-slate-800">"{weekUnit.topic}"</strong>.
                             </p>
 
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1">
                               <button
                                 onClick={() => handleGenerateAIContent("lesson_note", weekUnit)}
                                 className="py-2.5 px-4 bg-gradient-to-r from-indigo-50 to-indigo-100 hover:from-indigo-100 hover:to-indigo-150 text-indigo-950 font-black text-xs rounded-xl transition duration-250 border border-indigo-200/50 flex items-center justify-center gap-2 cursor-pointer hover:border-indigo-300"
@@ -1283,6 +1291,15 @@ export default function SchemeOfWorkDashboard({ user, userPerspective }: SchemeO
                                 <Sparkles className="w-4 h-4 text-amber-600 animate-pulse" />
                                 <span>Generate Exam Setup</span>
                               </button>
+
+                              <div className="space-y-1">
+                                <label className="text-[9px] uppercase font-bold text-slate-500">Difficulty</label>
+                                <select value={generationDifficulty} onChange={(e) => setGenerationDifficulty(e.target.value)} className="w-full bg-slate-50 border border-slate-200 rounded-xl p-2 text-xs focus:outline-none">
+                                  <option value="Simple">Simple</option>
+                                  <option value="Standard">Standard</option>
+                                  <option value="Deep">Deep</option>
+                                </select>
+                              </div>
                             </div>
                           </div>
 
@@ -1681,7 +1698,7 @@ export default function SchemeOfWorkDashboard({ user, userPerspective }: SchemeO
                             </div>
                             <div>
                               <span className="text-[10px] text-slate-400 block uppercase tracking-wider font-extrabold">DIFFICULTY</span>
-                              <span className="font-extrabold text-indigo-650">{generatedNote.difficulty}</span>
+                              <span className="font-extrabold text-indigo-650">{mapDifficulty(generatedNote.difficulty)}</span>
                             </div>
                           </div>
 

@@ -1,6 +1,105 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    select, input[type="text"], input[type="number"], textarea {
+        background: linear-gradient(135deg, #fff5f5 0%, #fff0f7 25%, #f0f4ff 50%, #f0fdf4 75%, #fefce8 100%) !important;
+        border: 2px solid transparent !important;
+        background-clip: padding-box !important;
+        border-image: linear-gradient(135deg, #ec4899, #8b5cf6, #06b6d4, #10b981) 1 !important;
+        transition: all 0.3s ease !important;
+        font-weight: 600 !important;
+        color: #1e293b !important;
+    }
+    select:hover, input:hover, textarea:hover {
+        box-shadow: 0 0 20px rgba(139,92,246,0.25), 0 0 40px rgba(236,72,153,0.1) !important;
+        transform: translateY(-1px);
+    }
+    select:focus, input:focus, textarea:focus {
+        box-shadow: 0 0 0 3px rgba(139,92,246,0.3), 0 0 30px rgba(6,182,212,0.2) !important;
+        border-image: linear-gradient(135deg, #f43f5e, #a855f7, #0ea5e9, #22c55e) 2 !important;
+        outline: none !important;
+    }
+    button[type="submit"], .generate-btn, .action-btn {
+        background: linear-gradient(135deg, #ec4899, #8b5cf6, #06b6d4) !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(139,92,246,0.4), 0 0 30px rgba(236,72,153,0.2) !important;
+        transition: all 0.3s ease !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.5px !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+    button[type="submit"]:hover, .generate-btn:hover, .action-btn:hover {
+        transform: translateY(-2px) scale(1.02) !important;
+        box-shadow: 0 6px 25px rgba(139,92,246,0.5), 0 0 50px rgba(6,182,212,0.3) !important;
+    }
+    button[type="submit"]:active, .generate-btn:active, .action-btn:active {
+        transform: translateY(0) scale(0.98) !important;
+    }
+    button[type="submit"]::after, .generate-btn::after, .action-btn::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent);
+        transform: rotate(45deg) translateX(-100%);
+        transition: 0.6s;
+    }
+    button[type="submit"]:hover::after, .generate-btn:hover::after, .action-btn:hover::after {
+        transform: rotate(45deg) translateX(100%);
+    }
+    .tab-btn {
+        transition: all 0.3s ease !important;
+    }
+    .tab-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(99,102,241,0.3);
+    }
+    .tab-btn.border-indigo-600 {
+        background: linear-gradient(135deg, #eef2ff, #f0fdf4) !important;
+    }
+    #plan-action-buttons button, #note-action-buttons button, #q-action-buttons button {
+        background: linear-gradient(135deg, #f43f5e, #ec4899) !important;
+        border: none !important;
+        box-shadow: 0 3px 10px rgba(244,63,94,0.3) !important;
+        transition: all 0.3s ease !important;
+    }
+    #plan-action-buttons button:hover, #note-action-buttons button:hover, #q-action-buttons button:hover {
+        transform: translateY(-2px) scale(1.05) !important;
+        box-shadow: 0 5px 20px rgba(244,63,94,0.4) !important;
+    }
+    .lp-table select, .lp-table input, .lp-table textarea {
+        background: white !important;
+        border: 1px solid #e2e8f0 !important;
+    }
+    [class*="bg-gradient"] {
+        transition: all 0.3s ease !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+    [class*="bg-gradient"]:hover {
+        transform: translateY(-2px) scale(1.02) !important;
+        filter: brightness(1.1) saturate(1.2) !important;
+        box-shadow: 0 6px 25px rgba(139,92,246,0.4), 0 0 50px rgba(236,72,153,0.2) !important;
+    }
+    [class*="bg-gradient"]::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent);
+        transform: rotate(45deg) translateX(-100%);
+        transition: 0.6s;
+    }
+    [class*="bg-gradient"]:hover::after {
+        transform: rotate(45deg) translateX(100%);
+    }
+</style>
 <div class="min-h-screen bg-gradient-to-br from-slate-50 to-white">
     <div class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8 space-y-6">
         {{-- Header --}}
@@ -179,7 +278,7 @@
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Difficulty</label>
                                         <select id="note-difficulty" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
-                                            <option>Easy</option><option selected>Medium</option><option>Hard</option>
+                                             <option>Simple</option><option selected>Standard</option><option>Deep</option>
                                         </select>
                                     </div>
                                 </div>
@@ -350,7 +449,7 @@
                                 </div>
                                 <div class="flex flex-wrap gap-4 text-slate-500">
                                     <span><strong class="text-slate-700">Correct Answer:</strong> Letter (A, B, C, D)</span>
-                                    <span><strong class="text-slate-700">Difficulty:</strong> Easy, Medium, or Hard</span>
+                                    <span><strong class="text-slate-700">Difficulty:</strong> Simple, Standard, or Deep</span>
                                     <span><strong class="text-slate-700">Explanation, Marks, Topic, Image URL</strong> are optional</span>
                                 </div>
                                 <div class="flex items-center gap-3 text-slate-500">

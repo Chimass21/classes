@@ -206,6 +206,7 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
   const [spinCount, setSpinCount] = useState("35 Pupils");
   const [spinWeek, setSpinWeek] = useState<string>("1");
   const [spinDate, setSpinDate] = useState<string>(new Date().toISOString().split("T")[0]);
+  const [spinDifficulty, setSpinDifficulty] = useState<string>("Standard");
   const [selectedFilterWeekPlan, setSelectedFilterWeekPlan] = useState<string>("ALL");
   const [activePlan, setActivePlan] = useState<LessonPlan | null>(null);
   const [creatingPlan, setCreatingPlan] = useState(false);
@@ -218,7 +219,7 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
   const [noteTopic, setNoteTopic] = useState("");
   const [noteSubTopic, setNoteSubTopic] = useState("");
   const [notePeriods, setNotePeriods] = useState("2 Periods");
-  const [noteDifficulty, setNoteDifficulty] = useState<'Easy' | 'Medium' | 'Hard'>("Medium");
+  const [noteDifficulty, setNoteDifficulty] = useState<'Simple' | 'Standard' | 'Deep'>("Standard");
   const [noteWeek, setNoteWeek] = useState<string>("1");
   const [noteDate, setNoteDate] = useState<string>(new Date().toISOString().split("T")[0]);
   const [selectedFilterWeekNote, setSelectedFilterWeekNote] = useState<string>("ALL");
@@ -232,7 +233,7 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
   const [aiTopic, setAiTopic] = useState("");
   const [aiClass, setAiClass] = useState("Grade 1");
   const [aiCount, setAiCount] = useState(5);
-  const [aiDifficulty, setAiDifficulty] = useState("Medium");
+  const [aiDifficulty, setAiDifficulty] = useState("Standard");
   const [generatingAiBank, setGeneratingAiBank] = useState(false);
   const [aiBankQuestions, setAiBankQuestions] = useState<Question[]>([]);
 
@@ -1023,6 +1024,7 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
           teacherId: user.id,
           week: spinWeek,
           date: spinDate,
+          difficulty: spinDifficulty,
         }),
       });
 
@@ -2016,7 +2018,7 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-2 gap-2">
+                          <div className="grid grid-cols-3 gap-2">
                             <div className="space-y-1">
                               <label className="text-[10px] uppercase font-bold text-slate-600">Hour duration</label>
                               <div className="relative flex items-center">
@@ -2034,6 +2036,14 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                                   <VoiceInputButton value={spinAge} onTranscript={setSpinAge} size="xs" />
                                 </div>
                               </div>
+                            </div>
+                            <div className="space-y-1">
+                              <label className="text-[10px] uppercase font-bold text-slate-600">Difficulty</label>
+                              <select value={spinDifficulty} onChange={(e) => setSpinDifficulty(e.target.value)} className="bg-slate-50 border rounded-xl p-2 text-xs w-full focus:outline-none">
+                                <option value="Simple">Simple</option>
+                                <option value="Standard">Standard</option>
+                                <option value="Deep">Deep</option>
+                              </select>
                             </div>
                           </div>
 
@@ -2475,11 +2485,11 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                               </div>
                             </div>
                             <div className="space-y-1">
-                              <label className="text-[10px] uppercase font-bold text-slate-600">Complexity</label>
+                              <label className="text-[10px] uppercase font-bold text-slate-600">Difficulty</label>
                               <select value={noteDifficulty} onChange={(e: any) => setNoteDifficulty(e.target.value)} className="bg-slate-50 border rounded-xl p-2 text-xs w-full focus:outline-none">
-                                <option value="Easy">Easy (Interactive)</option>
-                                <option value="Medium">Medium (Standard)</option>
-                                <option value="Hard">Hard (Deep analysis)</option>
+                                <option value="Simple">Simple</option>
+                                <option value="Standard">Standard</option>
+                                <option value="Deep">Deep</option>
                               </select>
                             </div>
                           </div>
@@ -2866,9 +2876,9 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                       <div>
                         <label className="text-xs font-bold text-slate-700 block mb-1">Difficulty</label>
                         <select value={aiDifficulty} onChange={(e) => setAiDifficulty(e.target.value)} className="bg-slate-50 border rounded-xl p-2 w-full text-xs focus:outline-none font-semibold">
-                          <option>Easy</option>
-                          <option>Medium</option>
-                          <option>Hard</option>
+                          <option value="Simple">Simple</option>
+                          <option value="Standard">Standard</option>
+                          <option value="Deep">Deep</option>
                         </select>
                       </div>
 

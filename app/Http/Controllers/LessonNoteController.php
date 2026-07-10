@@ -36,7 +36,7 @@ class LessonNoteController extends Controller
             'subTopic' => $request->subTopic ?? '',
             'term' => $request->term ?? 'First Term',
             'week' => $request->week ?? 1,
-            'difficulty' => $request->difficulty ?? 'Medium',
+            'difficulty' => $request->difficulty ?? 'Standard',
             'periods' => $request->periods ?? '2 Periods',
         ];
 

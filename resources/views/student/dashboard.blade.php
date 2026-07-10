@@ -1,6 +1,105 @@
 @extends('layouts.app')
 
 @section('content')
+<style>
+    select, input[type="text"], input[type="number"], textarea {
+        background: linear-gradient(135deg, #f0fdf4 0%, #fefce8 25%, #fff5f5 50%, #f0f4ff 75%, #fdf2f8 100%) !important;
+        border: 2px solid transparent !important;
+        background-clip: padding-box !important;
+        border-image: linear-gradient(135deg, #10b981, #f59e0b, #ef4444, #8b5cf6) 1 !important;
+        transition: all 0.3s ease !important;
+        font-weight: 600 !important;
+        color: #1e293b !important;
+    }
+    select:hover, input:hover, textarea:hover {
+        box-shadow: 0 0 20px rgba(245,158,11,0.25), 0 0 40px rgba(16,185,129,0.1) !important;
+        transform: translateY(-1px);
+    }
+    select:focus, input:focus, textarea:focus {
+        box-shadow: 0 0 0 3px rgba(139,92,246,0.3), 0 0 30px rgba(239,68,68,0.2) !important;
+        border-image: linear-gradient(135deg, #22c55e, #eab308, #f43f5e, #a855f7) 2 !important;
+        outline: none !important;
+    }
+    button[type="submit"], .gen-btn, .action-btn {
+        background: linear-gradient(135deg, #f59e0b, #ec4899, #8b5cf6) !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(236,72,153,0.4), 0 0 30px rgba(245,158,11,0.2) !important;
+        transition: all 0.3s ease !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.5px !important;
+        position: relative !important;
+        overflow: hidden !important;
+        color: white !important;
+    }
+    button[type="submit"]:hover, .gen-btn:hover, .action-btn:hover {
+        transform: translateY(-2px) scale(1.02) !important;
+        box-shadow: 0 6px 25px rgba(236,72,153,0.5), 0 0 50px rgba(139,92,246,0.3) !important;
+    }
+    button[type="submit"]:active, .gen-btn:active, .action-btn:active {
+        transform: translateY(0) scale(0.98) !important;
+    }
+    button[type="submit"]::after, .gen-btn::after, .action-btn::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);
+        transform: rotate(45deg) translateX(-100%);
+        transition: 0.6s;
+    }
+    button[type="submit"]:hover::after, .gen-btn:hover::after, .action-btn:hover::after {
+        transform: rotate(45deg) translateX(100%);
+    }
+    .tab-btn {
+        transition: all 0.3s ease !important;
+    }
+    .tab-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(99,102,241,0.3);
+    }
+    .ltab-btn {
+        transition: all 0.3s ease !important;
+    }
+    .ltab-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(99,102,241,0.25);
+    }
+    #join-exam-btn, .start-exam-btn {
+        background: linear-gradient(135deg, #06b6d4, #8b5cf6) !important;
+        box-shadow: 0 4px 15px rgba(6,182,212,0.4), 0 0 30px rgba(139,92,246,0.2) !important;
+        transition: all 0.3s ease !important;
+    }
+    #join-exam-btn:hover, .start-exam-btn:hover {
+        transform: translateY(-2px) scale(1.02) !important;
+        box-shadow: 0 6px 25px rgba(6,182,212,0.5), 0 0 50px rgba(139,92,246,0.3) !important;
+    }
+    [class*="bg-gradient"] {
+        transition: all 0.3s ease !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+    [class*="bg-gradient"]:hover {
+        transform: translateY(-2px) scale(1.02) !important;
+        filter: brightness(1.1) saturate(1.2) !important;
+        box-shadow: 0 6px 25px rgba(139,92,246,0.4), 0 0 50px rgba(236,72,153,0.2) !important;
+    }
+    [class*="bg-gradient"]::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255,255,255,0.2), transparent);
+        transform: rotate(45deg) translateX(-100%);
+        transition: 0.6s;
+    }
+    [class*="bg-gradient"]:hover::after {
+        transform: rotate(45deg) translateX(100%);
+    }
+</style>
 <div class="flex flex-col md:flex-row min-h-screen w-full font-sans bg-slate-50 text-slate-800">
     <!-- Sidebar Navigation -->
     <aside class="w-full md:w-64 bg-indigo-900 text-white flex flex-col shrink-0 border-b md:border-b-0 md:border-r border-indigo-950">

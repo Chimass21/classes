@@ -198,7 +198,7 @@ export default function MyLibrary({ user, onRefreshWallet }: MyLibraryProps) {
           topic: wizardTopic,
           subTopic: wizardTopic,
           periods: "2 Periods",
-          difficulty: "Medium",
+          difficulty: "Standard",
           teacherId: user.id
         };
       }

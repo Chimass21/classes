@@ -911,13 +911,21 @@ function generateDynamicFallbackJSON(prompt: string, schema?: any): string {
       num = Math.min(Math.max(Number(numMatch[1]), 1), 20);
     }
     
+    const answerOrder = ['A', 'B', 'C', 'D'];
     const results = [];
     for (let i = 0; i < num; i++) {
       const template = mockQuestions[i % mockQuestions.length];
-      results.push({
-        ...template,
-        question: `[Q${i + 1}] ` + template.question
-      });
+      const correctLetter = answerOrder[i % 4];
+      // Swap option fields so the chosen correct letter matches
+      const oldCorrect = template.correctAnswer;
+      const q = { ...template, question: `[Q${i + 1}] ` + template.question, correctAnswer: correctLetter };
+      if (oldCorrect !== correctLetter) {
+        // Swap the option labels so content stays but correct letter changes
+        const tmp = q[`option${oldCorrect}`];
+        q[`option${oldCorrect}`] = q[`option${correctLetter}`];
+        q[`option${correctLetter}`] = tmp;
+      }
+      results.push(q);
     }
 
     return JSON.stringify({ questions: results }, null, 2);
@@ -2024,6 +2032,7 @@ app.post("/api/ai/lesson-plan", async (req, res) => {
     teacherId,
     week,
     term,
+    difficulty,
   } = req.body;
 
   if (!subject || !topic || !classLevel) {
@@ -2047,6 +2056,7 @@ Date: ${date || "N/A"}
 Duration: ${duration || "45 Minutes"}
 Age of Pupils: ${ageOfPupils || "N/A"}
 Number of Pupils: ${numberOfPupils || "N/A"}
+Difficulty Level: ${difficulty || "Standard"}
 
 Core Framework Requirements:
 1. STRICT ONE-PAGE A4 PORTRAIT LAYOUT CONDENSATION:
@@ -2183,8 +2193,8 @@ app.post("/api/ai/lesson-note", async (req, res) => {
 
   if (isPhysics) {
     examplesRequirement = `
-1. AT LEAST TEN (10) FULLY SOLVED PHYSICS CALCULATIVE EXAMPLES (EXACTLY 10 OR MORE):
-   Since the subject is Physics, you MUST dynamically generate at least ten (10) separate, highly detailed, step-by-step solved calculation examples directly related to the topic of "${topic}".
+1. FIRST, determine whether the topic "${topic}" in Physics genuinely involves calculations (e.g., motion, forces, energy, circuits, waves, optics with formulas) or is purely conceptual/theoretical (e.g., physics definitions, historical discoveries, classifications). Only include calculation examples if the topic actually requires numerical problem-solving.
+2. If the topic involves calculations: include exactly 5 fully solved calculation examples that are STRICTLY AND EXACTLY based on the topic "${topic}". Every single example MUST directly use the concepts, formulas, and principles of "${topic}" — do NOT generate generic or off-topic examples.
    - Arrange the examples sequentially so that they progress from easy/simple to difficult/advanced difficulty.
    - Each example must be unique and topic-specific, containing:
      - "Question [Number]"
@@ -2193,11 +2203,12 @@ app.post("/api/ai/lesson-note", async (req, res) => {
      - "In-depth step-by-step explanation of physical principles/assumptions for each step"
      - "Final Answer with proper SI/metric units (e.g., m/s^{2}, N, J, W, kg·m/s, Ω, V)"
    - Do NOT abbreviate steps or provide simple final numbers. Provide detailed, teacher-standard text explanations for every single equation line.
-2. PRACTICE EXERCISES SECTION:
+   If the topic does NOT involve calculations: include ZERO calculation examples — instead provide relevant illustrative examples or applications.
+3. PRACTICE EXERCISES SECTION:
    - Provide 3 to 5 brief practice exercises/questions directly after the solved examples for the students to test their understanding.
 `;
-    examplesHint = "At least 10 solved Physics calculation examples (ordered easy to difficult) with Question, Formula, step-by-step Workings & Explanations, and Final Answer with correct SI units.";
-    examplesArrayPrompt = "Exactly 10 detailed, unique, and topic-specific solved physics calculation examples progressing from easy to difficult with full step explanations and correct SI units.";
+    examplesHint = "Solved Physics calculation examples with Question, Formula, step-by-step Workings & Explanations, and Final Answer with correct SI units (only if topic involves calculations).";
+    examplesArrayPrompt = "Physics calculation examples with full step explanations and correct SI units (only if topic requires calculations, otherwise omit).";
     evaluationArrayPrompt = "At least 5 to 10 distinct test/assessment questions (WASSCE/NECO/JAMB past-question-style) with multiple-choice options or direct questions to evaluate student understanding.";
     
     subjectSpecificPromptAddition = `
@@ -2207,7 +2218,7 @@ app.post("/api/ai/lesson-note", async (req, res) => {
   2. Learning Objectives (Student-focused behavioural objectives).
   3. Formulas: Place ALL relevant physics formulas related to the topic in a separate, dedicated section with names, variables, and SI units clearly labeled.
   4. Diagrams/Schematics: Incorporate structured ASCII drawings, grids, or clear graphical block schematics (e.g., representing forces, circuits, or vectors) where applicable.
-  5. EXACTLY TEN (10) Solved Calculation Examples as specified above, progressing from easy to difficult with in-depth explanations for each step.
+  5. Solved Calculation Examples (only if topic involves calculations): exactly 5 examples, progressing from easy to difficult with in-depth explanations for each step. If topic is conceptual/theoretical, provide illustrative examples instead.
   6. At least 3 to 5 Practice Exercises for students.
   7. Class Activities and Assignment homework.
   8. Recapped conclusion.
@@ -2215,8 +2226,8 @@ app.post("/api/ai/lesson-note", async (req, res) => {
 `;
   } else if (isMaths) {
     examplesRequirement = `
-1. AT LEAST TEN (10) FULLY SOLVED MATHEMATICAL EXAMPLES (EXACTLY 10 OR MORE):
-   Since the subject is Mathematics, you MUST dynamically generate at least ten (10) separate, highly detailed, step-by-step solved mathematical examples directly based on the topic "${topic}".
+1. FIRST, determine whether the topic "${topic}" in Mathematics genuinely involves calculations or numerical problem-solving (e.g., Algebra, Geometry, Trigonometry, Calculus, Arithmetic) or is purely conceptual/theoretical (e.g., Sets, Logic, Mathematical reasoning, History of mathematics, Statistics theory). Only include worked examples if the topic actually requires calculations.
+2. If the topic involves calculations: include exactly 5 fully solved mathematical examples that are STRICTLY AND EXACTLY based on the topic "${topic}". Every single example MUST directly apply the concepts, formulas, and methods of "${topic}" — do NOT generate generic or off-topic examples.
    - Arrange the examples sequentially so that they progress from simple/basic to advanced/complex difficulty.
    - Each example must be unique and contain:
      - "Question [Number]"
@@ -2225,11 +2236,12 @@ app.post("/api/ai/lesson-note", async (req, res) => {
      - "Final Answer"
      - "**Common Student Mistakes to Avoid**: Highlight typical conceptual/computational errors, sign slips, or formula misapplications that students should watch out for on this specific question."
    - Never skip steps or use ellipses. Write out all intermediate calculations clearly.
-2. PRACTICE QUESTIONS:
+   If the topic does NOT involve calculations: include ZERO calculation examples — instead provide illustrative examples or applications.
+3. PRACTICE QUESTIONS:
    - Include 4 to 5 rigorous practice questions immediately after the solved examples for students to try on their own.
 `;
-    examplesHint = "At least 10 solved Maths examples (simple to advanced) with step-by-step workings, Formula, Final Answer, Common Student Mistakes to Avoid, and Practice Questions.";
-    examplesArrayPrompt = "Exactly 10 detailed mathematical solved examples with formulas, working steps, final answers, and common student mistakes to avoid.";
+    examplesHint = "Solved Maths examples with step-by-step workings, Formula, Final Answer, Common Student Mistakes to Avoid, and Practice Questions (only if topic involves calculations).";
+    examplesArrayPrompt = "Detailed mathematical solved examples with formulas, working steps, final answers, and common student mistakes to avoid (only if topic requires calculations).";
     evaluationArrayPrompt = "At least 5 to 10 distinct, exam-style evaluation/assessment questions with multiple-choice options or direct questions.";
 
     subjectSpecificPromptAddition = `
@@ -2239,7 +2251,7 @@ app.post("/api/ai/lesson-note", async (req, res) => {
   2. Definitions of core mathematical terms and Key Concepts.
   3. Formulas: Include all relevant equations/rules in a separate, dedicated section.
   4. Diagrams/Graphs: Include dynamic ASCII-based graphs, grids, coordinate systems, or geometric representations (e.g., of angles, triangles, coordinates, or lines) where applicable.
-  5. EXACTLY TEN (10) Solved Mathematical Examples as specified above, progressing from easy to difficult, complete with working steps and Common Student Mistakes to Avoid.
+  5. Solved Mathematical Examples (only if topic involves calculations): exactly 5 examples, progressing from easy to difficult, complete with working steps and Common Student Mistakes to Avoid. If topic is conceptual, provide illustrative examples instead.
   6. A list of Practice Questions following the examples.
   7. Class Activities (discussion prompts or quiz tasks).
   8. Assigned homework.
@@ -2250,8 +2262,8 @@ app.post("/api/ai/lesson-note", async (req, res) => {
     examplesRequirement = `
 1. DETERMINATION OF CALCULATIVE VS. THEORY TOPIC:
    Determine whether "${topic}" involves chemical calculations (e.g., mole concept, concentrations, gas laws, electrolysis, stoichiometry, chemical equilibrium, titration, thermodynamics, solubility, pH/acid-base calculations) or is purely theory-based.
-2. AT LEAST TEN (10) SOLVED CALCULATION EXAMPLES (FOR CALCULATIVE TOPICS):
-   - If calculations are involved, you MUST automatically generate at least ten (10) highly detailed solved calculation examples.
+2. SOLVED CALCULATION EXAMPLES (FOR CALCULATIVE TOPICS — maximum 5):
+   - If calculations are involved, you MUST generate exactly 5 highly detailed solved calculation examples that are STRICTLY AND EXACTLY based on the topic "${topic}". Every single example MUST directly use the chemical concepts, formulas, and reactions of "${topic}" — do NOT generate generic or off-topic examples.
    - Each example must be unique and contain:
      - "Question [Number]"
      - "Formula Used"
@@ -2259,12 +2271,13 @@ app.post("/api/ai/lesson-note", async (req, res) => {
      - "Units clearly indicated for all intermediate quantities and final numbers"
      - "Step-by-step working process"
      - "Final Answer with proper Chemistry units (e.g., g/mol, mol/dm^{3}, cm^{3}, K)"
-3. AT LEAST FIVE (5) DETAILED APPLIED EXAMPLES (FOR THEORETICAL TOPICS):
-   - If the topic is purely theory-based, you MUST provide at least five (5) rich, highly detailed applied examples, case studies, state comparisons, state symbols, and structural applications.
+3. DETAILED APPLIED EXAMPLES (FOR THEORETICAL TOPICS — at least 5):
+   - If the topic is purely theory-based, you MUST provide at least five (5) rich, highly detailed applied examples, case studies, state comparisons, state symbols, and structural applications that are STRICTLY AND EXACTLY based on the topic "${topic}". Every single example MUST directly relate to "${topic}" — do NOT generate generic or off-topic examples.
+   - If the topic does NOT involve calculations, include ZERO calculation examples — only provide theoretical/applied examples.
    - Balanced Chemical Equations: All reaction equations must be balanced beautifully with subscript state symbols (e.g., (aq), (s), (g), (l)) and reaction arrows (→ or ⇌). Use superscripts for charges (Na^{+}, SO_{4}^{2-}).
 `;
-    examplesHint = "10 chemistry calculation examples with formula, substitution, units, and workings, OR 5 highly detailed theoretical applied examples.";
-    examplesArrayPrompt = "10 unique Chemistry calculation examples with substitutions, formulas, and units, or 5 extremely detailed theoretical applied examples.";
+    examplesHint = "5 chemistry calculation examples with formula, substitution, units, and workings, OR 5 highly detailed theoretical applied examples.";
+    examplesArrayPrompt = "5 unique Chemistry calculation examples with substitutions, formulas, and units, or 5 extremely detailed theoretical applied examples.";
     evaluationArrayPrompt = "At least 5 to 10 unique, chemistry diagnostic quiz/exam questions (WASSCE standard) containing balanced reaction equations and chemical symbols.";
 
     subjectSpecificPromptAddition = `
@@ -2274,7 +2287,7 @@ app.post("/api/ai/lesson-note", async (req, res) => {
   2. Balanced Chemical Equations: Write all reactions beautifully with proper subscripts (e.g., H_{2}O, CO_{2}), reactant state symbols (aq, s, g, l), and arrows (→ or ⇌). Use superscripts for ionic charges (Na^{+}, SO_{4}^{2-}).
   3. Key Concepts and detailed textbook-level prose explanations of chemical properties, trends, structures, or mechanisms.
   4. Formulas Section: List all relevant mathematical formulas for Chemistry in a separate, dedicated block, clarifying constants (e.g., Avogadro's number, gas constants) and their metric units.
-  5. Numerical or Applied Examples: Dynamic generation of EXACTLY TEN (10) solved calculation examples for computational topics, or FIVE (5) detailed theoretical applied examples.
+  5. Numerical or Applied Examples: Exactly 5 solved calculation examples for computational topics, or 5 detailed theoretical applied examples.
   6. ASCII experimental drawings: Illustrate setups (e.g. fractional distillation, gas collection, electrolysis, titration) using structured text or ASCII art/grids where appropriate.
   7. Class Activities and Homework Assignment questions.
   8- Recapped conclusion.
@@ -2283,7 +2296,7 @@ app.post("/api/ai/lesson-note", async (req, res) => {
   } else {
     examplesRequirement = `
 1. RELEVANT ILLUSTRATIVE EXAMPLES (At least 3-4):
-   CRITICAL: Since ${subject} is NOT a scientific or mathematical calculation subject, you are STRICTLY FORBIDDEN from including calculations below this note. Do NOT include formulas, variables, solving equations, maths, or calculations. Instead, provide 3 to 4 illustrative prose examples, real-life practical case studies, writing samples (for Language/English), or contextual scenarios relevant to the topic of ${topic}.
+   CRITICAL: Since ${subject} is NOT a scientific or mathematical calculation subject, you are STRICTLY FORBIDDEN from including calculations below this note. Do NOT include formulas, variables, solving equations, maths, or calculations. Instead, provide 3 to 4 illustrative prose examples, real-life practical case studies, writing samples (for Language/English), or contextual scenarios that are STRICTLY AND EXACTLY based on the topic "${topic}". Every single example MUST directly relate to "${topic}" — do NOT generate generic or off-topic examples.
 `;
     examplesHint = `High-quality illustrative prose point, case study scenario, sentence example, or essay/reading sample relevant to ${topic}`;
     examplesArrayPrompt = "Provide 3-4 detailed and culturally relevant conceptual prose examples. Do NOT use any asterisks, hashtags, or markdown tables here.";
@@ -2300,7 +2313,7 @@ Term: ${term}
 Week of Term: Week ${week || "1"}
 Date: ${date || "N/A"}
 Periods: ${periods || "2 Periods"}
-Difficulty Level: ${difficulty || "Medium"}
+Difficulty Level: ${difficulty || "Standard"}
 
 CURRICULUM AND NATIONAL ALIGNMENT REQUIREMENTS (NIGERIAN SYSTEM):
 1. NIGERIAN CURRICULUM & SCHEME OF WORK:
@@ -2316,6 +2329,8 @@ CURRICULUM AND NATIONAL ALIGNMENT REQUIREMENTS (NIGERIAN SYSTEM):
 3. NIGERIAN TEXTBOOKS & INTERNET REFERENCES:
    - For "instructionalMaterials", you MUST ALWAYS include relevant physical/visual teaching aids as well as "Internet-connected devices (laptops, tablets, or smartphones for active search of web resources and digital curriculum portals)".
    - For "referenceMaterials", you MUST list 1 to 3 actual, widely recognized Nigerian textbooks that intensely relate to ${subject} and are highly relevant to ${classLevel} (e.g., "New General Mathematics for Senior Secondary Schools", "Essential Physics for SSS", "Modern Biology for SSS" by Sarojini T. Ramalingam, "Intensive English for Secondary Schools", "Macmillan Champion Primary English/Mathematics", etc., depending on the content) alongside direct curriculum links (e.g., "https://www.nerdc.org.ng" or specific online/internet educational resources). You are STRICTLY FORBIDDEN from putting blank placeholders. Always write real titles and active website reference URLs relevant to ${topic}.
+
+CRITICAL EXAMPLES REQUIREMENT: All examples, case studies, and practice questions provided in this lesson note MUST be STRICTLY based on the exact topic "${topic}" and aligned with the Nigerian curriculum (NERDC/WAEC/NECO/JAMB standards). Do NOT generate examples that are generic, unrelated, or off-topic. Every example MUST directly illustrate or apply the concepts of "${topic}" in a Nigerian educational context.
 
 DETAILED NOTE ARCHITECTURE (NO SINGLE-PAGE RESTRICTION & STRICT FORMATTING LIMITS):
 ${subjectSpecificPromptAddition}
@@ -2359,7 +2374,7 @@ Deliver the contents in a JSON schema structure:
   "entryBehaviour": "string description",
   "previousKnowledge": "string description of what the students/pupils already know related to this topic",
   "introduction": "string description of presentation set induction / lesson introduction details",
-  "detailedNote": "This is the main, highly-detailed Lesson Note Content. For Physics, Maths, or Chemistry, you MUST fully embed: 1. Student learning objectives, 2. Clear definitions and key concepts, 3. Formulas section separated cleanly, 4. ASCII schematics, graphs, or visual guides, 5. EXACTLY TEN (10) solved calculation/applied examples (sequential simple-to-advanced, showing full working steps, formulas, step explanations, metric/SI units, and student mistakes to avoid where applicable), 6. Practice exercises at the end, 7. Class activities, assignments, and 8. Takeaway conclusions. IT MUST NOT CONTAIN ANY asterisks (* or **), hashtags (### or ##), or Markdown pipe-and-colon tables (|---). Write in clean textbook-quality paragraphs with comprehensive definitions, background context, and clear comparisons organized strictly using simple sequential Arabic numerals (1., 2., 3., 4., etc.) for sections, lists, and outlines under the Nigerian curriculum. DO NOT use decimal/sub-level numbered outlines like 1.1 or 1.2; use only sequential whole numbers (1, 2, 3...) throughout.",
+  "detailedNote": "This is the main, highly-detailed Lesson Note Content. For Physics, Maths, or Chemistry that involve calculations: embed exactly 5 solved calculation/applied examples (sequential simple-to-advanced, showing full working steps, formulas, step explanations, metric/SI units, and student mistakes to avoid where applicable). For purely theoretical topics, include illustrative examples instead of calculations. 6. Practice exercises at the end, 7. Class activities, assignments, and 8. Takeaway conclusions. IT MUST NOT CONTAIN ANY asterisks (* or **), hashtags (### or ##), or Markdown pipe-and-colon tables (|---). Write in clean textbook-quality paragraphs with comprehensive definitions, background context, and clear comparisons organized strictly using simple sequential Arabic numerals (1., 2., 3., 4., etc.) for sections, lists, and outlines under the Nigerian curriculum. DO NOT use decimal/sub-level numbered outlines like 1.1 or 1.2; use only sequential whole numbers (1, 2, 3...) throughout.",
   "explanation": "Pedagogical hints and suggestions for the teacher on how to present this topic in a Nigerian classroom. (No asterisks, no markdown tables)",
   "presentationSteps": [
     {
@@ -2395,7 +2410,7 @@ Return ONLY valid JSON representation matching types. No surrounding backticks o
       week: week ? Number(week) : 1,
       date: date || new Date().toISOString().split("T")[0],
       periods: periods || "2 Periods",
-      difficulty: difficulty || "Medium",
+      difficulty: difficulty || "Standard",
       content: parsedNote,
       createdAt: new Date().toISOString(),
     };
@@ -2448,7 +2463,7 @@ Generate exactly ${numQuestions} objective multiple choice questions for an educ
 Subject: ${subject}
 Requested Topic State: ${isAllTopics ? "All topics across the dynamic syllabus (Comprehensive exam)" : `Strictly single topic: "${topic}"`}
 Class: ${classLevel}
-Difficulty Level: ${difficulty || "Medium"}
+Difficulty Level: ${difficulty || "Standard"}
 
 ${noteContent ? `CONTEXT FROM GENERATED LESSON NOTE:
 -----
@@ -2508,6 +2523,7 @@ Deliver the response in a JSON schema representing a list of questions:
 
 Rules:
 - The correctAnswer must be exactly one uppercase letter: "A", "B", "C", or "D"
+- CRITICAL: Distribute the correct answers as evenly as possible across A, B, C, and D. Do NOT cluster correct answers on a single option. For example, for 40 questions, aim for roughly 10 correct answers per option (A, B, C, D).
 - Return ONLY valid JSON.
 `;
 
@@ -2516,7 +2532,40 @@ Rules:
     if (!rawResult) throw new Error("AI returned empty results.");
 
     const parsedResult = JSON.parse(rawResult.trim());
-    const questionsList = parsedResult.questions || [];
+    let questionsList = parsedResult.questions || [];
+
+    // Balance correct answer distribution across A, B, C, D
+    if (questionsList.length >= 4) {
+      const opts = ['A', 'B', 'C', 'D'];
+      const freq: Record<string, number> = { A: 0, B: 0, C: 0, D: 0 };
+      for (const q of questionsList) {
+        if (freq[q.correctAnswer] !== undefined) freq[q.correctAnswer]++;
+      }
+
+      const target = Math.floor(questionsList.length / 4);
+      const over = opts.filter(o => freq[o] > target + 1).sort((a, b) => freq[b] - freq[a]);
+      const under = opts.filter(o => freq[o] < target).sort((a, b) => freq[a] - freq[b]);
+
+      for (const o of over) {
+        for (const u of under) {
+          let needed = target - freq[u];
+          if (needed <= 0) continue;
+          for (const q of questionsList) {
+            if (needed <= 0) break;
+            if (q.correctAnswer === o) {
+              // Swap the option fields so the answer letter changes
+              const tmp = q[`option${o}`];
+              q[`option${o}`] = q[`option${u}`];
+              q[`option${u}`] = tmp;
+              q.correctAnswer = u;
+              freq[o]--;
+              freq[u]++;
+              needed--;
+            }
+          }
+        }
+      }
+    }
 
     // Save automatically to the logged-in user's personal documents portal if authenticated
     const authUser = getAuthenticatedUser(req);

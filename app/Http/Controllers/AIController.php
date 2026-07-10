@@ -43,7 +43,8 @@ class AIController extends Controller
 
             $prompt = $this->buildLessonPlanPrompt(
                 $data['subject'], $data['class'], $data['term'], $data['week'],
-                $data['topic'], $schoolName, $teacherName, $duration, $ageRange, $scheme
+                $data['topic'], $schoolName, $teacherName, $duration, $ageRange, $scheme,
+                $data['subTopic'] ?? ''
             );
 
             Log::info('AI Lesson Plan Request', [
@@ -148,7 +149,7 @@ class AIController extends Controller
             $data['class'] = $data['class'] ?? 'SS1';
             $data['term'] = $data['term'] ?? 'First Term';
             $data['week'] = $data['week'] ?? 1;
-            $difficulty = $data['difficulty'] ?? 'Medium';
+            $difficulty = $data['difficulty'] ?? 'Standard';
             $periods = $data['periods'] ?? '2 Periods';
             $ageRange = CurriculumData::getAgeRange($data['class']);
             $scheme = CurriculumData::getSchemeOfWork($data['subject'], $data['class'], $data['term']);
@@ -523,14 +524,51 @@ class AIController extends Controller
 
     // --- PROMPT BUILDERS ---
 
-    protected function buildLessonPlanPrompt($subject, $class, $term, $week, $topic, $schoolName, $teacherName, $duration, $ageRange, $scheme): string
+    protected function buildLessonPlanPrompt($subject, $class, $term, $week, $topic, $schoolName, $teacherName, $duration, $ageRange, $scheme, $subTopic = ''): string
     {
         $weekScheme = '';
+        $schemeSubtopics = [];
         foreach ($scheme as $s) {
             if (($s['week'] ?? 0) == $week) {
                 $weekScheme = 'Scheme of Work topic: ' . ($s['topic'] ?? '') . '. Subtopics: ' . implode(', ', $s['subtopics'] ?? []);
+                $schemeSubtopics = $s['subtopics'] ?? [];
                 break;
             }
+        }
+
+        $userSubtopicsList = [];
+        if (!empty($subTopic)) {
+            $userSubtopicsList = array_map('trim', preg_split('/[,\n]+/', $subTopic));
+            $userSubtopicsList = array_filter($userSubtopicsList);
+        }
+
+        $subtopicsInstruction = '';
+        $objectiveSources = [];
+
+        if (!empty($userSubtopicsList)) {
+            $subtopicsInstruction = "\nUSER-PROVIDED SUB-TOPICS (each is ONE behavioural objective):\n";
+            foreach ($userSubtopicsList as $i => $st) {
+                $num = $i + 1;
+                $subtopicsInstruction .= "  {$num}. {$st}\n";
+                $objectiveSources[] = $st;
+            }
+            $subtopicsInstruction .= "\nGenerate exactly " . count($userSubtopicsList) . " behavioural objectives matching these sub-topics. Each objective becomes one lesson step and one evaluation question.";
+        } elseif (!empty($schemeSubtopics)) {
+            $subtopicsInstruction = "\nSCHEME SUB-TOPICS (each is ONE behavioural objective):\n";
+            foreach ($schemeSubtopics as $i => $st) {
+                $num = $i + 1;
+                $subtopicsInstruction .= "  {$num}. {$st}\n";
+                $objectiveSources[] = $st;
+            }
+        }
+
+        $numSources = count($objectiveSources);
+        $evalCount = $numSources > 0 ? $numSources : 5;
+        $stepCountInstruction = '';
+        if ($numSources > 0) {
+            $stepCountInstruction = "Generate exactly {$numSources} behavioural objectives, {$numSources} lesson steps, and {$numSources} evaluation questions. Objective 1 → Step 1 → Evaluation Q1, Objective 2 → Step 2 → Evaluation Q2, etc.";
+        } else {
+            $stepCountInstruction = "Generate exactly 5 behavioural objectives, 5 lesson steps, and 5 evaluation questions. Objective 1 → Step 1 → Evaluation Q1, etc. This ensures the lesson plan fills the entire A4 page.";
         }
 
         return <<<PROMPT
@@ -549,37 +587,45 @@ CONTEXT:
 - Teacher: {$teacherName}
 - Duration: {$duration}
 {$weekScheme}
+{$subtopicsInstruction}
 
-Generate a COMPLETE LESSON PLAN in STRICT JSON format about "{$topic}" in {$subject} for {$class}. Every single objective, step, and evaluation must be directly about {$topic}.
+Generate a COMPLETE, DETAILED LESSON PLAN in STRICT JSON format for "{$topic}" in {$subject} for {$class}.
 
-Return JSON in this exact structure:
+CRITICAL — FILL THE ENTIRE A4 PAGE:
+- Write each behavioural objective as a full, detailed sentence (not a phrase).
+- Each step's teacherActivities and learnerActivities must be 2-3 detailed sentences each (not just one line).
+- learningPoints must be a substantive paragraph.
+- Evaluation must contain {$evalCount} numbered questions (one per objective), each a full sentence.
+- Summary and conclusion must each be at least 3-4 sentences.
+- Previous knowledge must be 2-3 sentences about what students already know.
+
+Return ONLY valid JSON with this exact structure (no markdown, no code fences):
 {
-  "behaviouralObjectives": ["By the end of the lesson, students should be able to: 1. ...", "2. ...", "3. ..."],
-  "instructionalMaterials": ["List of materials needed"],
-  "previousKnowledge": "Statement about what students already know",
+  "behaviouralObjectives": ["Full detailed objective sentence 1.", "Full detailed objective sentence 2.", "Full detailed objective sentence 3."],
+  "instructionalMaterials": ["Material 1", "Material 2", "Material 3"],
+  "previousKnowledge": "2-3 sentences about what students already know related to this topic.",
   "lessonSteps": [
     {
       "step": 1,
-      "teacherActivities": "What teacher does in this step",
-      "learnerActivities": "What learners do in this step",
-      "learningPoints": "Key learning point from this step"
+      "teacherActivities": "2-3 detailed sentences describing what the teacher does in this step.",
+      "learnerActivities": "2-3 detailed sentences describing what learners do in this step.",
+      "learningPoints": "Substantive paragraph about the key learning point from this step."
     }
   ],
-  "evaluation": "Evaluation questions based on objectives",
-  "assignment": "Take-home assignment",
-  "summary": "Brief summary of the lesson",
-  "conclusion": "Conclusion and wrap-up"
+  "evaluation": "1. First evaluation question (matches Objective 1)?\\n2. Second evaluation question (matches Objective 2)?\\n3. Third evaluation question (matches Objective 3)?",
+  "assignment": "Detailed take-home assignment (2-3 sentences).",
+  "summary": "Substantive summary of the lesson (3-4 sentences).",
+  "conclusion": "Concluding remarks connecting to next lesson (3-4 sentences)."
 }
 
 RULES:
-- Number of lessonSteps MUST equal number of behaviouralObjectives
-- Each objective must have a corresponding lesson step
-- Each objective must have a corresponding evaluation item
-- Teacher and learner activities must be practical and curriculum-based
-- ALL content must be about "{$topic}" specifically for {$class} level ({$ageRange})
-- Use Nigerian examples (₦aira, Nigerian locations, cultural contexts)
-- Before writing, re-read the topic: "{$topic}"
-- If the topic is "{$topic}", do NOT write about anything else
+- {$stepCountInstruction}
+- Each objective, its corresponding step, and its evaluation question must cover the SAME sub-topic.
+- Teacher and learner activities must be practical, detailed, and curriculum-based.
+- ALL content must be about "{$topic}" specifically for {$class} level ({$ageRange}).
+- Use Nigerian examples (₦aira, Nigerian locations, cultural contexts).
+- Every field must contain substantial content — no empty or one-line entries.
+- If the topic is "{$topic}", do NOT write about anything else.
 PROMPT;
     }
 
@@ -640,12 +686,12 @@ REQUIREMENTS:
 3. Cover ALL relevant subtopics under "{$topic}" for {$class} level ({$ageRange})
 4. Be teacher-friendly and student-friendly
 5. Use Nigeria-centric examples (₦aira, Nigerian cities, cultural references)
-6. For Mathematics and Physics: include at least 10 fully solved examples progressing from simple to advanced, ALL related to {$topic}
-7. For Chemistry with calculations: include at least 10 fully solved examples about {$topic}
+6. FIRST, reason about whether the topic "{$topic}" in {$subject} actually involves calculations or numerical problem-solving. Only include calculation/worked examples if the topic genuinely requires them. For example: Mathematics topics like Sets, Logic, or Statistics theory may not need calculation examples; purely conceptual Physics or Chemistry topics may not need them either. Other subjects (Biology, English, History, etc.) generally do NOT need calculation examples.
+7. If the topic genuinely involves calculations: include exactly 5 fully solved examples progressing from simple to advanced, ALL related to {$topic}. If the topic does NOT involve calculations: include ZERO calculation examples — instead provide relevant illustrative examples or applications.
 8. Content must be curriculum-compliant (NERDC/UBEC approved)
 9. The topic "{$topic}" MUST appear in every section
 10. Tailor the depth and language to {$class} level ({$ageRange}) — simpler explanations for primary, more advanced for secondary
-11. Match the difficulty level "{$difficulty}" — "Easy" means foundational concepts, "Medium" means standard curriculum depth, "Hard" means advanced/extension content
+11. Match the difficulty level "{$difficulty}" — "Simple" means foundational concepts, "Standard" means standard curriculum depth, "Deep" means advanced/extension content
 PROMPT;
     }
 

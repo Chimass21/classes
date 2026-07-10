@@ -109,7 +109,7 @@ export interface LessonNote {
   topic: string;
   subTopic: string;
   periods: string;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
+  difficulty: 'Simple' | 'Standard' | 'Deep';
   content: {
     detailedNote: string;
     explanation: string;

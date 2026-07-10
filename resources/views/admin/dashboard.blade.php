@@ -23,14 +23,79 @@
     .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(124,58,237,0.12); }
 
     .input-bright {
-        background: #fff;
-        border: 1.5px solid #e2e8f0;
-        color: #1e293b;
+        background: linear-gradient(135deg, #f0f4ff 0%, #fdf2f8 50%, #fefce8 100%) !important;
+        border: 2px solid transparent !important;
+        background-clip: padding-box !important;
+        border-image: linear-gradient(135deg, #8b5cf6, #ec4899, #f59e0b) 1 !important;
+        color: #1e293b !important;
+        font-weight: 600 !important;
+    }
+    .input-bright:hover {
+        box-shadow: 0 0 20px rgba(139,92,246,0.25), 0 0 40px rgba(236,72,153,0.1) !important;
+        transform: translateY(-1px);
     }
     .input-bright:focus {
-        border-color: #7c3aed;
-        box-shadow: 0 0 0 3px rgba(124,58,237,0.1);
-        outline: none;
+        border-image: linear-gradient(135deg, #a855f7, #f43f5e, #eab308) 2 !important;
+        box-shadow: 0 0 0 3px rgba(139,92,246,0.3), 0 0 30px rgba(236,72,153,0.2) !important;
+        outline: none !important;
+    }
+
+    select, input:not([type="hidden"]):not([type="file"]), textarea {
+        background: linear-gradient(135deg, #f0f4ff 0%, #fdf2f8 50%, #fefce8 100%) !important;
+        border: 2px solid transparent !important;
+        background-clip: padding-box !important;
+        border-image: linear-gradient(135deg, #8b5cf6, #ec4899, #f59e0b) 1 !important;
+        transition: all 0.3s ease !important;
+        font-weight: 600 !important;
+        color: #1e293b !important;
+    }
+    select:hover, input:hover, textarea:hover {
+        box-shadow: 0 0 20px rgba(139,92,246,0.25), 0 0 40px rgba(236,72,153,0.1) !important;
+        transform: translateY(-1px);
+    }
+    select:focus, input:focus, textarea:focus {
+        box-shadow: 0 0 0 3px rgba(139,92,246,0.3), 0 0 30px rgba(236,72,153,0.2) !important;
+        border-image: linear-gradient(135deg, #a855f7, #f43f5e, #eab308) 2 !important;
+        outline: none !important;
+    }
+
+    button[type="submit"], .btn-primary, .action-btn {
+        background: linear-gradient(135deg, #8b5cf6, #ec4899, #f59e0b) !important;
+        border: none !important;
+        box-shadow: 0 4px 15px rgba(139,92,246,0.4), 0 0 30px rgba(236,72,153,0.2) !important;
+        transition: all 0.3s ease !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.5px !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+    button[type="submit"]:hover, .btn-primary:hover, .action-btn:hover {
+        transform: translateY(-2px) scale(1.02) !important;
+        box-shadow: 0 6px 25px rgba(139,92,246,0.5), 0 0 50px rgba(245,158,11,0.3) !important;
+    }
+    button[type="submit"]:active, .btn-primary:active, .action-btn:active {
+        transform: translateY(0) scale(0.98) !important;
+    }
+    button[type="submit"]::after, .btn-primary::after, .action-btn::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent);
+        transform: rotate(45deg) translateX(-100%);
+        transition: 0.6s;
+    }
+    button[type="submit"]:hover::after, .btn-primary:hover::after, .action-btn:hover::after {
+        transform: rotate(45deg) translateX(100%);
+    }
+    .nav-btn, .sidebar-item {
+        transition: all 0.3s ease !important;
+    }
+    .nav-btn:hover, .sidebar-item:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(124,58,237,0.2);
     }
 
     table thead th {
@@ -41,6 +106,30 @@
     table tbody tr { border-bottom: 1px solid rgba(0,0,0,0.03); }
     table tbody tr:hover { background: rgba(124,58,237,0.03); }
 
+    [class*="bg-gradient"] {
+        transition: all 0.3s ease !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }
+    [class*="bg-gradient"]:hover {
+        transform: translateY(-2px) scale(1.02) !important;
+        filter: brightness(1.1) saturate(1.2) !important;
+        box-shadow: 0 6px 25px rgba(139,92,246,0.4), 0 0 50px rgba(236,72,153,0.2) !important;
+    }
+    [class*="bg-gradient"]::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: linear-gradient(45deg, transparent, rgba(255,255,255,0.15), transparent);
+        transform: rotate(45deg) translateX(-100%);
+        transition: 0.6s;
+    }
+    [class*="bg-gradient"]:hover::after {
+        transform: rotate(45deg) translateX(100%);
+    }
     .badge-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
 </style>
 

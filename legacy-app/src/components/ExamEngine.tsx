@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { 
   Clock, 
   CheckCircle, 
@@ -20,8 +20,10 @@ import {
   Calendar, 
   XSquare, 
   CheckSquare, 
-  Activity 
+  Activity,
+  Printer
 } from 'lucide-react';
+import { jsPDF } from 'jspdf';
 import { motion } from 'motion/react';
 import { Exam, ExamResult } from '../types';
 import { renderFormattedMath } from '../lib/mathUtils';
@@ -69,23 +71,42 @@ export default function ExamEngine({ exam, studentUser, onExit }: ExamEngineProp
     };
   }, []);
 
-  // Timer countdown
-  useEffect(() => {
-    if (!isExamActive || secondsLeft <= 0) return;
+  // Timer countdown - decrements every second and stops at 0
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const hasExpiredRef = useRef(false);
 
-    const timer = setInterval(() => {
+  useEffect(() => {
+    if (!isExamActive || hasExpiredRef.current) {
+      return;
+    }
+
+    timerRef.current = setInterval(() => {
       setSecondsLeft((prev) => {
         if (prev <= 1) {
-          clearInterval(timer);
-          handleAutoSubmit();
+          hasExpiredRef.current = true;
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [secondsLeft, isExamActive]);
+    return () => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+    };
+  }, [isExamActive]);
+
+  // Auto-submit when secondsLeft hits 0 - robust check with ref guard
+  const autoSubmittedRef = useRef(false);
+
+  useEffect(() => {
+    if (secondsLeft > 0 || !isExamActive || result || autoSubmittedRef.current) return;
+    autoSubmittedRef.current = true;
+    setIsExamActive(false);
+    triggerExamSubmission();
+  }, [secondsLeft]);
 
   // Warn on accidental refresh or unload during active exam
   useEffect(() => {
@@ -155,7 +176,8 @@ export default function ExamEngine({ exam, studentUser, onExit }: ExamEngineProp
   };
 
   const handleAutoSubmit = () => {
-    if (!isExamActive) return;
+    if (!isExamActive || submitting || result) return;
+    setIsExamActive(false);
     triggerExamSubmission();
   };
 
@@ -300,6 +322,7 @@ export default function ExamEngine({ exam, studentUser, onExit }: ExamEngineProp
 
   const handleRetakeExam = () => {
     if (confirm("Are you sure you want to retake this exam? This will reset your current timer and answers slate.")) {
+      autoSubmittedRef.current = false;
       setSelectedAnswers({});
       setFlaggedQuestions({});
       setSecondsLeft(exam.duration * 60);
@@ -334,6 +357,123 @@ export default function ExamEngine({ exam, studentUser, onExit }: ExamEngineProp
   const handlePrintResultSlip = () => {
     alert("To Print standard A4 Results Report:\n1. Change Printer/Destination target to 'Save as PDF'.\n2. Set Layout to 'Portrait'.\n3. Click printed sheet to save.");
     triggerNativePrint("Result_Slip");
+  };
+
+  const handleDownloadScriptPDF = () => {
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let y = 15;
+
+    const addHeader = () => {
+      doc.setFillColor(30, 41, 59);
+      doc.rect(0, 0, pageWidth, 40, 'F');
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(14);
+      doc.text('EXAM SCRIPT - DETAILED BREAKDOWN', pageWidth / 2, 18, { align: 'center' });
+      doc.setFontSize(9);
+      doc.text(`${exam.title} • ${exam.subject}`, pageWidth / 2, 26, { align: 'center' });
+      doc.text(`Candidate: ${result.studentName} (ID: ${result.studentId})`, pageWidth / 2, 32, { align: 'center' });
+      doc.setTextColor(0, 0, 0);
+      y = 48;
+    };
+
+    addHeader();
+
+    // Score summary
+    doc.setFillColor(248, 250, 252);
+    doc.rect(10, y - 4, pageWidth - 20, 12, 'F');
+    doc.setFontSize(10);
+    doc.text(`Score: ${result.score} / ${result.totalQuestions * 5} (${result.percentage}%)  •  ${result.correctAnswers} / ${result.totalQuestions} Correct`, pageWidth / 2, y + 4, { align: 'center' });
+    y += 16;
+
+    exam.questions.forEach((q, idx) => {
+      if (y > 270) {
+        doc.addPage();
+        addHeader();
+      }
+
+      const studentAnswer = selectedAnswers[idx] || 'Not answered';
+      const isCorrect = studentAnswer === q.correctAnswer;
+
+      doc.setFillColor(isCorrect ? 240 : 254, isCorrect ? 253 : 242, isCorrect ? 244 : 242);
+      doc.rect(10, y - 2, pageWidth - 20, 34, 'F');
+      doc.setDrawColor(isCorrect ? 134 : 239, isCorrect ? 239 : 68, isCorrect ? 134 : 68);
+      doc.rect(10, y - 2, pageWidth - 20, 34, 'S');
+      doc.setFontSize(9);
+      doc.setTextColor(30, 41, 59);
+      const qLines = doc.splitTextToSize(`Q${idx + 1}: ${q.question.replace(/<[^>]*>/g, '')}`, pageWidth - 28);
+      doc.text(qLines, 14, y + 4);
+      y += qLines.length * 4 + 2;
+      doc.setFontSize(8);
+      doc.setTextColor(100, 116, 139);
+      const opts = [`A: ${q.optionA}`, `B: ${q.optionB}`, `C: ${q.optionC}`, `D: ${q.optionD}`];
+      opts.forEach((o, oi) => {
+        const letter = String.fromCharCode(65 + oi);
+        if (letter === q.correctAnswer) doc.setTextColor(22, 163, 74);
+        else if (letter === studentAnswer && !isCorrect) doc.setTextColor(220, 38, 38);
+        else doc.setTextColor(100, 116, 139);
+        doc.text(o, 16 + (oi % 2) * 88, y + 3 + Math.floor(oi / 2) * 5);
+      });
+      doc.setTextColor(30, 41, 59);
+      doc.setFontSize(7);
+      doc.text(`Your answer: ${studentAnswer}  |  Correct: ${q.correctAnswer}  |  ${isCorrect ? 'CORRECT' : 'INCORRECT'}`, 14, y + 12);
+      y += 18;
+    });
+
+    doc.save(`${exam.title.replace(/\s+/g, '_')}_Script_${result.studentName.replace(/\s+/g, '_')}.pdf`);
+  };
+
+  const handleDownloadScriptDOC = () => {
+    let html = `
+      <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+      <head><meta charset='utf-8'><title>Exam Script - ${exam.title}</title>
+      <style>
+        body { font-family: 'Calibri', Arial, sans-serif; padding: 20px; line-height: 1.5; color: #1e293b; }
+        h1 { text-align: center; border-bottom: 2px solid #1e293b; padding-bottom: 10px; font-size: 18px; }
+        .score-box { background: #f8fafc; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; text-align: center; font-size: 14px; font-weight: bold; margin: 10px 0; }
+        .question { padding: 8px; margin: 6px 0; border-radius: 6px; border-left: 4px solid #ccc; }
+        .correct { background: #f0fdf4; border-left-color: #22c55e; }
+        .incorrect { background: #fef2f2; border-left-color: #ef4444; }
+        .q-text { font-weight: bold; font-size: 12px; }
+        .opts { margin-left: 16px; font-size: 11px; }
+        .result-line { font-size: 10px; margin-top: 4px; }
+      </style>
+      </head>
+      <body>
+        <h1>EXAM SCRIPT - DETAILED BREAKDOWN</h1>
+        <p style="text-align:center;font-size:12px;">${exam.title} • ${exam.subject}</p>
+        <div class="score-box">Candidate: ${result.studentName} (ID: ${result.studentId})<br/>Score: ${result.score} / ${result.totalQuestions * 5} (${result.percentage}%) • ${result.correctAnswers} / ${result.totalQuestions} Correct</div>
+    `;
+    exam.questions.forEach((q, idx) => {
+      const studentAnswer = selectedAnswers[idx] || 'Not answered';
+      const isCorrect = studentAnswer === q.correctAnswer;
+      html += `
+        <div class="question ${isCorrect ? 'correct' : 'incorrect'}">
+          <div class="q-text">Q${idx + 1}: ${q.question.replace(/<[^>]*>/g, '')}</div>
+          <div class="opts">
+            <div${studentAnswer === 'A' ? ' style="font-weight:bold;color:' + (isCorrect ? '#16a34a' : '#dc2626') + ';"' : ''}>A. ${q.optionA}</div>
+            <div${studentAnswer === 'B' ? ' style="font-weight:bold;color:' + (isCorrect ? '#16a34a' : '#dc2626') + ';"' : ''}>B. ${q.optionB}</div>
+            <div${studentAnswer === 'C' ? ' style="font-weight:bold;color:' + (isCorrect ? '#16a34a' : '#dc2626') + ';"' : ''}>C. ${q.optionC}</div>
+            <div${studentAnswer === 'D' ? ' style="font-weight:bold;color:' + (isCorrect ? '#16a34a' : '#dc2626') + ';"' : ''}>D. ${q.optionD}</div>
+          </div>
+          <div class="result-line">Your answer: <strong>${studentAnswer}</strong> | Correct: <strong>${q.correctAnswer}</strong> | ${isCorrect ? '<span style="color:#16a34a;">CORRECT</span>' : '<span style="color:#dc2626;">INCORRECT</span>'}</div>
+        </div>
+      `;
+    });
+    html += `<p style="text-align:center;font-size:9px;color:#94a3b8;margin-top:20px;">Generated by Swiftstudy CBT Engine • ${new Date().toLocaleString()}</p></body></html>`;
+
+    const blob = new Blob([html], { type: 'application/msword' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${exam.title.replace(/\s+/g, '_')}_Script_${result.studentName.replace(/\s+/g, '_')}.doc`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handlePrintScript = () => {
+    alert("To save as PDF:\n1. Set Destination to 'Save as PDF'.\n2. Set Layout to 'Portrait'.\n3. Click Save.");
+    triggerNativePrint("Exam_Script");
   };
 
   const formatElapsedTime = (totalSec: number) => {
@@ -411,7 +551,7 @@ export default function ExamEngine({ exam, studentUser, onExit }: ExamEngineProp
             display: none !important;
           }
           /* Setup full viewport pages */
-          #print-section-certificate, #printable-result-slip {
+          #print-section-certificate, #printable-result-slip, #printable-exam-script {
             display: block !important;
             visibility: visible !important;
             width: 100% !important;
@@ -552,6 +692,27 @@ export default function ExamEngine({ exam, studentUser, onExit }: ExamEngineProp
               >
                 <Medal className="w-4 h-4 text-white" />
                 Print Scholar Certificate
+              </button>
+              <button
+                onClick={handleDownloadScriptPDF}
+                className="px-5 py-3 bg-cyan-600 hover:bg-cyan-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2.5 cursor-pointer"
+              >
+                <Download className="w-4 h-4 text-white" />
+                Download Script PDF
+              </button>
+              <button
+                onClick={handleDownloadScriptDOC}
+                className="px-5 py-3 bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2.5 cursor-pointer"
+              >
+                <FileText className="w-4 h-4 text-white" />
+                Download Script DOC
+              </button>
+              <button
+                onClick={handlePrintScript}
+                className="px-5 py-3 bg-violet-600 hover:bg-violet-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2.5 cursor-pointer"
+              >
+                <Printer className="w-4 h-4 text-white" />
+                Print Exam Script
               </button>
               <button
                 onClick={handleRetakeExam}
@@ -899,6 +1060,59 @@ export default function ExamEngine({ exam, studentUser, onExit }: ExamEngineProp
                     <p className="font-serif italic text-lg text-indigo-600 my-1">Austin Nwaigbo</p>
                     <div className="h-[1px] bg-slate-350 w-48 ml-auto" />
                   </div>
+                </div>
+              </div>
+            </div>
+
+            {/* ========================================================
+                 A4 DETAILED PRINTABLE EXAM SCRIPT (Questions + Answers)
+               ======================================================== */}
+            <div id="printable-exam-script" className="hidden print:block p-8 bg-white font-sans text-xs min-h-[297mm]">
+              <div className="space-y-6">
+                <div className="text-center border-b-2 border-slate-900 pb-4">
+                  <h1 className="text-xl font-black uppercase text-slate-900">EXAM SCRIPT - DETAILED BREAKDOWN</h1>
+                  <p className="text-xs uppercase font-extrabold text-slate-500 tracking-wider">{exam.title} • {exam.subject}</p>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 border border-slate-200 rounded-xl">
+                  <div>
+                    <span className="text-slate-450 uppercase font-bold text-[9px]">CANDIDATE</span>
+                    <p className="text-sm font-extrabold text-slate-900">{result.studentName}</p>
+                    <p className="text-[10px] text-slate-500">ID: {result.studentId}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-450 uppercase font-bold text-[9px]">SCORE</span>
+                    <p className="text-sm font-extrabold text-slate-900">{result.score} / {result.totalQuestions * 5} ({result.percentage}%)</p>
+                    <p className="text-[10px] text-slate-500">{result.correctAnswers} / {result.totalQuestions} Correct</p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <h3 className="font-extrabold text-xs uppercase border-b border-slate-200 pb-1 text-slate-700">Question-by-Question Breakdown</h3>
+                  {exam.questions.map((q, idx) => {
+                    const studentAnswer = selectedAnswers[idx] || 'Not answered';
+                    const isCorrect = studentAnswer === q.correctAnswer;
+                    return (
+                      <div key={idx} className={`p-3 rounded-xl border ${isCorrect ? 'border-green-300 bg-green-50/30' : 'border-red-200 bg-red-50/30'}`}>
+                        <p className="font-extrabold text-slate-900 mb-1">Q{idx + 1}. <span dangerouslySetInnerHTML={{ __html: renderFormattedMath(q.question) }} /></p>
+                        <div className="grid grid-cols-2 gap-1 ml-4 text-slate-700">
+                          <p className={studentAnswer === 'A' ? (isCorrect ? 'text-green-700 font-bold' : 'text-red-600 font-bold') : ''}>A. {q.optionA}</p>
+                          <p className={studentAnswer === 'B' ? (isCorrect ? 'text-green-700 font-bold' : 'text-red-600 font-bold') : ''}>B. {q.optionB}</p>
+                          <p className={studentAnswer === 'C' ? (isCorrect ? 'text-green-700 font-bold' : 'text-red-600 font-bold') : ''}>C. {q.optionC}</p>
+                          <p className={studentAnswer === 'D' ? (isCorrect ? 'text-green-700 font-bold' : 'text-red-600 font-bold') : ''}>D. {q.optionD}</p>
+                        </div>
+                        <div className="mt-1.5 flex gap-4 text-[10px] font-bold">
+                          <span>Your answer: <span className={isCorrect ? 'text-green-700' : 'text-red-600'}>{studentAnswer}</span></span>
+                          <span>Correct answer: <span className="text-green-700">{q.correctAnswer}</span></span>
+                          <span className={isCorrect ? 'text-green-700' : 'text-red-600'}>{isCorrect ? '✓ Correct' : '✗ Incorrect'}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="pt-4 border-t border-slate-200 text-center text-[9px] text-slate-400">
+                  Generated by Swiftstudy CBT Engine • {new Date().toLocaleString()}
                 </div>
               </div>
             </div>
