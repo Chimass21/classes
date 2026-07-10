@@ -415,10 +415,6 @@
                                     <input type="text" id="practice-subtopic" placeholder="e.g., Solving by Substitution" class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full focus:outline-none" />
                                 </div>
                             </div>
-                            <div>
-                                <label class="text-xs font-bold text-indigo-200 block mb-1">Sub-topic (Optional)</label>
-                                <input type="text" id="practice-subtopic" placeholder="e.g., Solving by Substitution" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full focus:outline-none" />
-                            </div>
                             <div class="sm:col-span-2">
                                 <label class="text-xs font-bold text-indigo-200 block mb-1">Questions count</label>
                                 <select id="practice-count" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full sm:w-48 font-semibold text-slate-800 focus:outline-none">
