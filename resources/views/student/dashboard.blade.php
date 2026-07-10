@@ -572,11 +572,11 @@ async function loadData() {
         state.results = resRes.results || [];
         state.notifications = notifRes.notifications || [];
         state.notes = notesRes.lessonNotes || [];
-        state.subjects = subRes.subjects || ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English Language', 'Accounting', 'Economics', 'Government', 'ICT', 'Literature', 'Commerce', 'Agriculture', 'Civic Education'];
+        state.subjects = (subRes.subjects && subRes.subjects.length) ? subRes.subjects : defaultSubjects();
         state.reportSheets = reportRes.reportSheets || [];
     } catch(e) { console.error('Data load error:', e); }
-    if (!state.subjects) {
-        state.subjects = ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English Language', 'Accounting', 'Economics', 'Government', 'ICT', 'Literature', 'Commerce', 'Agriculture', 'Civic Education'];
+    if (!state.subjects || !state.subjects.length) {
+        state.subjects = defaultSubjects();
     }
     renderAll();
 }
@@ -698,7 +698,7 @@ async function markNotifRead(id) {
 // Render Lesson Notes subjects
 function renderSubjects() {
     const scroll = document.getElementById('subjects-scroll');
-    const subs = ['Mathematics','English Language','Physics','Chemistry','Biology','Economics','Computer Studies','Civic Education','Agricultural Science','Government','Geography','Literature in English','CCA','Social Studies'];
+    const subs = state.subjects && state.subjects.length ? state.subjects : defaultSubjects();
     scroll.innerHTML = subs.map(s => `<button onclick="selectSubject('${s}')" class="subj-btn py-2 px-4 rounded-xl text-xs font-bold whitespace-nowrap transition cursor-pointer border bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200" data-subj="${s}">${s}</button>`).join('');
 }
 
@@ -812,9 +812,14 @@ function renderStudentNote(note) {
     `;
 }
 
+// Full Nigerian curriculum subjects
+function defaultSubjects() {
+    return ['Mathematics','English Language','Physics','Chemistry','Biology','Agricultural Science','Economics','Government','Civic Education','Literature in English','Commerce','Accounting','Computer Studies/ICT','Geography','History','Home Economics','Christian Religious Studies','Islamic Studies','Social Studies','Basic Science','Basic Technology','Physical & Health Education','Business Studies','French','Fine Arts/Creative Arts','Music','Yoruba','Hausa','Igbo','Further Mathematics'];
+}
+
 // Populate subject dropdowns
 function populateSubjectSelects() {
-    const subs = state.subjects || ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English Language', 'Accounting', 'Economics', 'Government', 'ICT', 'Literature', 'Commerce', 'Agriculture', 'Civic Education'];
+    const subs = (state.subjects && state.subjects.length) ? state.subjects : defaultSubjects();
     const options = subs.map(s => `<option value="${s}">${s}</option>`).join('');
     const practiceSel = document.getElementById('practice-subject');
     if (practiceSel && !practiceSel.options.length) practiceSel.innerHTML = options;
