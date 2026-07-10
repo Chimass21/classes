@@ -269,15 +269,15 @@
                             <svg class="w-5 h-5 text-cyan-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
                             <h3 class="text-lg font-black">Generate Lesson Note</h3>
                         </div>
-                        <form id="student-note-form" class="space-y-3 text-slate-900">
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <form id="student-note-form" class="space-y-4 text-slate-900">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="text-xs font-bold text-indigo-200 block mb-1">Subject</label>
-                                    <select id="student-note-subject" required class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full font-semibold focus:outline-none"></select>
+                                    <label class="text-xs font-bold text-indigo-200 block mb-1.5">Subject</label>
+                                    <select id="student-note-subject" required class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full font-semibold focus:outline-none"></select>
                                 </div>
                                 <div>
-                                    <label class="text-xs font-bold text-indigo-200 block mb-1">Class</label>
-                                    <select id="student-note-class" required class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full font-semibold focus:outline-none">
+                                    <label class="text-xs font-bold text-indigo-200 block mb-1.5">Class</label>
+                                    <select id="student-note-class" required class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full font-semibold focus:outline-none">
                                         <option value="Primary 1">Primary 1</option>
                                         <option value="Primary 2">Primary 2</option>
                                         <option value="Primary 3">Primary 3</option>
@@ -293,14 +293,15 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <hr class="border-indigo-800/40">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label class="text-xs font-bold text-indigo-200 block mb-1">Topic</label>
-                                    <input type="text" id="student-note-topic" required placeholder="e.g. Algebra, Photosynthesis" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full focus:outline-none" />
+                                    <label class="text-xs font-bold text-indigo-200 block mb-1.5">Topic</label>
+                                    <input type="text" id="student-note-topic" required placeholder="e.g. Algebra, Photosynthesis" class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full focus:outline-none" />
                                 </div>
                                 <div>
-                                    <label class="text-xs font-bold text-indigo-200 block mb-1">Sub-topic (Optional)</label>
-                                    <input type="text" id="student-note-subtopic" placeholder="e.g., Quadratic Equations" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full focus:outline-none" />
+                                    <label class="text-xs font-bold text-indigo-200 block mb-1.5">Sub-topic (Optional)</label>
+                                    <input type="text" id="student-note-subtopic" placeholder="e.g., Quadratic Equations" class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full focus:outline-none" />
                                 </div>
                             </div>
                             <div>
@@ -379,16 +380,39 @@
                             <svg class="w-6 h-6 text-cyan-400 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                             <h3 class="text-xl font-black">Study Revision Drill</h3>
                         </div>
-                        <form id="practice-form" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 text-slate-900">
-                            <div>
-                                <label class="text-xs font-bold text-indigo-200 block mb-1">Subject</label>
-                                <select id="practice-subject" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full font-semibold focus:outline-none"></select>
+                        <form id="practice-form" class="space-y-4 pt-4 text-slate-900">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs font-bold text-indigo-200 block mb-1.5">Subject</label>
+                                    <select id="practice-subject" class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full font-semibold focus:outline-none"></select>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-indigo-200 block mb-1.5">Class</label>
+                                    <select id="practice-class" class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full font-semibold focus:outline-none">
+                                        <option value="Primary 1">Primary 1</option>
+                                        <option value="Primary 2">Primary 2</option>
+                                        <option value="Primary 3">Primary 3</option>
+                                        <option value="Primary 4">Primary 4</option>
+                                        <option value="Primary 5">Primary 5</option>
+                                        <option value="Primary 6">Primary 6</option>
+                                        <option value="JSS1">JSS1</option>
+                                        <option value="JSS2">JSS2</option>
+                                        <option value="JSS3">JSS3</option>
+                                        <option value="SS1" selected>SS1</option>
+                                        <option value="SS2">SS2</option>
+                                        <option value="SS3">SS3</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div>
-                                <label class="text-xs font-bold text-indigo-200 block mb-1">Topic</label>
-                                <div class="relative flex items-center">
-                                    <input required type="text" id="practice-topic" placeholder="e.g. 'Algebra', 'Calculus'" class="bg-white border-none rounded-xl py-2.5 pl-3 pr-10 text-xs w-full focus:outline-none" />
-                                    <div class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center text-slate-700 voice-btn-container" data-input="practice-topic"></div>
+                            <hr class="border-indigo-800/40">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs font-bold text-indigo-200 block mb-1.5">Topic</label>
+                                    <input required type="text" id="practice-topic" placeholder="e.g. 'Algebra', 'Calculus'" class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full focus:outline-none" />
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold text-indigo-200 block mb-1.5">Sub-topic (Optional)</label>
+                                    <input type="text" id="practice-subtopic" placeholder="e.g., Solving by Substitution" class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full focus:outline-none" />
                                 </div>
                             </div>
                             <div>
@@ -889,7 +913,7 @@ document.getElementById('practice-form')?.addEventListener('submit', async funct
     try {
         const res = await fetch('/api/ai/generate-questions', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ subject: subj, topic, subTopic: document.getElementById('practice-subtopic').value, classLevel: 'Grade 1', count, difficulty: 'Medium' })
+            body: JSON.stringify({ subject: subj, topic, subTopic: document.getElementById('practice-subtopic').value, class: document.getElementById('practice-class').value, count, difficulty: 'Medium' })
         });
         const data = await res.json();
         if (res.ok && data.questions) {
