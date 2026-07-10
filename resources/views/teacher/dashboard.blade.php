@@ -978,7 +978,7 @@ document.getElementById('questions-form')?.addEventListener('submit', async func
 function displayQuestions(qs) {
     document.getElementById('q-preview').classList.remove('hidden');
     const container = document.getElementById('q-content');
-    const objectives = qs.objectives || [];
+    const objectives = Array.isArray(qs) ? qs : (qs.objectives || []);
     const theory = qs.theoryQuestions || [];
     const essay = qs.essayQuestions || [];
     const structured = qs.structuredQuestions || [];

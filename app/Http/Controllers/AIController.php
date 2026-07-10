@@ -4,19 +4,19 @@ namespace App\Http\Controllers;
 
 use App\Helpers\CurriculumData;
 use App\Helpers\JsonDb;
-use App\Services\GeminiService;
+use App\Services\OpenAIService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 
 class AIController extends Controller
 {
-    protected GeminiService $gemini;
+    protected OpenAIService $ai;
     protected const MAX_RETRIES = 1;
 
-    public function __construct(GeminiService $gemini)
+    public function __construct(OpenAIService $ai)
     {
-        $this->gemini = $gemini;
+        $this->ai = $ai;
     }
 
     public function generateLessonPlan(Request $request)
@@ -46,7 +46,7 @@ class AIController extends Controller
                 $data['topic'], $schoolName, $teacherName, $duration, $ageRange, $scheme
             );
 
-            Log::info('Gemini Lesson Plan Request', [
+            Log::info('AI Lesson Plan Request', [
                 'subject' => $data['subject'],
                 'class' => $data['class'],
                 'topic' => $data['topic'],
@@ -54,15 +54,15 @@ class AIController extends Controller
                 'prompt_length' => strlen($prompt),
             ]);
 
-            $response = $this->gemini->generate($prompt);
+            $response = $this->ai->generate($prompt, true);
 
-            Log::info('Gemini Lesson Plan Response', [
+            Log::info('AI Lesson Plan Response', [
                 'response_length' => strlen($response),
                 'response_preview' => substr($response, 0, 500),
             ]);
 
             if ($this->isRefusal($response)) {
-                Log::warning('Gemini refused lesson plan request', ['topic' => $data['topic']]);
+                Log::warning('AI refused lesson plan request', ['topic' => $data['topic']]);
                 return response()->json([
                     'success' => false,
                     'error' => 'The AI model declined to generate content for this topic. Please rephrase your topic or try a different subject.',
@@ -72,7 +72,7 @@ class AIController extends Controller
             $plan = json_decode($response, true);
 
             if (!is_array($plan) || empty($plan)) {
-                Log::warning('Gemini returned non-JSON response for lesson plan', [
+                    Log::warning('AI returned non-JSON response for lesson plan', [
                     'response' => substr($response, 0, 1000),
                 ]);
                 return response()->json([
@@ -88,9 +88,9 @@ class AIController extends Controller
                 ]);
 
                 if (self::MAX_RETRIES > 0) {
-                    $retryResponse = $this->gemini->generate($this->buildStrictRetryPrompt($prompt, $data['subject'], $data['topic'], $data['class']));
+                    $retryResponse = $this->ai->generate($this->buildStrictRetryPrompt($prompt, $data['subject'], $data['topic'], $data['class']), true);
 
-                    Log::info('Gemini Lesson Plan Retry Response', [
+                    Log::info('AI Lesson Plan Retry Response', [
                         'response_length' => strlen($retryResponse),
                         'response_preview' => substr($retryResponse, 0, 500),
                     ]);
@@ -159,7 +159,7 @@ class AIController extends Controller
                 $data['topic'], $periods, $difficulty, $ageRange, $scheme, $userSubtopics
             );
 
-            Log::info('Gemini Lesson Note Request', [
+            Log::info('AI Lesson Note Request', [
                 'subject' => $data['subject'],
                 'class' => $data['class'],
                 'topic' => $data['topic'],
@@ -167,15 +167,15 @@ class AIController extends Controller
                 'prompt_length' => strlen($prompt),
             ]);
 
-            $response = $this->gemini->generate($prompt);
+            $response = $this->ai->generate($prompt, true);
 
-            Log::info('Gemini Lesson Note Response', [
+            Log::info('AI Lesson Note Response', [
                 'response_length' => strlen($response),
                 'response_preview' => substr($response, 0, 500),
             ]);
 
             if ($this->isRefusal($response)) {
-                Log::warning('Gemini refused lesson note request', ['topic' => $data['topic']]);
+                Log::warning('AI refused lesson note request', ['topic' => $data['topic']]);
                 return response()->json([
                     'success' => false,
                     'error' => 'The AI model declined to generate content for this topic. Please rephrase your topic or try a different subject.',
@@ -185,7 +185,7 @@ class AIController extends Controller
             $note = json_decode($response, true);
 
             if (!is_array($note) || empty($note)) {
-                Log::warning('Gemini returned non-JSON response for lesson note', [
+                Log::warning('AI returned non-JSON response for lesson note', [
                     'response' => substr($response, 0, 1000),
                 ]);
                 return response()->json([
@@ -201,9 +201,9 @@ class AIController extends Controller
                 ]);
 
                 if (self::MAX_RETRIES > 0) {
-                    $retryResponse = $this->gemini->generate($this->buildStrictRetryPrompt($prompt, $data['subject'], $data['topic'], $data['class']));
+                    $retryResponse = $this->ai->generate($this->buildStrictRetryPrompt($prompt, $data['subject'], $data['topic'], $data['class']), true);
 
-                    Log::info('Gemini Lesson Note Retry Response', [
+                    Log::info('AI Lesson Note Retry Response', [
                         'response_length' => strlen($retryResponse),
                         'response_preview' => substr($retryResponse, 0, 500),
                     ]);
@@ -275,7 +275,7 @@ class AIController extends Controller
                 $data['week'] ?? 1, $data['includeTheory'] ?? false, $lessonNoteContent
             );
 
-            Log::info('Gemini Questions Request', [
+            Log::info('AI Questions Request', [
                 'subject' => $data['subject'],
                 'topic' => $data['topic'],
                 'count' => $data['count'],
@@ -284,15 +284,15 @@ class AIController extends Controller
                 'prompt_length' => strlen($prompt),
             ]);
 
-            $response = $this->gemini->generate($prompt);
+            $response = $this->ai->generate($prompt, true);
 
-            Log::info('Gemini Questions Response', [
+            Log::info('AI Questions Response', [
                 'response_length' => strlen($response),
                 'response_preview' => substr($response, 0, 500),
             ]);
 
             if ($this->isRefusal($response)) {
-                Log::warning('Gemini refused questions request', ['topic' => $data['topic']]);
+                Log::warning('AI refused questions request', ['topic' => $data['topic']]);
                 return response()->json([
                     'success' => false,
                     'error' => 'The AI model declined to generate questions for this topic. Please rephrase your topic or try a different subject.',
@@ -302,7 +302,7 @@ class AIController extends Controller
             $questions = json_decode($response, true);
 
             if (!is_array($questions) || empty($questions)) {
-                Log::warning('Gemini returned non-JSON for questions', [
+                Log::warning('AI returned non-JSON for questions', [
                     'response' => substr($response, 0, 1000),
                 ]);
                 return response()->json([
@@ -333,9 +333,9 @@ class AIController extends Controller
                 Log::warning('Questions rejected - no options found in response');
 
                 if (self::MAX_RETRIES > 0) {
-                    $retryResponse = $this->gemini->generate($this->buildStrictRetryPrompt($prompt, $data['subject'], $data['topic'], $data['class'] ?? 'SS1'));
+                    $retryResponse = $this->ai->generate($this->buildStrictRetryPrompt($prompt, $data['subject'], $data['topic'], $data['class'] ?? 'SS1'), true);
 
-                    Log::info('Gemini Questions Retry Response', [
+                    Log::info('AI Questions Retry Response', [
                         'response_length' => strlen($retryResponse),
                         'response_preview' => substr($retryResponse, 0, 500),
                     ]);
@@ -801,6 +801,7 @@ PROMPT;
         if ($type === 'lesson_plan') {
             $allText = implode(' ', $content['behaviouralObjectives'] ?? []) . ' ' .
                        ($content['previousKnowledge'] ?? '') . ' ' .
+                       (is_array($content['instructionalMaterials'] ?? null) ? implode(' ', $content['instructionalMaterials']) : ($content['instructionalMaterials'] ?? '')) . ' ' .
                        implode(' ', array_map(fn($s) => ($s['teacherActivities'] ?? '') . ' ' . ($s['learnerActivities'] ?? '') . ' ' . ($s['learningPoints'] ?? ''), $content['lessonSteps'] ?? [])) . ' ' .
                        ($content['evaluation'] ?? '') . ' ' .
                        ($content['summary'] ?? '');
@@ -818,8 +819,6 @@ PROMPT;
             return false;
         }
 
-        $subjectFound = str_contains($allText, $subjectLower);
-
         $topicWords = array_filter(explode(' ', $topicLower), fn($w) => strlen($w) > 2);
         if (empty($topicWords)) {
             $topicWords = [$topicLower];
@@ -833,6 +832,9 @@ PROMPT;
         }
         $topicScore = $topicMatchCount / count($topicWords);
 
+        $subjectWords = array_filter(explode(' ', $subjectLower), fn($w) => strlen($w) > 2);
+        $subjectFound = empty($subjectWords) || !empty(array_filter($subjectWords, fn($w) => str_contains($allText, $w)));
+
         $pass = true;
         $reasons = [];
 
@@ -840,7 +842,7 @@ PROMPT;
             $pass = false;
             $reasons[] = "topicScore={$topicScore}";
         }
-        if (!$subjectFound && $type !== 'questions') {
+        if (!$subjectFound && $type !== 'questions' && $topicScore < 0.6) {
             $pass = false;
             $reasons[] = 'subjectMissing';
         }

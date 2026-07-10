@@ -2,7 +2,6 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import crypto from "crypto";
-import { GoogleGenAI, Type } from "@google/genai";
 import { createServer as createViteServer } from "vite";
 import { createClient } from "@supabase/supabase-js";
 
@@ -47,16 +46,10 @@ export function hashPassword(password: string): string {
   return crypto.createHash("sha256").update(password).digest("hex");
 }
 
-// Initialize Gemini client on the server as per the API guide.
-// We set raw headers for custom telemetries.
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY || "",
-  httpOptions: {
-    headers: {
-      "User-Agent": "aistudio-build",
-    },
-  },
-});
+// OpenAI configuration
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "";
+const OPENAI_MODEL = process.env.OPENAI_MODEL || "gpt-4o-mini";
+const OPENAI_API_URL = "https://api.openai.com/v1/chat/completions";
 
 export const app = express();
 const PORT = 3000;
@@ -1071,49 +1064,86 @@ This unit covers standard definitions, curriculum frameworks, and core guideline
   }, null, 2);
 }
 
-async function callGemini(prompt: string, jsonMode = false, schema?: any) {
-  const modelsToTry = ["gemini-3.5-flash", "gemini-3.1-flash-lite"];
+async function callOpenAI(prompt: string, jsonMode = false, maxRetries = 3): Promise<string> {
+  if (!OPENAI_API_KEY) {
+    throw new Error("OpenAI API key is not configured. Set OPENAI_API_KEY in your .env file.");
+  }
+
   let lastError: any = null;
 
-  for (const model of modelsToTry) {
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      try {
-        const config: any = {
-          systemInstruction: "You are Brain, an ultra-smart Nigerian Educational AI expert that provides highly robust lesson plans, lesson notes, and CBT questions precisely in structure.",
-        };
-        if (jsonMode) {
-          config.responseMimeType = "application/json";
-          if (schema) {
-            config.responseSchema = schema;
-          }
-        }
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const payload: any = {
+        model: OPENAI_MODEL,
+        messages: [
+          {
+            role: "system",
+            content: "You are Brain, an expert Nigerian curriculum specialist and educational content creator. You generate high-quality, curriculum-aligned lesson plans, lesson notes, examination questions, and educational resources for Nigerian primary and secondary schools following NERDC/UBEC/WASSCE/NECO/JAMB standards. Always respond with accurate, well-structured content tailored for teachers and students.",
+          },
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        max_tokens: 16384,
+        temperature: 0.7,
+      };
 
-        const response = await ai.models.generateContent({
-          model: model,
-          contents: prompt,
-          config,
-        });
-        
-        if (response && response.text) {
-          return response.text;
-        }
-        throw new Error("Empty text returned from Gemini API candidate stream.");
-      } catch (err: any) {
-        lastError = err;
-        console.warn(`Gemini call failed (Model: ${model}, Attempt: ${attempt}/3):`, err instanceof Error ? err.message : err);
-        
-        // Wait before retry with exponential backoff
-        const delay = attempt * 400;
-        await new Promise((resolve) => setTimeout(resolve, delay));
+      if (jsonMode) {
+        payload.response_format = { type: "json_object" };
       }
+
+      const response = await fetch(OPENAI_API_URL, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        if (response.status === 429) {
+          const retryAfter = Math.min(60, attempt * 5);
+          console.warn(`OpenAI rate limited (attempt ${attempt}/${maxRetries}), retrying in ${retryAfter}s`);
+          await new Promise((resolve) => setTimeout(resolve, retryAfter * 1000));
+          lastError = new Error("Rate limited by OpenAI API");
+          continue;
+        }
+        if (response.status >= 500 && attempt < maxRetries) {
+          console.warn(`OpenAI server error (attempt ${attempt}/${maxRetries}): HTTP ${response.status}`);
+          await new Promise((resolve) => setTimeout(resolve, attempt * 2000));
+          lastError = new Error(`OpenAI server error: HTTP ${response.status}`);
+          continue;
+        }
+        throw new Error(`OpenAI API returned status ${response.status}: ${errorBody.substring(0, 500)}`);
+      }
+
+      const data = await response.json();
+      const text = data.choices?.[0]?.message?.content || "";
+
+      if (!text.trim()) {
+        throw new Error("OpenAI returned an empty response.");
+      }
+
+      return text.trim();
+    } catch (err: any) {
+      lastError = err;
+      if (attempt >= maxRetries) {
+        console.error(`OpenAI call failed after ${maxRetries} attempts:`, err.message);
+        break;
+      }
+      console.warn(`OpenAI call failed (Attempt ${attempt}/${maxRetries}):`, err.message);
+      await new Promise((resolve) => setTimeout(resolve, attempt * 1000));
     }
   }
 
-  // ALL ATTEMPTS EXHAUSTED: Enable resilient failover fallback content generator
-  console.warn("⚠️ [Resilience Fallover Engaged] Gemini call completely failed or was rate-limited. Activating dynamic local curriculum fallback generation...");
+  // Fallback to local generation
+  console.warn("OpenAI call completely failed. Activating dynamic local curriculum fallback generation...");
   try {
     if (jsonMode) {
-      return generateDynamicFallbackJSON(prompt, schema);
+      return generateDynamicFallbackJSON(prompt);
     } else {
       const getField = (label: string, defVal: string): string => {
         const r = new RegExp(`(?:${label})\\s*:\\s*(.*?)(?:\\r?\\n|$)`, "i");
@@ -1130,11 +1160,7 @@ This unit covers the foundational curriculum aspects of ${topic} as mandated by 
     }
   } catch (fallbackErr) {
     console.error("Critical: Fallback content generator failed:", fallbackErr);
-    if (lastError instanceof Error) {
-      throw new Error(`Gemini AI service error: ${lastError.message}`);
-    } else {
-      throw new Error("Unknown error while generating content with Gemini after fallback retries.");
-    }
+    throw new Error("AI service error: " + (lastError?.message || "Unknown error after all retries and fallback."));
   }
 }
 
@@ -1871,21 +1897,9 @@ Please deliver the response in a JSON object conforming to this exact schema str
 Return only valid JSON. Do not write markdown tags outside the JSON representation.
 `;
 
-  const schema = {
-    type: Type.OBJECT,
-    properties: {
-      title: { type: Type.STRING },
-      subject: { type: Type.STRING },
-      classLevel: { type: Type.STRING },
-      topic: { type: Type.STRING },
-      body: { type: Type.STRING }
-    },
-    required: ["title", "subject", "classLevel", "topic", "body"]
-  };
-
   try {
-    const rawResult = await callGemini(prompt, true, schema);
-    if (!rawResult) throw new Error("Gemini returned empty results.");
+    const rawResult = await callOpenAI(prompt, true);
+    if (!rawResult) throw new Error("AI returned empty results.");
 
     const parsedResource = JSON.parse(rawResult.trim());
     
@@ -2097,69 +2111,9 @@ Rule: Create exactly 4 highly compact presentation steps (maximum 1 or 2 brief s
 Return only valid JSON. Do not write markdown tags outside the JSON representation.
 `;
 
-  // Schema declaration for robust JSON format
-  const schema = {
-    type: Type.OBJECT,
-    properties: {
-      schoolInformation: { type: Type.STRING },
-      subject: { type: Type.STRING },
-      classLevel: { type: Type.STRING },
-      term: { type: Type.STRING },
-      week: { type: Type.STRING },
-      date: { type: Type.STRING },
-      topic: { type: Type.STRING },
-      subTopic: { type: Type.STRING },
-      duration: { type: Type.STRING },
-      behaviouralObjectives: { type: Type.ARRAY, items: { type: Type.STRING } },
-      instructionalMaterials: { type: Type.ARRAY, items: { type: Type.STRING } },
-      referenceMaterials: { type: Type.ARRAY, items: { type: Type.STRING } },
-      entryBehaviour: { type: Type.STRING },
-      previousKnowledge: { type: Type.STRING },
-      introduction: { type: Type.STRING },
-      presentationSteps: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            step: { type: Type.STRING },
-            teachersActivities: { type: Type.STRING },
-            studentsActivities: { type: Type.STRING },
-            classDiscussion: { type: Type.STRING },
-            learningPoints: { type: Type.STRING },
-          },
-          required: ["step", "teachersActivities", "studentsActivities", "classDiscussion", "learningPoints"],
-        },
-      },
-      evaluation: { type: Type.STRING },
-      assignment: { type: Type.STRING },
-      conclusion: { type: Type.STRING },
-    },
-    required: [
-      "schoolInformation",
-      "subject",
-      "classLevel",
-      "term",
-      "week",
-      "date",
-      "topic",
-      "subTopic",
-      "duration",
-      "behaviouralObjectives",
-      "instructionalMaterials",
-      "referenceMaterials",
-      "entryBehaviour",
-      "previousKnowledge",
-      "introduction",
-      "presentationSteps",
-      "evaluation",
-      "assignment",
-      "conclusion",
-    ],
-  };
-
   try {
-    const rawResult = await callGemini(prompt, true, schema);
-    if (!rawResult) throw new Error("Gemini returned empty results.");
+    const rawResult = await callOpenAI(prompt, true);
+    if (!rawResult) throw new Error("AI returned empty results.");
 
     const parsedPlan = JSON.parse(rawResult.trim());
     const completeLessonPlanObject = {
@@ -2426,76 +2380,9 @@ Deliver the contents in a JSON schema structure:
 Return ONLY valid JSON representation matching types. No surrounding backticks or commentary outside JSON.
 `;
 
-  const schema = {
-    type: Type.OBJECT,
-    properties: {
-      schoolInformation: { type: Type.STRING },
-      subject: { type: Type.STRING },
-      classLevel: { type: Type.STRING },
-      term: { type: Type.STRING },
-      week: { type: Type.STRING },
-      date: { type: Type.STRING },
-      topic: { type: Type.STRING },
-      subTopic: { type: Type.STRING },
-      duration: { type: Type.STRING },
-      behaviouralObjectives: { type: Type.ARRAY, items: { type: Type.STRING } },
-      instructionalMaterials: { type: Type.ARRAY, items: { type: Type.STRING } },
-      referenceMaterials: { type: Type.ARRAY, items: { type: Type.STRING } },
-      entryBehaviour: { type: Type.STRING },
-      previousKnowledge: { type: Type.STRING },
-      introduction: { type: Type.STRING },
-      detailedNote: { type: Type.STRING },
-      explanation: { type: Type.STRING },
-      presentationSteps: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            step: { type: Type.STRING },
-            teachersActivities: { type: Type.STRING },
-            studentsActivities: { type: Type.STRING },
-            classDiscussion: { type: Type.STRING },
-            learningPoints: { type: Type.STRING },
-          },
-          required: ["step", "teachersActivities", "studentsActivities", "classDiscussion", "learningPoints"],
-        },
-      },
-      examples: { type: Type.ARRAY, items: { type: Type.STRING } },
-      classActivities: { type: Type.ARRAY, items: { type: Type.STRING } },
-      evaluation: { type: Type.ARRAY, items: { type: Type.STRING } },
-      assignment: { type: Type.STRING },
-      conclusion: { type: Type.STRING },
-    },
-    required: [
-      "schoolInformation",
-      "subject",
-      "classLevel",
-      "term",
-      "week",
-      "date",
-      "topic",
-      "subTopic",
-      "duration",
-      "behaviouralObjectives",
-      "instructionalMaterials",
-      "referenceMaterials",
-      "entryBehaviour",
-      "previousKnowledge",
-      "introduction",
-      "detailedNote",
-      "explanation",
-      "presentationSteps",
-      "examples",
-      "classActivities",
-      "evaluation",
-      "assignment",
-      "conclusion",
-    ],
-  };
-
   try {
-    const rawResult = await callGemini(prompt, true, schema);
-    if (!rawResult) throw new Error("Gemini returned empty results.");
+    const rawResult = await callOpenAI(prompt, true);
+    if (!rawResult) throw new Error("AI returned empty results.");
 
     const parsedNote = JSON.parse(rawResult.trim());
     const completeLessonNoteObject = {
@@ -2624,34 +2511,9 @@ Rules:
 - Return ONLY valid JSON.
 `;
 
-  const schema = {
-    type: Type.OBJECT,
-    properties: {
-      questions: {
-        type: Type.ARRAY,
-        items: {
-          type: Type.OBJECT,
-          properties: {
-            question: { type: Type.STRING },
-            optionA: { type: Type.STRING },
-            optionB: { type: Type.STRING },
-            optionC: { type: Type.STRING },
-            optionD: { type: Type.STRING },
-            correctAnswer: { type: Type.STRING, description: "Must be exactly one letter: A, B, C, or D" },
-            subject: { type: Type.STRING },
-            topic: { type: Type.STRING },
-            marks: { type: Type.INTEGER },
-          },
-          required: ["question", "optionA", "optionB", "optionC", "optionD", "correctAnswer", "subject", "topic", "marks"],
-        },
-      },
-    },
-    required: ["questions"],
-  };
-
   try {
-    const rawResult = await callGemini(prompt, true, schema);
-    if (!rawResult) throw new Error("Gemini returned empty results.");
+    const rawResult = await callOpenAI(prompt, true);
+    if (!rawResult) throw new Error("AI returned empty results.");
 
     const parsedResult = JSON.parse(rawResult.trim());
     const questionsList = parsedResult.questions || [];
@@ -3666,10 +3528,10 @@ User: ${message.trim()}
 Brain Support:`;
 
   try {
-    const aiText = await callGemini(directivePrompt);
+    const aiText = await callOpenAI(directivePrompt);
     res.json({ success: true, text: aiText });
   } catch (error: any) {
-    console.error("Gemini direct chat error:", error);
+    console.error("OpenAI direct chat error:", error);
     res.json({
       success: true,
       text: "Hello! I received your message. I am currently offline, but you can always reach us directly via Phone / WhatsApp at 08062078597 or via email at nwaigboaugust@gmail.com. We're happy to assist you!"
