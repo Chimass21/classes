@@ -780,7 +780,7 @@ document.getElementById('student-note-form')?.addEventListener('submit', async f
             renderStudentNote(data.note);
             loadData();
         } else {
-            container.innerHTML = '<div class="p-6 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 font-bold">Failed to generate lesson note.</div>';
+            container.innerHTML = '<div class="p-6 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 font-bold">' + (data.error || 'Failed to generate lesson note.') + '</div>';
         }
     } catch(e) {
         container.innerHTML = '<div class="p-6 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 font-bold">Connection error.</div>';
@@ -921,9 +921,9 @@ document.getElementById('practice-form')?.addEventListener('submit', async funct
             body: JSON.stringify({ subject: subj, topic, subTopic: document.getElementById('practice-subtopic').value, class: document.getElementById('practice-class').value, count, difficulty: 'Medium' })
         });
         const data = await res.json();
-        if (res.ok && data.questions) {
+        if (res.ok && data.success && data.questions) {
             container.innerHTML = renderPracticeQuiz(data.questions);
-        } else { container.innerHTML = '<div class="p-6 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 font-bold">Failed to generate questions.</div>'; }
+        } else { container.innerHTML = '<div class="p-6 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 font-bold">' + (data.error || 'Failed to generate questions.') + '</div>'; }
     } catch(e) { container.innerHTML = '<div class="p-6 bg-rose-50 border border-rose-200 rounded-2xl text-xs text-rose-700 font-bold">Connection error.</div>'; }
 });
 
