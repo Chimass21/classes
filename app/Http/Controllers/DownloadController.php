@@ -436,13 +436,17 @@ class DownloadController extends Controller
         foreach ($questions as $i => $q) {
             $num = $i + 1;
             $options = $q['options'] ?? $q;
+            $optA = $options['A'] ?? $q['optionA'] ?? '';
+            $optB = $options['B'] ?? $q['optionB'] ?? '';
+            $optC = $options['C'] ?? $q['optionC'] ?? '';
+            $optD = $options['D'] ?? $q['optionD'] ?? '';
             $qHtml .= "<div class='question'>
                 <p><strong>{$num}.</strong> {$q['question']}</p>
                 <ul class='options'>
-                    <li>A. " . ($options['A'] ?? '') . "</li>
-                    <li>B. " . ($options['B'] ?? '') . "</li>
-                    <li>C. " . ($options['C'] ?? '') . "</li>
-                    <li>D. " . ($options['D'] ?? '') . "</li>
+                    <li>A. {$optA}</li>
+                    <li>B. {$optB}</li>
+                    <li>C. {$optC}</li>
+                    <li>D. {$optD}</li>
                 </ul>
             </div>";
         }

@@ -376,7 +376,7 @@ class AIController extends Controller
 
             return response()->json([
                 'success' => true,
-                'questions' => $questionsArray,
+                'questions' => $questions,
                 'count' => $data['count'],
                 'message' => $data['count'] . ' questions generated with ' . (($data['includeTheory'] ?? false) ? 'theory questions' : 'MCQ only') . '.',
             ]);

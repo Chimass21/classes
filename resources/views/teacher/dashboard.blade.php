@@ -1030,7 +1030,7 @@ async function saveQuestions() {
                 subject: document.getElementById('q-subject').value,
                 topic: document.getElementById('q-topic').value,
                 subTopic: document.getElementById('q-subtopic').value,
-                questions: currentQuestions.objectives || [],
+                questions: Array.isArray(currentQuestions) ? currentQuestions : (currentQuestions.objectives || []),
             })
         });
         const data = await res.json();
@@ -1050,7 +1050,8 @@ async function convertToCBT() {
     }
     if (!qsId) { alert('Please save questions first.'); return; }
     try {
-        const duration = prompt('Exam duration in minutes:', Math.max(10, Math.min(60, Math.floor((currentQuestions?.objectives?.length || 20) / 2))));
+        const questionCount = Array.isArray(currentQuestions) ? currentQuestions.length : (currentQuestions?.objectives?.length || 20);
+        const duration = prompt('Exam duration in minutes:', Math.max(10, Math.min(60, Math.floor(questionCount / 2))));
         if (!duration) return;
         const marks = prompt('Default marks per question:', '1');
         if (!marks) return;

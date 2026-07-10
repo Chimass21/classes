@@ -81,10 +81,14 @@ class OpenAIService
                 $errorMessage = $errorJson['error']['message'] ?? $errorBody;
 
                 if ($statusCode === 429) {
-                    $retryAfter = min(60, $attempt * 5);
+                    $lastError = new \RuntimeException('AI service is busy. Please wait 1 minute and try again.');
+                    if ($attempt >= $this->maxRetries) {
+                        throw $lastError;
+                    }
+                    $headerRetryAfter = $response->header('Retry-After');
+                    $retryAfter = $headerRetryAfter ? (int)$headerRetryAfter : min(60, $attempt * 15);
                     Log::warning("Rate limited (attempt {$attempt}/{$this->maxRetries}), retrying in {$retryAfter}s");
                     sleep($retryAfter);
-                    $lastError = new \RuntimeException('Rate limited by AI API');
                     continue;
                 }
 
