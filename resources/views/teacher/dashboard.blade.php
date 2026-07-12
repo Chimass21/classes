@@ -956,8 +956,24 @@ function displayLessonNote(note) {
     const examples = note.examples || [];
     const activities = note.classroomActivities || [];
     const evaluation = note.evaluationQuestions || [];
+    const definitions = note.definitions || [];
+    const practicalApps = note.practicalApplications || [];
+    const illustrations = note.illustrations || [];
+    const advDisadv = note.advantagesDisadvantages || {};
+    const keyPoints = note.keyPoints || [];
 
     let examplesHtml = examples.map(ex => `<div class="p-3 bg-slate-50 border-l-4 border-emerald-500 rounded mb-2"><strong class="text-sm">${ex.title || 'Example'}:</strong><p class="text-xs mt-1">${ex.description || ''}</p></div>`).join('');
+    let definitionsHtml = definitions.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Definitions of Key Terms</h3><table class="w-full text-sm border-collapse">${definitions.map(d => `<tr class="border-b border-slate-200"><td class="py-2 pr-3 font-semibold text-emerald-700 w-1/3">${d.term || ''}</td><td class="py-2 text-slate-600">${d.definition || ''}</td></tr>`).join('')}</table></div>` : '';
+    let practicalHtml = practicalApps.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Practical Applications</h3><ul class="text-sm space-y-1 list-disc pl-5 text-slate-600">${practicalApps.map(a => `<li>${a}</li>`).join('')}</ul></div>` : '';
+    let illustrationsHtml = illustrations.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Illustrations / Diagrams</h3>${illustrations.map(i => `<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg mb-2 text-sm text-slate-600 font-mono text-xs">${i}</div>`).join('')}</div>` : '';
+    let advHtml = '';
+    if (advDisadv.advantages && advDisadv.advantages.length) {
+        advHtml += `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Advantages</h3><ul class="text-sm space-y-1 list-disc pl-5 text-green-700">${advDisadv.advantages.map(a => `<li>${a}</li>`).join('')}</ul></div>`;
+    }
+    if (advDisadv.disadvantages && advDisadv.disadvantages.length) {
+        advHtml += `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Disadvantages</h3><ul class="text-sm space-y-1 list-disc pl-5 text-red-700">${advDisadv.disadvantages.map(d => `<li>${d}</li>`).join('')}</ul></div>`;
+    }
+    let keyPointsHtml = keyPoints.length ? `<div class="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl"><h3 class="text-sm font-bold text-emerald-800 mb-2">Key Points to Remember</h3><ul class="text-sm space-y-1 list-disc pl-5 text-emerald-700">${keyPoints.map(k => `<li>${k}</li>`).join('')}</ul></div>` : '';
 
     container.innerHTML = `
         <div class="text-center border-b-2 border-emerald-600 pb-3 mb-4">
@@ -965,11 +981,16 @@ function displayLessonNote(note) {
             <p class="text-xs text-slate-500">${note.subject || ''} | ${note.class || ''} | ${note.term || ''} | Week ${note.week || ''} | ${note.periods || ''}</p>
         </div>
         ${note.content || ''}
+        ${definitionsHtml}
         ${examplesHtml ? `<h3 class="text-base font-bold text-slate-800 mt-4 mb-2">Examples</h3>${examplesHtml}` : ''}
+        ${illustrationsHtml}
+        ${practicalHtml}
+        ${advHtml}
         ${activities.length ? `<h3 class="text-base font-bold text-slate-800 mt-4 mb-2">Classroom Activities</h3>${activities.map(a => `<div class="mb-2"><strong class="text-sm">${a.title}:</strong><p class="text-xs mt-1">${a.description}</p></div>`).join('')}` : ''}
         ${evaluation.length ? `<h3 class="text-base font-bold text-slate-800 mt-4 mb-2">Evaluation Questions</h3><ol class="text-sm pl-4 space-y-1">${evaluation.map(eq => `<li>${eq}</li>`).join('')}</ol>` : ''}
         ${note.summary ? `<h3 class="text-base font-bold text-slate-800 mt-4 mb-2">Summary</h3><p class="text-sm">${note.summary}</p>` : ''}
         ${note.assignment ? `<h3 class="text-base font-bold text-slate-800 mt-4 mb-2">Assignment</h3><div class="text-sm whitespace-pre-wrap">${note.assignment}</div>` : ''}
+        ${keyPointsHtml}
     `;
 
     document.getElementById('note-action-buttons').innerHTML = `

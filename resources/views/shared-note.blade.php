@@ -17,6 +17,17 @@
         <div class="prose max-w-none text-sm">
             {!! $note['content'] ?? '' !!}
         </div>
+        @if(!empty($note['definitions']))
+        <h3 class="text-lg font-bold text-slate-800 mt-6 mb-3">Definitions of Key Terms</h3>
+        <table class="w-full text-sm border-collapse mb-4">
+            @foreach($note['definitions'] as $def)
+            <tr class="border-b border-slate-200">
+                <td class="py-2 pr-3 font-semibold text-emerald-700 w-1/3">{{ $def['term'] ?? '' }}</td>
+                <td class="py-2 text-slate-600">{{ $def['definition'] ?? '' }}</td>
+            </tr>
+            @endforeach
+        </table>
+        @endif
         @if(!empty($note['examples']))
         <h3 class="text-lg font-bold text-slate-800 mt-6 mb-3">Examples</h3>
         @foreach($note['examples'] as $ex)
@@ -25,6 +36,38 @@
             <p class="text-sm mt-1">{{ $ex['description'] ?? '' }}</p>
         </div>
         @endforeach
+        @endif
+        @if(!empty($note['illustrations']))
+        <h3 class="text-lg font-bold text-slate-800 mt-6 mb-3">Illustrations / Diagrams</h3>
+        @foreach($note['illustrations'] as $ill)
+        <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg mb-3 text-sm text-slate-600 font-mono">{{ $ill }}</div>
+        @endforeach
+        @endif
+        @if(!empty($note['practicalApplications']))
+        <h3 class="text-lg font-bold text-slate-800 mt-6 mb-3">Practical Applications</h3>
+        <ul class="text-sm space-y-2 list-disc pl-5 text-slate-600 mb-4">
+            @foreach($note['practicalApplications'] as $app)
+            <li>{{ $app }}</li>
+            @endforeach
+        </ul>
+        @endif
+        @if(!empty($note['advantagesDisadvantages']))
+            @if(!empty($note['advantagesDisadvantages']['advantages']))
+            <h3 class="text-lg font-bold text-slate-800 mt-6 mb-3">Advantages</h3>
+            <ul class="text-sm space-y-1 list-disc pl-5 text-green-700 mb-3">
+                @foreach($note['advantagesDisadvantages']['advantages'] as $adv)
+                <li>{{ $adv }}</li>
+                @endforeach
+            </ul>
+            @endif
+            @if(!empty($note['advantagesDisadvantages']['disadvantages']))
+            <h3 class="text-lg font-bold text-slate-800 mt-6 mb-3">Disadvantages</h3>
+            <ul class="text-sm space-y-1 list-disc pl-5 text-red-700 mb-3">
+                @foreach($note['advantagesDisadvantages']['disadvantages'] as $dis)
+                <li>{{ $dis }}</li>
+                @endforeach
+            </ul>
+            @endif
         @endif
         @if(!empty($note['classroomActivities']))
         <h3 class="text-lg font-bold text-slate-800 mt-6 mb-3">Classroom Activities</h3>
@@ -50,6 +93,14 @@
         @if(!empty($note['assignment']))
         <h3 class="text-lg font-bold text-slate-800 mt-6 mb-3">Assignment</h3>
         <div class="text-sm whitespace-pre-wrap">{{ $note['assignment'] }}</div>
+        @endif
+        @if(!empty($note['keyPoints']))
+        <h3 class="text-lg font-bold text-slate-800 mt-6 mb-3">Key Points to Remember</h3>
+        <ul class="text-sm space-y-1 list-disc pl-5 text-emerald-700">
+            @foreach($note['keyPoints'] as $kp)
+            <li>{{ $kp }}</li>
+            @endforeach
+        </ul>
         @endif
     </div>
 </body>

@@ -186,6 +186,13 @@ class AIController extends Controller
             $note = json_decode($response, true);
 
             if (!is_array($note) || empty($note)) {
+                $cleaned = $this->extractJson($response);
+                if ($cleaned !== null) {
+                    $note = $cleaned;
+                }
+            }
+
+            if (!is_array($note) || empty($note)) {
                 Log::warning('AI returned non-JSON response for lesson note', [
                     'response' => substr($response, 0, 1000),
                 ]);
@@ -217,6 +224,12 @@ class AIController extends Controller
                     }
 
                     $note = json_decode($retryResponse, true);
+                    if (!is_array($note) || empty($note)) {
+                        $cleaned = $this->extractJson($retryResponse);
+                        if ($cleaned !== null) {
+                            $note = $cleaned;
+                        }
+                    }
 
                     if (is_array($note) && !empty($note) && $this->isRelevantToTopic($note, 'lesson_note', $data['subject'], $data['topic'], $data['class'])) {
                         return $this->storeAndReturnLessonNote($note, $data, $user, $periods, $difficulty, $ageRange);
@@ -641,57 +654,64 @@ PROMPT;
 
         $subtopicInstruction = '';
         if (!empty($userSubtopics)) {
-            $subtopicInstruction = "\n\nYOU MUST COVER THESE SPECIFIC SUB-TOPICS IN ORDER:\n" . $userSubtopics . "\n\nStructure the content section with each sub-topic as a separate <h4> heading followed by detailed <p> explanations and <ul>/<ol> lists.";
+            $subtopicInstruction = "\n\nYOU MUST COVER THESE SPECIFIC SUB-TOPICS IN ORDER:\n" . $userSubtopics;
         }
 
         return <<<PROMPT
-You are a Nigerian curriculum expert and experienced subject teacher. Your ONLY task is to write a DETAILED LESSON NOTE about the EXACT topic specified below. DO NOT write about any other topic.
+You are a Nigerian curriculum expert. Write a DETAILED LESSON NOTE about "{$topic}" for {$subject} ({$class}, {$term}, Week {$week}). Difficulty: {$difficulty}.
 
-CRITICAL: Every single sentence you generate must be directly about the topic "{$topic}". If you write about anything else, the lesson note will be rejected.
-
-CONTEXT:
-- Subject: {$subject}
-- Class: {$class} (Age range: {$ageRange})
-- Term: {$term}
-- Week: {$week}
-- TOPIC (MUST FOLLOW EXACTLY): {$topic}
-- Periods: {$periods}
-- Difficulty: {$difficulty}
 {$weekScheme}
 {$subtopicInstruction}
 
-Return ONLY valid JSON with this exact structure (no markdown, no code fences):
+Return ONLY valid JSON (no markdown, no code fences). Use this exact structure:
 {
   "topic": "{$topic}",
-  "subtopics": ["Sub-topic 1 related to {$topic}", "Sub-topic 2 related to {$topic}", "Sub-topic 3 related to {$topic}"],
-  "learningObjectives": ["By the end of the lesson, students should be able to: 1. ...", "2. ...", "3. ..."],
-  "introduction": "Engaging introduction paragraph connecting to prior knowledge, directly about {$topic}",
-  "content": "Detailed FULL HTML content with <h4> headings, <p> paragraphs, <ul>/<ol> lists. ALL content must be about {$topic}. Include definitions, explanations, and illustrations relevant to {$topic}.",
+  "subtopics": ["All relevant subtopics under {$topic}", "one per array item"],
+  "learningObjectives": ["5 specific learning objectives starting with 'By the end of the lesson, students should be able to:'"],
+  "introduction": "4-6 sentence engaging intro connecting to prior knowledge, Nigeria context",
+  "content": "FULL DETAILED HTML — 4 A4 pages when printed. Structure with <h3> and <h4> headings. Include ALL of these sections in order inside the content field:
+   1. Introduction to {$topic}
+   2. Definitions of key terms (use <ul> or <table>)
+   3. Main body: detailed explanation of EACH subtopic — this is the longest section (2-3 A4 pages)
+   4. Illustrations/diagrams (describe with <table> or structured text)
+   5. Practical applications in Nigeria (₦aira, Nigerian cities, local contexts)
+   6. Advantages and disadvantages (where relevant)
+   7. Key points to remember (<ul> with 5-8 items)
+   8. Conclusion
+   Use <p>, <ul>/<ol>, <table> throughout. EVERY sentence about {$topic}.",
+  "definitions": [
+    {"term": "Key term 1", "definition": "Clear definition in context of {$topic}"}
+  ],
   "examples": [
-    {"title": "Example 1 about {$topic}", "description": "Worked example with step-by-step solution related to {$topic}"}
+    {"title": "Example 1", "description": "Detailed worked example or illustration. 4-6 sentences."}
   ],
+  "practicalApplications": ["Real-life application 1 of {$topic} in Nigeria", "Application 2"],
+  "illustrations": ["Description of diagram, chart, or illustration for {$topic}"],
+  "advantagesDisadvantages": {
+    "advantages": ["Advantage 1", "Advantage 2"],
+    "disadvantages": ["Disadvantage 1", "Disadvantage 2"]
+  },
   "classroomActivities": [
-    {"title": "Activity 1 about {$topic}", "description": "Description of classroom activity related to {$topic}"}
+    {"title": "Activity 1", "description": "Description of classroom activity"}
   ],
-  "summary": "Concise summary of the lesson focusing on {$topic}",
-  "conclusion": "Concluding remarks about {$topic} and connection to next lesson",
-  "evaluationQuestions": ["Question 1 about {$topic}", "Question 2 about {$topic}", "Question 3 about {$topic}"],
-  "assignment": "Home assignment tasks related to {$topic}",
-  "detailedNote": "Full comprehensive lesson note text about {$topic} with all subtopics explained in detail"
+  "evaluationQuestions": ["5 evaluation questions about {$topic}"],
+  "summary": "4-6 sentence comprehensive summary of the lesson",
+  "assignment": "4-5 specific homework tasks for students",
+  "keyPoints": ["5-8 key takeaways from the lesson"]
 }
 
-REQUIREMENTS:
-1. EVERY sentence MUST be about "{$topic}" - nothing else
-2. Content MUST be academically accurate and follow Nigerian curriculum standards
-3. Cover ALL relevant subtopics under "{$topic}" for {$class} level ({$ageRange})
-4. Be teacher-friendly and student-friendly
-5. Use Nigeria-centric examples (₦aira, Nigerian cities, cultural references)
-6. FIRST, reason about whether the topic "{$topic}" in {$subject} actually involves calculations or numerical problem-solving. Only include calculation/worked examples if the topic genuinely requires them. For example: Mathematics topics like Sets, Logic, or Statistics theory may not need calculation examples; purely conceptual Physics or Chemistry topics may not need them either. Other subjects (Biology, English, History, etc.) generally do NOT need calculation examples.
-7. If the topic genuinely involves calculations: include exactly 5 fully solved examples progressing from simple to advanced, ALL related to {$topic}. If the topic does NOT involve calculations: include ZERO calculation examples — instead provide relevant illustrative examples or applications.
-8. Content must be curriculum-compliant (NERDC/UBEC approved)
-9. The topic "{$topic}" MUST appear in every section
-10. Tailor the depth and language to {$class} level ({$ageRange}) — simpler explanations for primary, more advanced for secondary
-11. Match the difficulty level "{$difficulty}" — "Simple" means foundational concepts, "Standard" means standard curriculum depth, "Deep" means advanced/extension content
+STRICT RULES:
+- Every sentence MUST be about "{$topic}"
+- Follow NERDC/UBEC Nigerian curriculum standards
+- Cover ALL subtopics under {$topic} for {$class} level ({$ageRange})
+- The content field MUST be ~4 A4 pages when printed — thorough, detailed, complete
+- Use Nigeria-centric examples (₦aira, Nigerian cities, local culture)
+- For calculation topics: include 5 fully solved examples. For non-calculation topics: include 3-4 illustrative examples
+- Match language to {$class} level — simpler for primary, advanced for secondary
+- Match difficulty "{$difficulty}": Simple=foundational, Standard=curriculum depth, Deep=advanced
+- Suitable for both classroom teaching and self-study
+- No placeholders — every field must be fully written
+- Complete enough for a teacher to use directly in class
 PROMPT;
     }
 
@@ -942,5 +962,28 @@ PROMPT;
     protected function buildStrictRetryPrompt(string $originalPrompt, string $subject, string $topic, string $class): string
     {
         return $originalPrompt . "\n\n--- STRICT CORRECTION ---\n\nYour previous response was REJECTED because it was NOT about the requested topic.\n\nCRITICAL — READ CAREFULLY:\n- You MUST write ONLY about \"{$topic}\" in {$subject} for {$class}.\n- EVERY sentence must directly relate to \"{$topic}\".\n- Do NOT write about anything else.\n- Include the exact phrase \"{$topic}\" throughout your response.\n";
+    }
+
+    private function extractJson(string $text): ?array
+    {
+        $text = trim($text);
+        if (empty($text)) {
+            return null;
+        }
+        $text = preg_replace('/^```(?:json)?\s*/i', '', $text);
+        $text = preg_replace('/\s*```$/', '', $text);
+        $text = trim($text);
+        $decoded = json_decode($text, true);
+        if (is_array($decoded) && !empty($decoded)) {
+            return $decoded;
+        }
+        if (preg_match('/\{.*\}/s', $text, $matches)) {
+            $candidate = trim($matches[0]);
+            $decoded = json_decode($candidate, true);
+            if (is_array($decoded) && !empty($decoded)) {
+                return $decoded;
+            }
+        }
+        return null;
     }
 }
