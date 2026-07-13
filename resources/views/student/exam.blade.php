@@ -6,9 +6,12 @@
     body { background-color: white !important; color: black !important; }
     header, .print-hidden, button, nav, footer, .floating-support, #cbt-header { display: none !important; }
     #print-section-certificate, #printable-result-slip, #printable-graded-script { display: block !important; visibility: visible !important; width: 100% !important; }
-    #print-section-certificate { page-break-after: always !important; page-break-inside: avoid !important; }
-    body:not(.printing-graded) #printable-graded-script { display: none !important; }
+    #print-section-certificate { page-break-inside: avoid !important; page-break-before: always !important; }
+    body:not(.printing-graded):not(.printing-combined) #printable-graded-script { display: none !important; }
     body.printing-graded #print-section-certificate, body.printing-graded #printable-result-slip { display: none !important; }
+    body.printing-combined #printable-graded-script { display: block !important; }
+    body.printing-combined #printable-result-slip { display: block !important; page-break-before: always !important; }
+    body.printing-combined #print-section-certificate { display: block !important; page-break-inside: avoid !important; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   }
   .nav-btn { transition: all 0.15s ease; }
@@ -124,26 +127,9 @@
     <!-- Results State -->
     <div id="exam-results" class="hidden space-y-6"></div>
 
-    <!-- Printable Certificate -->
-    <div id="print-section-certificate" class="hidden print:block p-4 sm:p-10 bg-white min-h-[190mm]">
-      <div class="border-4 border-double border-amber-600 p-6 sm:p-10 text-center bg-gradient-to-b from-amber-50/40 to-white max-w-5xl mx-auto rounded-2xl sm:rounded-3xl relative shadow-xl">
-        <div class="absolute top-4 left-4 w-16 h-16 border-t-4 border-l-4 border-amber-600 rounded-tl-xl"></div>
-        <div class="absolute top-4 right-4 w-16 h-16 border-t-4 border-r-4 border-amber-600 rounded-tr-xl"></div>
-        <div class="absolute bottom-4 left-4 w-16 h-16 border-b-4 border-l-4 border-amber-600 rounded-bl-xl"></div>
-        <div class="absolute bottom-4 right-4 w-16 h-16 border-b-4 border-r-4 border-amber-600 rounded-br-xl"></div>
-        <div class="relative z-10">
-          <h1 class="text-3xl sm:text-4xl font-serif font-bold text-amber-900 uppercase tracking-wide">Certificate of Excellence</h1>
-          <div class="w-24 h-1 bg-amber-500 mx-auto my-4 rounded-full"></div>
-          <p class="italic text-sm text-slate-600">Presented to</p>
-          <h2 id="cert-name" class="text-3xl sm:text-4xl font-serif font-black underline underline-offset-8 my-4 uppercase text-slate-900"></h2>
-          <p id="cert-desc" class="text-sm text-slate-700 max-w-lg mx-auto leading-relaxed"></p>
-          <div id="cert-percentage" class="my-6 text-5xl sm:text-6xl font-black text-amber-700"></div>
-          <div class="flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 mt-10 sm:mt-16 pt-6 border-t border-dashed border-amber-300 gap-4">
-            <div class="text-left">Principal Assessor: <strong class="text-slate-800 block mt-1">Nwaigbo Augustine</strong></div>
-            <div id="cert-id" class="text-right">Verification Code: <strong class="text-slate-800 block mt-1 font-mono"></strong></div>
-          </div>
-        </div>
-      </div>
+    <!-- Printable Graded Script (first in print order) -->
+    <div id="printable-graded-script" class="hidden print:block p-6 sm:p-10 bg-white font-sans min-h-[297mm]">
+      <div id="graded-script-content" class="max-w-5xl mx-auto space-y-6"></div>
     </div>
 
     <!-- Printable Result Slip -->
@@ -169,9 +155,26 @@
       </div>
     </div>
 
-    <!-- Printable Graded Script -->
-    <div id="printable-graded-script" class="hidden print:block p-6 sm:p-10 bg-white font-sans min-h-[297mm]">
-      <div id="graded-script-content" class="max-w-5xl mx-auto space-y-6"></div>
+    <!-- Printable Certificate (last in print order) -->
+    <div id="print-section-certificate" class="hidden print:block p-4 sm:p-10 bg-white min-h-[190mm]">
+      <div class="border-4 border-double border-amber-600 p-6 sm:p-10 text-center bg-gradient-to-b from-amber-50/40 to-white max-w-5xl mx-auto rounded-2xl sm:rounded-3xl relative shadow-xl">
+        <div class="absolute top-4 left-4 w-16 h-16 border-t-4 border-l-4 border-amber-600 rounded-tl-xl"></div>
+        <div class="absolute top-4 right-4 w-16 h-16 border-t-4 border-r-4 border-amber-600 rounded-tr-xl"></div>
+        <div class="absolute bottom-4 left-4 w-16 h-16 border-b-4 border-l-4 border-amber-600 rounded-bl-xl"></div>
+        <div class="absolute bottom-4 right-4 w-16 h-16 border-b-4 border-r-4 border-amber-600 rounded-br-xl"></div>
+        <div class="relative z-10">
+          <h1 class="text-3xl sm:text-4xl font-serif font-bold text-amber-900 uppercase tracking-wide">Certificate of Excellence</h1>
+          <div class="w-24 h-1 bg-amber-500 mx-auto my-4 rounded-full"></div>
+          <p class="italic text-sm text-slate-600">Presented to</p>
+          <h2 id="cert-name" class="text-3xl sm:text-4xl font-serif font-black underline underline-offset-8 my-4 uppercase text-slate-900"></h2>
+          <p id="cert-desc" class="text-sm text-slate-700 max-w-lg mx-auto leading-relaxed"></p>
+          <div id="cert-percentage" class="my-6 text-5xl sm:text-6xl font-black text-amber-700"></div>
+          <div class="flex flex-col sm:flex-row justify-between items-center text-xs text-slate-500 mt-10 sm:mt-16 pt-6 border-t border-dashed border-amber-300 gap-4">
+            <div class="text-left">Principal Assessor: <strong class="text-slate-800 block mt-1">Nwaigbo Augustine</strong></div>
+            <div id="cert-id" class="text-right">Verification Code: <strong class="text-slate-800 block mt-1 font-mono"></strong></div>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -606,8 +609,12 @@ function showResults() {
     <!-- Download / Action Buttons -->
     <div class="p-5 sm:p-6 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-xs print-hidden slide-up">
       <div class="flex flex-wrap items-center gap-3">
+        <button onclick="handlePrintFullResult()" class="px-5 py-3 bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-600 hover:to-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer ring-2 ring-emerald-300">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Download Full Result (PDF)
+        </button>
         <button onclick="handlePrintCertificate()" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.032-.133-2.052-.382-3.016z"/></svg>
           Print Certificate
         </button>
         <button onclick="handlePrintResultSlip()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
@@ -699,10 +706,14 @@ function showResults() {
         ${explanationsHtml}
       </div>
       <div class="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-200 mt-6">
-        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mr-2">Download Script:</span>
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mr-2">Download:</span>
+        <button onclick="handlePrintFullResult()" class="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-600 hover:to-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+          Full Result (PDF)
+        </button>
         <button onclick="handlePrintGradedScript()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-          PDF
+          Graded Script (PDF)
         </button>
         <button onclick="window.open('/api/download/exam/${examId}/docx', '_blank')" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -740,6 +751,13 @@ function handlePrintGradedScript() {
   alert('To Save as PDF:\n1. Change destination to \'Save as PDF\'.\n2. Set Layout to \'Portrait\'.\n3. Click Save.');
   window.print();
   setTimeout(() => document.body.classList.remove('printing-graded'), 500);
+}
+
+function handlePrintFullResult() {
+  document.body.classList.add('printing-combined');
+  alert('To Save as PDF:\n1. Change destination to \'Save as PDF\'.\n2. Set Layout to \'Portrait\'.\n3. Ensure background graphics are ON.\n4. Click Save.');
+  window.print();
+  setTimeout(() => document.body.classList.remove('printing-combined'), 500);
 }
 
 function handleRetake() {
