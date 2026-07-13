@@ -316,6 +316,13 @@ class AIController extends Controller
             $questions = json_decode($response, true);
 
             if (!is_array($questions) || empty($questions)) {
+                $cleaned = $this->extractJson($response);
+                if ($cleaned !== null) {
+                    $questions = $cleaned;
+                }
+            }
+
+            if (!is_array($questions) || empty($questions)) {
                 Log::warning('AI returned non-JSON for questions', [
                     'response' => substr($response, 0, 1000),
                 ]);
@@ -362,6 +369,12 @@ class AIController extends Controller
                     }
 
                     $questions = json_decode($retryResponse, true);
+                    if (!is_array($questions) || empty($questions)) {
+                        $cleaned = $this->extractJson($retryResponse);
+                        if ($cleaned !== null) {
+                            $questions = $cleaned;
+                        }
+                    }
                     if (is_array($questions) && !empty($questions)) {
                         $questionItems = $questions['objectives'] ?? $questions;
                         $hasOptionsAfterRetry = !empty($questionItems) && (
