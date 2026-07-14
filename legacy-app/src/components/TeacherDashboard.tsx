@@ -1036,9 +1036,13 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
       setCsvProgressStep("Saving to database...");
       setCsvProgressWidth("60%");
 
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+
       const resp = await fetch("/api/csv-import/convert-json", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           questions: csvParsedQuestions,
           title: examTitle || `${examSubject} CSV Import`,
@@ -1051,6 +1055,7 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
           duplicate_handling: csvDuplicateHandling,
         }),
       });
+      clearTimeout(timeoutId);
 
       setCsvProgressWidth("85%");
 

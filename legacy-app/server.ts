@@ -2728,6 +2728,122 @@ app.delete("/api/exams/:id", (req, res) => {
   res.json({ success: true, message: "Exam and any associated candidate attempts successfully deleted." });
 });
 
+// --- CSV IMPORT: Convert parsed JSON questions to a CBT exam ---
+app.post("/api/csv-import/convert-json", (req, res) => {
+  try {
+    const { questions, title, subject, level, duration, defaultMarks, creatorId, creatorName, duplicate_handling } = req.body;
+
+    if (!questions || !Array.isArray(questions) || questions.length === 0) {
+      return res.status(400).json({ success: false, error: "No questions provided." });
+    }
+    if (!subject) {
+      return res.status(400).json({ success: false, error: "Subject is required." });
+    }
+
+    const handling = duplicate_handling || "import_all";
+    const defaultM = defaultMarks || 1;
+    const subjectKey = subject.toLowerCase().trim();
+
+    // Build index of existing questions for this subject
+    const existingQuestionIndex: Record<string, true> = {};
+    const examWithQuestion: Record<string, { examId: string; questionIndex: number }> = {};
+    if (handling !== "import_all") {
+      for (const exam of db.exams) {
+        if ((exam.subject || "").toLowerCase().trim() !== subjectKey) continue;
+        if (!exam.questions) continue;
+        for (let qIdx = 0; qIdx < exam.questions.length; qIdx++) {
+          const eq = exam.questions[qIdx];
+          const key = (eq.question || "").toLowerCase().trim();
+          if (key) {
+            existingQuestionIndex[key] = true;
+            examWithQuestion[key] = { examId: exam.id, questionIndex: qIdx };
+          }
+        }
+      }
+    }
+
+    const finalQuestions: any[] = [];
+    let imported = 0;
+    let skipped = 0;
+    let replaced = 0;
+
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      const qText = (q.question || "").trim();
+      const qKey = qText.toLowerCase();
+      const questionEntry = {
+        id: i + 1,
+        question: qText,
+        optionA: q.optionA || "",
+        optionB: q.optionB || "",
+        optionC: q.optionC || "",
+        optionD: q.optionD || "",
+        correctAnswer: (q.correctAnswer || "").toUpperCase(),
+        marks: defaultM,
+      };
+
+      if (handling !== "import_all" && existingQuestionIndex[qKey]) {
+        if (handling === "skip") {
+          skipped++;
+          continue;
+        }
+        if (handling === "replace") {
+          replaced++;
+          const loc = examWithQuestion[qKey];
+          if (loc) {
+            for (const exam of db.exams) {
+              if (exam.id === loc.examId && exam.questions) {
+                exam.questions[loc.questionIndex] = questionEntry;
+                break;
+              }
+            }
+          }
+          continue;
+        }
+      }
+
+      if (handling !== "import_all") {
+        existingQuestionIndex[qKey] = true;
+      }
+
+      finalQuestions.push(questionEntry);
+      imported++;
+    }
+
+    const examId = "exam_" + Math.random().toString(36).substring(2, 9);
+    const dur = duration || Math.max(10, Math.min(120, Math.floor(finalQuestions.length / 2)));
+
+    db.exams.push({
+      id: examId,
+      title: title || `${subject} CSV Import`,
+      subject,
+      level: level || "Mixed",
+      duration: dur,
+      defaultMarks: defaultM,
+      totalMarks: finalQuestions.length * defaultM,
+      instructions: `Answer all questions. Each question carries ${defaultM} mark(s).`,
+      questions: finalQuestions,
+      creatorId: creatorId || "unknown",
+      creatorName: creatorName || "CSV Import",
+      isPublished: false,
+      source: "csv_import",
+      createdAt: new Date().toISOString(),
+    });
+
+    saveDatabase();
+
+    let msg = `${imported} questions imported`;
+    if (skipped > 0) msg += `, ${skipped} skipped`;
+    if (replaced > 0) msg += `, ${replaced} replaced`;
+    msg += ".";
+
+    res.json({ success: true, examId, imported, skipped, replaced, message: msg });
+  } catch (err: any) {
+    console.error("CSV import error:", err);
+    res.status(500).json({ success: false, error: err.message || "Failed to import questions." });
+  }
+});
+
 // --- SUBMIT EXAM RESULTS ---
 app.post("/api/exams/:id/submit", (req, res) => {
   const examId = req.params.id;
