@@ -848,87 +848,296 @@ class ContentGenerator
         $seed = crc32($topic . $subject . $num);
         srand($seed);
 
-        // Each template is [question_stem, correct_answer_pattern]
-        // The options are generated per-question using the topic/seed to vary
-        $pairs = [
-            ["What is the main focus of {$topic} in {$subject}?", "The study of {$topic} focuses on {$topic}-related concepts within {$subject}"],
-            ["Which of the following best defines {$topic}?", "{$topic} is a key concept in {$subject} that deals with specific principles and applications"],
-            ["The term '{$topic}' in {$subject} refers to:", "{$topic} refers to the core ideas and practices related to this topic in {$subject}"],
-            ["One of the key characteristics of {$topic} is:", "A defining characteristic of {$topic} is its focus on relevant {$subject} principles"],
-            ["Why is {$topic} important in the study of {$subject}?", "{$topic} is important because it forms the foundation for understanding advanced {$subject} concepts"],
-            ["Which of the following is NOT directly related to {$topic}?", "An unrelated concept from a different area of {$subject} that does not involve {$topic}"],
-            ["{$topic} can best be described as:", "{$topic} encompasses the fundamental ideas and methods used in this area of {$subject}"],
-            ["A practical application of {$topic} in real life is:", "Applying {$topic} principles helps solve real-world problems in {$subject}-related fields"],
-            ["All of the following are aspects of {$topic} EXCEPT:", "A topic from {$subject} that is studied separately from {$topic}"],
-            ["Which statement about {$topic} is correct?", "{$topic} involves understanding key principles and applying them to {$subject} problems"],
-            ["The study of {$topic} helps students to:", "Students learn to apply {$topic} concepts to analyze and solve {$subject} problems effectively"],
-            ["In {$subject}, the concept of {$topic} is used to:", "{$topic} provides the tools and framework for understanding {$subject} at a deeper level"],
-            ["Which of the following best illustrates {$topic}?", "A real-world example or scenario that demonstrates {$topic} in the context of {$subject}"],
-            ["A student mastering {$topic} should be able to:", "Identify and apply the key principles of {$topic} to solve {$subject} problems independently"],
-            ["Which of the following is a common misunderstanding about {$topic}?", "Confusing {$topic} with a related but different concept taught elsewhere in {$subject}"],
-            ["{$topic} contributes to {$subject} by:", "Providing essential knowledge and skills that are built upon in more advanced {$subject} topics"],
-            ["When learning {$topic}, it is important to first understand:", "The prerequisite concepts in {$subject} that form the basis for studying {$topic}"],
-            ["Which of the following correctly applies {$topic} principles?", "Using {$topic} methods to correctly analyze a given {$subject} scenario or problem"],
-            ["The scope of {$topic} in {$subject} includes:", "The key areas, subtopics, and applications that fall under {$topic} within {$subject}"],
-            ["Which question would {$topic} help a {$subject} student answer?", "A question that requires knowledge of {$topic} to solve or explain in {$subject}"],
-            ["A key skill developed through studying {$topic} is:", "The ability to apply {$topic}-specific reasoning to {$subject} problems and questions"],
-            ["{$topic} relates to other {$subject} topics by:", "Building on previously learned concepts and providing groundwork for more advanced study"],
-            ["The best way to understand {$topic} is to:", "Study the core principles of {$topic} and practice applying them to {$subject} examples"],
-            ["Which of the following is a direct application of {$topic}?", "Using {$topic} knowledge to address a specific problem or question in {$subject}"],
+        // Each archetype is a COMPLETE question style with its own answer and distractor patterns.
+        // Archetypes alternate so adjacent questions look completely different.
+        $archetypes = [
+
+            // --- DEFINITION style ---
+            ['question' => 'Which of the following is the correct definition of {$topic} in {$subject}?',
+             'correct' => '{$topic} is a core concept in {$subject} that involves specific principles, rules, and applications unique to this topic.',
+             'wrong' => [
+                '{$topic} is a general term used across all subjects with no specific meaning in {$subject}',
+                '{$topic} refers to a completely different topic studied outside of {$subject}',
+                '{$topic} is the same as another unrelated concept in {$subject}',
+             ]],
+
+            // --- COMPONENT style ---
+            ['question' => 'Which of the following is a major component of {$topic} in {$subject}?',
+             'correct' => 'One of the key components of {$topic} is understanding its foundational principles and how they apply to {$subject} problems.',
+             'wrong' => [
+                'Memorizing facts without understanding the underlying principles of {$topic}',
+                'Ignoring the relationship between {$topic} and other {$subject} topics',
+                'Focusing only on unrelated topics outside of {$subject}',
+             ]],
+
+            // --- EXAMPLE style ---
+            ['question' => 'Which of the following is a good example of {$topic} as taught in {$subject}?',
+             'correct' => 'A practical example of {$topic} can be seen when applying {$subject} knowledge to solve problems related to this topic.',
+             'wrong' => [
+                'An example taken from a completely different subject area',
+                'A situation where {$topic} knowledge is deliberately ignored',
+                'A common everyday activity that has no connection to {$subject}',
+             ]],
+
+            // --- IMPORTANCE style ---
+            ['question' => 'Why is {$topic} considered an important topic in {$subject}?',
+             'correct' => '{$topic} is important because it provides the foundation for understanding more advanced concepts and solving real-world problems in {$subject}.',
+             'wrong' => [
+                '{$topic} is not actually important and is rarely used in {$subject}',
+                '{$topic} is only important for passing exams and has no practical value',
+                '{$topic} is important only for students who want to specialize in other subjects',
+             ]],
+
+            // --- APPLICATION style ---
+            ['question' => 'How is {$topic} applied in real-world {$subject} situations?',
+             'correct' => '{$topic} is applied by using its principles to analyze, interpret, and solve practical problems encountered in {$subject}-related fields.',
+             'wrong' => [
+                '{$topic} has no real-world applications and is only studied theoretically',
+                '{$topic} can only be applied in laboratory settings, not in everyday life',
+                'The application of {$topic} is limited to written examinations only',
+             ]],
+
+            // --- CLASSIFICATION style ---
+            ['question' => 'Which of the following best categorizes the scope of {$topic} in {$subject}?',
+             'correct' => '{$topic} covers a range of subtopics and principles that collectively form an important area of study within the {$subject} curriculum.',
+             'wrong' => [
+                '{$topic} is a single narrow concept with no subtopics or related ideas',
+                '{$topic} belongs to a different subject entirely and is not part of {$subject}',
+                '{$topic} covers everything in {$subject} and has no specific boundaries',
+             ]],
+
+            // --- CHARACTERISTIC style ---
+            ['question' => 'Which of the following is a key characteristic of {$topic}?',
+             'correct' => 'A defining characteristic of {$topic} is that it requires both theoretical understanding and practical application within the context of {$subject}.',
+             'wrong' => [
+                '{$topic} is purely theoretical with no practical component in {$subject}',
+                '{$topic} is easy and requires no effort to understand or apply',
+                '{$topic} is identical to every other topic in {$subject}',
+             ]],
+
+            // --- DISTINCTION style ---
+            ['question' => 'How does {$topic} differ from other topics in {$subject}?',
+             'correct' => '{$topic} differs from other topics because it focuses on specific concepts and methods that are unique to this area of {$subject}.',
+             'wrong' => [
+                '{$topic} is exactly the same as every other topic in {$subject}',
+                '{$topic} is not actually taught as part of {$subject}',
+                'There is no difference between {$topic} and unrelated everyday knowledge',
+             ]],
+
+            // --- PREREQUISITE style ---
+            ['question' => 'What knowledge is needed before studying {$topic} in {$subject}?',
+             'correct' => 'Before studying {$topic}, students should understand the foundational concepts in {$subject} that serve as building blocks for this topic.',
+             'wrong' => [
+                'No prior knowledge is needed; {$topic} can be studied by anyone at any level',
+                'Students must first study unrelated topics that have no connection to {$topic}',
+                'Only advanced mathematics knowledge is needed, regardless of the subject',
+             ]],
+
+            // --- OUTCOME style ---
+            ['question' => 'What should a student be able to do after learning {$topic} in {$subject}?',
+             'correct' => 'After learning {$topic}, a student should be able to identify, explain, and apply its key principles to solve {$subject} problems independently.',
+             'wrong' => [
+                'The student should be able to teach {$subject} to others without any preparation',
+                'The student should forget everything learned after the examination',
+                'The student should be able to answer questions about unrelated topics',
+             ]],
+
+            // --- RELATIONSHIP style ---
+            ['question' => 'How does {$topic} relate to the broader {$subject} curriculum?',
+             'correct' => '{$topic} connects to other topics in {$subject} by building on prior knowledge and providing a foundation for more advanced study.',
+             'wrong' => [
+                '{$topic} is isolated and has no relationship to any other part of {$subject}',
+                '{$topic} contradicts everything else taught in {$subject}',
+                '{$topic} replaces all other topics in the {$subject} curriculum',
+             ]],
+
+            // --- COMMON ERROR style ---
+            ['question' => 'Which of the following is a common mistake students make when studying {$topic}?',
+             'correct' => 'A common mistake is confusing the specific principles of {$topic} with similar but different concepts from other areas of {$subject}.',
+             'wrong' => [
+                'Spending too much time studying {$topic} and not enough on other subjects',
+                'Reading the textbook carefully and taking detailed notes',
+                'Asking the teacher questions when something about {$topic} is unclear',
+             ]],
+
+            // --- EVALUATION style ---
+            ['question' => 'Which of the following questions can be answered using knowledge of {$topic}?',
+             'correct' => 'A question that requires applying the principles of {$topic} to analyze a situation or solve a problem in {$subject}.',
+             'wrong' => [
+                'A question about a historical event that has no connection to {$subject}',
+                'A question that can be answered using common sense without studying {$subject}',
+                'A question about a completely different subject that is not related to {$topic}',
+             ]],
+
+            // --- SCOPE style ---
+            ['question' => 'What is included in the study of {$topic} in {$subject}?',
+             'correct' => 'The study of {$topic} includes its key principles, methods, applications, and how it connects to other areas within {$subject}.',
+             'wrong' => [
+                'The study of {$topic} includes unrelated topics from other school subjects',
+                'The study of {$topic} is limited to a single definition with no further content',
+                'The study of {$topic} covers only practical work with no theoretical background',
+             ]],
+
+            // --- TRUE STATEMENT style ---
+            ['question' => 'Which statement about {$topic} is true?',
+             'correct' => '{$topic} is an important area of {$subject} that helps students develop critical thinking and problem-solving skills.',
+             'wrong' => [
+                '{$topic} is only for advanced students and should not be taught at this level',
+                '{$topic} has been removed from the {$subject} curriculum',
+                '{$topic} is the same thing as another topic with a different name',
+             ]],
+
+            // --- FALSE STATEMENT style ---
+            ['question' => 'Which of the following is NOT true about {$topic}?',
+             'correct' => 'It is not true that {$topic} can be fully understood without studying the related concepts in {$subject}.',
+             'wrong' => [
+                '{$topic} requires practice and application to master',
+                '{$topic} is part of the {$subject} curriculum for this class level',
+                'Understanding {$topic} helps in solving {$subject} problems',
+             ]],
+
+            // --- PURPOSE style ---
+            ['question' => 'What is the main purpose of teaching {$topic} in {$subject}?',
+             'correct' => 'The purpose is to equip students with the knowledge and skills needed to understand and apply {$topic} principles in {$subject} and beyond.',
+             'wrong' => [
+                'The purpose is to make the {$subject} curriculum more difficult for students',
+                'The purpose is to fill time in the academic term with no specific learning goals',
+                'The purpose is to test students memory rather than their understanding',
+             ]],
+
+            // --- METHOD style ---
+            ['question' => 'Which approach is best for understanding {$topic} in {$subject}?',
+             'correct' => 'The best approach is to study the principles of {$topic} step by step and practice applying them to different {$subject} problems.',
+             'wrong' => [
+                'The best approach is to memorize all the answers without understanding',
+                'The best approach is to skip {$topic} and focus on other subjects entirely',
+                'The best approach is to guess randomly and hope for the best',
+             ]],
+
+            // --- COMPARISON style ---
+            ['question' => 'How should {$topic} be studied compared to other topics in {$subject}?',
+             'correct' => 'Like other topics in {$subject}, {$topic} should be studied with attention to its unique principles and how they connect to the broader subject.',
+             'wrong' => [
+                '{$topic} should be studied in isolation without connecting to other topics',
+                '{$topic} is less important and deserves less study time than other topics',
+                '{$topic} should only be studied if there is extra time at the end of the term',
+             ]],
+
+            // --- EXAM STYLE ---
+            ['question' => 'In a {$subject} examination, a question on {$topic} might ask a student to:',
+             'correct' => 'Apply their knowledge of {$topic} to analyze a given scenario and select the correct response based on {$subject} principles.',
+             'wrong' => [
+                'Write an essay about a topic that has nothing to do with {$subject}',
+                'Recite a poem or story unrelated to {$topic} or {$subject}',
+                'Draw a picture without any connection to the {$subject} curriculum',
+             ]],
+
+            // --- STEP style ---
+            ['question' => 'What is the first step in learning {$topic} in {$subject}?',
+             'correct' => 'The first step is to understand the basic definitions and core concepts that form the foundation of {$topic} in {$subject}.',
+             'wrong' => [
+                'The first step is to take an examination before studying the topic',
+                'The first step is to ignore the teacher and study on your own without guidance',
+                'The first step is to move on to advanced topics without understanding the basics',
+             ]],
+
+            // --- BENEFIT style ---
+            ['question' => 'How does studying {$topic} benefit a {$subject} student?',
+             'correct' => 'Studying {$topic} helps students develop a deeper understanding of {$subject} and prepares them for more advanced study and real-world applications.',
+             'wrong' => [
+                'Studying {$topic} has no benefit and is a waste of time for students',
+                'The only benefit of studying {$topic} is getting good grades on the report card',
+                'Studying {$topic} only benefits students who want to change subjects later',
+             ]],
+
+            // --- CHALLENGE style ---
+            ['question' => 'What makes {$topic} challenging for some {$subject} students?',
+             'correct' => '{$topic} can be challenging because it requires abstract thinking and the ability to connect multiple concepts within {$subject}.',
+             'wrong' => [
+                '{$topic} is challenging only because the textbook is difficult to read',
+                '{$topic} is challenging because teachers deliberately make it hard for students',
+                '{$topic} is not actually challenging; students who struggle are not trying hard enough',
+             ]],
+
+            // --- FOUNDATION style ---
+            ['question' => 'Why is {$topic} considered a foundational topic in {$subject}?',
+             'correct' => '{$topic} is foundational because it introduces key ideas and skills that are built upon in more advanced {$subject} topics throughout the curriculum.',
+             'wrong' => [
+                '{$topic} is not foundational; it is an optional topic that can be skipped',
+                '{$topic} is taught at the end of the term as a review of unrelated concepts',
+                '{$topic} is only a review of what students learned in previous classes',
+             ]],
+
+            // --- CONNECTION style ---
+            ['question' => 'What other subjects connect to {$topic} in {$subject}?',
+             'correct' => '{$topic} in {$subject} connects to other subjects by sharing principles and applications that are relevant across the broader school curriculum.',
+             'wrong' => [
+                '{$topic} does not connect to any other subject in any way',
+                '{$topic} only connects to subjects that are not taught in Nigerian schools',
+                '{$topic} replaces the need to study any other subject',
+             ]],
+
+            // --- ASSESSMENT style ---
+            ['question' => 'How is a students understanding of {$topic} typically assessed in {$subject}?',
+             'correct' => 'Understanding of {$topic} is assessed through questions that require students to recall, explain, and apply its principles to {$subject} problems.',
+             'wrong' => [
+                'Students are assessed only on their ability to memorize facts about {$topic}',
+                'Students are not assessed on {$topic} at all; it is not part of the examination',
+                'Assessment of {$topic} is based on group work rather than individual understanding',
+             ]],
+
+            // --- TEACHING style ---
+            ['question' => 'How should a teacher introduce {$topic} to a {$subject} class?',
+             'correct' => 'A teacher should start by connecting {$topic} to what students already know in {$subject}, then build understanding step by step with examples.',
+             'wrong' => [
+                'The teacher should give a test on {$topic} before teaching anything about it',
+                'The teacher should skip the introduction and move directly to advanced content',
+                'The teacher should tell students that {$topic} is too hard for them to understand',
+             ]],
+
+            // --- REVIEW style ---
+            ['question' => 'What should a student review before being tested on {$topic} in {$subject}?',
+             'correct' => 'A student should review the key definitions, principles, and examples of {$topic} and practice applying them to {$subject} problems.',
+             'wrong' => [
+                'The student should review topics from other subjects that are unrelated to {$subject}',
+                'The student does not need to review because the test on {$topic} will be very easy',
+                'The student should only review the answers without understanding the questions',
+             ]],
+
+            // --- MISTAKE style ---
+            ['question' => 'Which error might a student make when answering a question about {$topic}?',
+             'correct' => 'A student might confuse {$topic} with a related concept in {$subject} and apply the wrong principle to solve the problem.',
+             'wrong' => [
+                'A student might answer too quickly and finish the exam before the time is up',
+                'A student might help other students instead of focusing on their own work',
+                'A student might write the answer in the wrong place on the answer sheet',
+             ]],
         ];
 
-        $index = abs($num + $seed) % count($pairs);
-        $q = $pairs[$index][0];
-        $correctAnswer = $pairs[$index][1];
+        $index = abs($num + $seed) % count($archetypes);
+        $archetype = $archetypes[$index];
 
-        // Vary phrasing to reduce repetition across large question sets
-        $prefixes = ['', 'Specifically, ', 'In practice, ', 'Generally speaking, ', 'In the context of this topic, '];
-        $q = $prefixes[$num % count($prefixes)] . $q;
+        // Build question with placeholders replaced
+        $q = str_replace(['{$topic}', '{$subject}'], [$topic, $subject], $archetype['question']);
+        $correctAnswer = str_replace(['{$topic}', '{$subject}'], [$topic, $subject], $archetype['correct']);
 
-        // Replace placeholders in question and correct answer
-        $q = str_replace(['{$topic}', '{$subject}'], [$topic, $subject], $q);
-        $correctAnswer = str_replace(['{$topic}', '{$subject}'], [$topic, $subject], $correctAnswer);
+        // Build wrong options with placeholders replaced and ensure they differ
+        $wrongRaw = array_map(fn($w) => str_replace(['{$topic}', '{$subject}'], [$topic, $subject], $w), $archetype['wrong']);
 
-        // Generate per-question wrong options that differ from the correct answer and from each other
-        $wrongPatterns = [
-            'An unrelated concept from a different part of {$subject}',
-            'A common error where students confuse {$topic} with another topic',
-            'A simplified explanation that omits key details about {$topic}',
-            'A topic from {$subject} that is studied in a different term',
-            'The opposite or inverse of the correct {$topic} principle',
-            'A concept that applies to a different subject, not {$subject}',
-            'An outdated or incorrect understanding of {$topic}',
-            'A general statement about {$subject} that does not specifically relate to {$topic}',
-            'A definition that applies to a different topic within {$subject}',
-            'An example from outside {$subject} that does not illustrate {$topic}',
-            'A principle that contradicts the established understanding of {$topic}',
-            'A vague description that could apply to many topics, not just {$topic}',
-            'A concept studied before {$topic} that provides background but is not {$topic} itself',
-            'An advanced topic that requires knowledge of {$topic} but is not {$topic}',
-            'A memorization-based approach rather than understanding {$topic} concepts',
-            'A definition that confuses {$topic} with a broader {$subject} concept',
-            'An incorrect application of {$topic} principles to a {$subject} problem',
-            'A topic that is related to {$subject} but outside the current curriculum scope',
-        ];
+        // Shuffle and pick up to 3 unique wrong options
+        shuffle($wrongRaw);
+        $wrongSelected = array_slice($wrongRaw, 0, 3);
 
-        // Replace placeholders in wrong patterns
-        $wrongPatterns = array_map(fn($p) => str_replace(['{$topic}', '{$subject}'], [$topic, $subject], $p), $wrongPatterns);
-
-        // Pick 3 unique wrong options using a seeded shuffle
-        shuffle($wrongPatterns);
-        $selectedWrong = array_slice($wrongPatterns, 0, 3);
-
-        // Ensure all 4 options are different
-        $allOptions = [$correctAnswer, ...$selectedWrong];
-        $attempts = 0;
-        while (count(array_unique($allOptions)) < 4 && $attempts < 10) {
-            $allOptions[] = "Another aspect of {$subject} related to but not the same as {$topic}";
+        // Combine and ensure 4 unique options
+        $allOptions = [$correctAnswer, ...$wrongSelected];
+        $allOptions = array_unique(array_values($allOptions));
+        while (count($allOptions) < 4) {
+            $allOptions[] = "Another concept related to {$topic} in the study of {$subject}";
             $allOptions = array_unique(array_values($allOptions));
-            $attempts++;
         }
         $allOptions = array_values(array_slice($allOptions, 0, 4));
 
-        // Shuffle options and track which one is the correct answer
+        // Shuffle to randomize answer position
         $letters = ['A', 'B', 'C', 'D'];
         shuffle($allOptions);
         $options = [];

@@ -33,12 +33,13 @@ class OpenAIService
         }
 
         $lastError = null;
-        $triedWithoutJsonMode = false;
+        $triedJsonModes = [false, true];  // Try without json_mode first, then with
 
         for ($attempt = 1; $attempt <= $this->maxRetries; $attempt++) {
-            try {
-                $useJsonMode = $jsonMode;
+            // Cycle through json modes: first try no json_mode, then try with
+            $useJsonMode = $triedJsonModes[($attempt - 1) % count($triedJsonModes)];
 
+            try {
                 Log::debug('AI API Request', [
                     'model' => $this->model,
                     'json_mode' => $useJsonMode,
@@ -57,7 +58,26 @@ class OpenAIService
 
                 if ($response->successful()) {
                     $data = $response->json();
+
+                    // Try multiple response content paths (different APIs use different formats)
                     $text = $data['choices'][0]['message']['content'] ?? '';
+                    if (empty($text)) {
+                        $text = $data['choices'][0]['text'] ?? '';
+                    }
+                    if (empty($text)) {
+                        $text = $data['response'] ?? '';
+                    }
+                    if (empty($text)) {
+                        $text = $data['content'] ?? '';
+                    }
+                    if (empty($text) && is_array($data)) {
+                        // Log the full response structure for debugging
+                        Log::warning('AI response structure unexpected', [
+                            'keys' => array_keys($data),
+                            'has_choices' => isset($data['choices']),
+                            'response_raw_preview' => substr(json_encode($data), 0, 1000),
+                        ]);
+                    }
 
                     $usage = $data['usage'] ?? [];
                     Log::debug('AI API Response', [
@@ -73,19 +93,11 @@ class OpenAIService
 
                     if (empty(trim($text))) {
                         Log::warning("AI returned empty response (attempt {$attempt}, json_mode={$useJsonMode})");
-                        // If json_mode was on and we haven't tried without it, retry without json_mode
-                        if ($useJsonMode && !$triedWithoutJsonMode) {
-                            $triedWithoutJsonMode = true;
-                            Log::info('Retrying without json_mode');
-                            $lastError = new \RuntimeException('Empty response with json_mode');
-                            continue;
-                        }
-                        throw new \RuntimeException('The AI returned an empty response. Please try again.');
+                        continue;
                     }
 
                     $cleaned = $this->cleanJsonResponse($text);
 
-                    // Log if cleaning changed the response or if it's still not valid JSON
                     if ($cleaned !== $text) {
                         Log::debug('AI response was cleaned', [
                             'original_preview' => substr($text, 0, 500),
@@ -132,7 +144,6 @@ class OpenAIService
             } catch (\RuntimeException $e) {
                 $lastError = $e;
                 if ($attempt >= $this->maxRetries) {
-                    // Return empty string instead of throwing, so callers can fallback
                     Log::error('AI API failed after all retries', ['error' => $e->getMessage()]);
                     return '';
                 }
