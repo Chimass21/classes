@@ -1591,7 +1591,7 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
           </div>
         </header>
 
-        <div className="flex-grow p-6 md:p-8 space-y-6 overflow-y-auto">
+        <div className="flex-grow p-6 md:p-8 space-y-6 overflow-y-auto overflow-x-hidden max-w-full">
           <div className="flex items-end justify-between border-b border-slate-100 pb-2">
             <div>
               <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
@@ -1629,7 +1629,7 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                   exit={{ opacity: 0, y: -10 }}
                   className="space-y-6"
                 >
-                  <div className="p-6 bg-white border border-slate-200 rounded-3xl shadow-xs space-y-6">
+                  <div className="p-4 sm:p-6 bg-white border border-slate-200 rounded-3xl shadow-xs space-y-6">
                     <h3 className="text-base font-extrabold text-slate-900">Construct & Host CBT Assessments</h3>
                     
                     {/* Save new exam form */}
@@ -1699,8 +1699,8 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                       </div>
 
                       {/* Spreadsheet bulk file upload console */}
-                      <div className="p-4 bg-slate-50 rounded-2xl border border-slate-150 space-y-3">
-                        <div className="flex items-center justify-between">
+                      <div className="p-3 sm:p-4 bg-slate-50 rounded-2xl border border-slate-150 space-y-3">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2">
                           <span className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
                             <Upload className="w-4 h-4 text-pink-600" />
                             Option A: Bulk Spreadsheet CSV Upload
@@ -1708,9 +1708,9 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                           <button
                             type="button"
                             onClick={handleDownloadSampleCSV}
-                            className="text-[11px] font-bold text-pink-600 hover:text-pink-850 hover:underline flex items-center gap-1 cursor-pointer"
+                            className="self-start text-[11px] font-bold text-pink-600 hover:text-pink-850 hover:underline flex items-center gap-1 cursor-pointer"
                           >
-                            <Download className="w-3 h-3" /> Download Sample CSV Template
+                            <Download className="w-3 h-3 shrink-0" /> Download Sample CSV Template
                           </button>
                         </div>
                         <p className="text-[10px] text-slate-500 leading-relaxed font-medium">
@@ -1783,7 +1783,7 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                                 <div key={idx} className="p-2.5 flex items-start gap-2">
                                   <span className="font-black text-slate-400 shrink-0 w-5">{idx + 1}.</span>
                                   <div className="min-w-0">
-                                    <p className="font-semibold text-slate-800 truncate">{q.question}</p>
+                                    <p className="font-semibold text-slate-800 break-words">{q.question}</p>
                                     <p className="text-[10px] text-slate-500 mt-0.5">
                                       A: {q.optionA} &middot; B: {q.optionB} &middot; C: {q.optionC} &middot; D: {q.optionD}
                                       &nbsp;&middot; <strong className="text-emerald-700">Ans: {q.correctAnswer}</strong>
@@ -1798,12 +1798,12 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                               )}
                             </div>
 
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                               <button
                                 type="button"
                                 disabled={csvConverting}
                                 onClick={handleConvertCSVToCBT}
-                                className="flex-1 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed text-white font-black text-xs uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
+                                className="w-full sm:flex-1 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed text-white font-black text-xs uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
                               >
                                 {csvConverting ? (
                                   <span className="flex items-center gap-2">
@@ -1831,7 +1831,7 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                                   setUploadedFileName("");
                                   setCsvConvertResult(null);
                                 }}
-                                className="py-2.5 px-5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs rounded-xl transition cursor-pointer"
+                                className="py-2.5 px-5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs rounded-xl transition cursor-pointer w-full sm:w-auto"
                               >
                                 Clear
                               </button>
