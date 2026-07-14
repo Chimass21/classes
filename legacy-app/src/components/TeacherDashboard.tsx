@@ -1883,6 +1883,15 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                         )}
                       </div>
 
+                      <button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-sm uppercase tracking-wider rounded-xl transition duration-250 flex items-center justify-center gap-2 cursor-pointer min-h-[48px] shadow-sm hover:shadow-md active:scale-[0.98]"
+                      >
+                        <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
+                        Combine into draft CBT Exam
+                      </button>
+
                       {/* Manual input selector question-by-question */}
                       <div className="p-4 bg-slate-50 rounded-2xl border border-slate-150 space-y-3">
                         <span className="flex items-center gap-1.5 text-xs font-bold text-slate-700">
@@ -1988,15 +1997,6 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                           </div>
                         </div>
                       )}
-
-                      <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full py-3 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs uppercase tracking-wider rounded-xl transition duration-250 flex items-center justify-center gap-1 cursor-pointer"
-                      >
-                        <Plus className="w-4 h-4" />
-                        Combine into draft CBT Exam
-                      </button>
                     </form>
                   </div>
 
