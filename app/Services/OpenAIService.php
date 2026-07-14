@@ -72,7 +72,17 @@ class OpenAIService
                         throw new \RuntimeException('The AI returned an empty response. Please try again.');
                     }
 
-                    return $this->cleanJsonResponse($text);
+                    $cleaned = $this->cleanJsonResponse($text);
+
+                    // Log if cleaning changed the response or if it's still not valid JSON
+                    if ($cleaned !== $text) {
+                        Log::debug('AI response was cleaned', [
+                            'original_preview' => substr($text, 0, 500),
+                            'cleaned_preview' => substr($cleaned, 0, 500),
+                        ]);
+                    }
+
+                    return $cleaned;
                 }
 
                 $statusCode = $response->status();
@@ -201,8 +211,88 @@ class OpenAIService
 
     protected function cleanJsonResponse(string $text): string
     {
-        $text = preg_replace('/^```(?:json)?\s*/i', '', $text);
-        $text = preg_replace('/\s*```$/', '', $text);
-        return trim($text);
+        $text = trim($text);
+
+        if (empty($text)) {
+            return '';
+        }
+
+        // Remove BOM characters
+        $text = preg_replace('/^\xEF\xBB\xBF|\xFE\xFF|\xFF\xFE/', '', $text);
+
+        // Remove all markdown code fences (```json, ```, etc.)
+        $text = preg_replace('/```(?:json)?\s*/i', '', $text);
+        $text = str_replace('`', '', $text);
+
+        $text = trim($text);
+
+        // Try to extract JSON object or array from surrounding text
+        if ($text !== '' && $text[0] !== '{' && $text[0] !== '[') {
+            $extracted = $this->extractTopLevelJson($text);
+            if ($extracted !== null) {
+                $text = $extracted;
+            }
+        }
+
+        // Fix trailing commas before closing braces/brackets (common AI issue)
+        $text = preg_replace('/,\s*([}\]])/', '$1', $text);
+
+        return $text;
+    }
+
+    /**
+     * Extract the first top-level JSON object or array from text,
+     * properly handling nested braces/brackets and strings.
+     */
+    protected function extractTopLevelJson(string $text): ?string
+    {
+        $len = strlen($text);
+        for ($i = 0; $i < $len; $i++) {
+            $char = $text[$i];
+            if ($char === '{' || $char === '[') {
+                $depth = 0;
+                $inString = false;
+                $escaped = false;
+                $openChar = $char;
+                $closeChar = $openChar === '{' ? '}' : ']';
+                $start = $i;
+                $j = $i;
+
+                while ($j < $len) {
+                    $c = $text[$j];
+                    if ($escaped) {
+                        $escaped = false;
+                        $j++;
+                        continue;
+                    }
+                    if ($c === '\\') {
+                        $escaped = true;
+                        $j++;
+                        continue;
+                    }
+                    if ($c === '"') {
+                        $inString = !$inString;
+                        $j++;
+                        continue;
+                    }
+                    if (!$inString) {
+                        if ($c === $openChar) {
+                            $depth++;
+                        } elseif ($c === $closeChar) {
+                            $depth--;
+                            if ($depth === 0) {
+                                return substr($text, $start, $j - $start + 1);
+                            }
+                        }
+                    }
+                    $j++;
+                }
+                // Hit end of string without closing - continue searching
+                if ($depth > 0) {
+                    $i = $j;
+                }
+            }
+        }
+        return null;
     }
 }

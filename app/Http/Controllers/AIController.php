@@ -73,7 +73,14 @@ class AIController extends Controller
             $plan = json_decode($response, true);
 
             if (!is_array($plan) || empty($plan)) {
-                    Log::warning('AI returned non-JSON response for lesson plan', [
+                $cleaned = $this->extractJson($response);
+                if ($cleaned !== null) {
+                    $plan = $cleaned;
+                }
+            }
+
+            if (!is_array($plan) || empty($plan)) {
+                Log::warning('AI returned non-JSON response for lesson plan', [
                     'response' => substr($response, 0, 1000),
                 ]);
                 return response()->json([
@@ -104,6 +111,12 @@ class AIController extends Controller
                     }
 
                     $plan = json_decode($retryResponse, true);
+                    if (!is_array($plan) || empty($plan)) {
+                        $cleaned = $this->extractJson($retryResponse);
+                        if ($cleaned !== null) {
+                            $plan = $cleaned;
+                        }
+                    }
 
                     if (is_array($plan) && !empty($plan) && $this->isRelevantToTopic($plan, 'lesson_plan', $data['subject'], $data['topic'], $data['class'])) {
                         return $this->storeAndReturnLessonPlan($plan, $data, $user, $teacherName, $schoolName, $duration, $ageRange);
@@ -324,7 +337,8 @@ class AIController extends Controller
 
             if (!is_array($questions) || empty($questions)) {
                 Log::warning('AI returned non-JSON for questions', [
-                    'response' => substr($response, 0, 1000),
+                    'response_length' => strlen($response),
+                    'response_preview' => substr($response, 0, 2000),
                 ]);
                 return response()->json([
                     'success' => false,
@@ -983,20 +997,91 @@ PROMPT;
         if (empty($text)) {
             return null;
         }
-        $text = preg_replace('/^```(?:json)?\s*/i', '', $text);
-        $text = preg_replace('/\s*```$/', '', $text);
+
+        // Remove BOM characters and all markdown fences
+        $text = preg_replace('/^\xEF\xBB\xBF|\xFE\xFF|\xFF\xFE/', '', $text);
+        $text = preg_replace('/```(?:json)?\s*/i', '', $text);
+        $text = str_replace('`', '', $text);
         $text = trim($text);
+
+        // Fix trailing commas before closing braces/brackets
+        $text = preg_replace('/,\s*([}\]])/', '$1', $text);
+
+        // Try direct decode first
         $decoded = json_decode($text, true);
         if (is_array($decoded) && !empty($decoded)) {
             return $decoded;
         }
-        if (preg_match('/\{.*\}/s', $text, $matches)) {
-            $candidate = trim($matches[0]);
+
+        // Try to extract each top-level JSON block with proper bracket matching
+        $blocks = $this->extractJsonBlocks($text);
+        foreach ($blocks as $block) {
+            $candidate = preg_replace('/,\s*([}\]])/', '$1', trim($block));
             $decoded = json_decode($candidate, true);
             if (is_array($decoded) && !empty($decoded)) {
                 return $decoded;
             }
         }
+
         return null;
+    }
+
+    /**
+     * Extract all top-level JSON objects/arrays from text,
+     * properly handling nested braces/brackets and strings.
+     */
+    private function extractJsonBlocks(string $text): array
+    {
+        $blocks = [];
+        $len = strlen($text);
+        $i = 0;
+
+        while ($i < $len) {
+            $char = $text[$i];
+            if ($char === '{' || $char === '[') {
+                $depth = 0;
+                $inString = false;
+                $escaped = false;
+                $openChar = $char;
+                $closeChar = $openChar === '{' ? '}' : ']';
+                $start = $i;
+                $j = $i;
+
+                while ($j < $len) {
+                    $c = $text[$j];
+                    if ($escaped) {
+                        $escaped = false;
+                        $j++;
+                        continue;
+                    }
+                    if ($c === '\\') {
+                        $escaped = true;
+                        $j++;
+                        continue;
+                    }
+                    if ($c === '"') {
+                        $inString = !$inString;
+                        $j++;
+                        continue;
+                    }
+                    if (!$inString) {
+                        if ($c === $openChar) {
+                            $depth++;
+                        } elseif ($c === $closeChar) {
+                            $depth--;
+                            if ($depth === 0) {
+                                $blocks[] = substr($text, $start, $j - $start + 1);
+                                break;
+                            }
+                        }
+                    }
+                    $j++;
+                }
+                $i = $j;
+            }
+            $i++;
+        }
+
+        return $blocks;
     }
 }
