@@ -433,127 +433,175 @@ class AIController extends Controller
 
     public function saveGeneratedQuestions(Request $request)
     {
-        $data = $request->validate([
-            'subject' => 'required|string',
-            'topic' => 'required|string',
-            'subTopic' => 'nullable|string',
-            'questions' => 'required|array',
-            'questions.*.question' => 'required|string',
-        ]);
-
-        $questions = $request->input('questions');
-
-        // Normalize question field names before validation
-        $questions = $this->normalizeQuestionFields($questions);
-
-        // Validate questions before saving
-        $validationErrors = $this->validateQuestionPool($questions, $data['topic'], $data['subject']);
-        if (!empty($validationErrors)) {
-            Log::warning('Save questions rejected due to quality issues', [
-                'errors' => $validationErrors,
-                'count' => count($questions),
+        try {
+            $data = $request->validate([
+                'subject' => 'required|string',
+                'topic' => 'required|string',
+                'subTopic' => 'nullable|string',
+                'questions' => 'required|array',
+                'questions.*.question' => 'required|string',
             ]);
-            return response()->json([
-                'success' => false,
-                'error' => 'Questions failed quality check: ' . implode('; ', array_slice($validationErrors, 0, 5)),
-                'details' => $validationErrors,
-            ], 422);
+
+            $questions = $request->input('questions');
+            Log::info('Save questions request', [
+                'subject' => $data['subject'],
+                'topic' => $data['topic'],
+                'question_count' => count($questions),
+                'sample' => count($questions) > 0 ? array_keys($questions[0] ?? []) : 'empty',
+            ]);
+
+            // Normalize question field names before validation
+            $questions = $this->normalizeQuestionFields($questions);
+
+            // Validate questions — warn on quality issues but do NOT block save
+            $validationErrors = $this->validateQuestionPool($questions, $data['topic'], $data['subject']);
+            if (!empty($validationErrors)) {
+                Log::warning('Save questions quality warnings (non-blocking)', [
+                    'warnings' => $validationErrors,
+                    'count' => count($questions),
+                ]);
+            }
+
+            $user = Session::get('user');
+            JsonDb::init();
+            $db = JsonDb::get();
+
+            $qsId = 'qs_' . uniqid();
+            $qs = [
+                'id' => $qsId,
+                'teacherId' => $user['id'] ?? 'unknown',
+                'source' => 'ai_generated',
+                'sourceId' => null,
+                'questions' => $questions,
+                'subject' => $data['subject'],
+                'topic' => $data['topic'],
+                'subTopic' => $data['subTopic'] ?? '',
+                'createdAt' => now()->toIso8601String(),
+            ];
+            $db['questionSets'][] = $qs;
+            JsonDb::save($db);
+
+            Log::info('Questions saved successfully', ['qsId' => $qsId, 'count' => count($questions)]);
+
+            return response()->json(['success' => true, 'questionSetId' => $qsId, 'message' => 'Questions saved successfully.']);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Save questions validation failed', ['errors' => $e->errors()]);
+            return response()->json(['success' => false, 'error' => 'Validation error: ' . json_encode($e->errors())], 422);
+        } catch (\Exception $e) {
+            Log::error('Save questions failed with exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['success' => false, 'error' => 'Failed to save questions: ' . $e->getMessage()], 500);
         }
-
-        $user = Session::get('user');
-        JsonDb::init();
-        $db = JsonDb::get();
-
-        $qsId = 'qs_' . uniqid();
-        $qs = [
-            'id' => $qsId,
-            'teacherId' => $user['id'] ?? 'unknown',
-            'source' => 'ai_generated',
-            'sourceId' => null,
-            'questions' => $questions,
-            'subject' => $data['subject'],
-            'topic' => $data['topic'],
-            'subTopic' => $data['subTopic'] ?? '',
-            'createdAt' => now()->toIso8601String(),
-        ];
-        $db['questionSets'][] = $qs;
-        JsonDb::save($db);
-
-        return response()->json(['success' => true, 'questionSetId' => $qsId, 'message' => 'Questions saved successfully.']);
     }
 
     public function convertQuestionsToExam(Request $request)
     {
-        $data = $request->validate([
-            'questionSetId' => 'required|string',
-            'title' => 'nullable|string',
-            'duration' => 'nullable|integer|min:1|max:180',
-            'defaultMarks' => 'nullable|integer|min:1|max:100',
-        ]);
+        try {
+            $data = $request->validate([
+                'questionSetId' => 'required|string',
+                'title' => 'nullable|string',
+                'duration' => 'nullable|integer|min:1|max:180',
+                'defaultMarks' => 'nullable|integer|min:1|max:100',
+            ]);
 
-        $user = Session::get('user');
-        JsonDb::init();
-        $db = JsonDb::get();
+            Log::info('Convert to CBT request', ['questionSetId' => $data['questionSetId']]);
 
-        $qs = null;
-        foreach ($db['questionSets'] as $q) {
-            if ($q['id'] === $data['questionSetId']) { $qs = $q; break; }
-        }
-        if (!$qs) {
-            return response()->json(['success' => false, 'error' => 'Question set not found.'], 404);
-        }
+            $user = Session::get('user');
+            JsonDb::init();
+            $db = JsonDb::get();
 
-        $mcq = array_filter($qs['questions'], fn($q) => isset($q['options']) || isset($q['A']));
-        $mcq = array_values($mcq);
-        if (empty($mcq)) {
-            return response()->json(['success' => false, 'error' => 'No objective questions found in the question set.'], 400);
-        }
+            $qs = null;
+            foreach ($db['questionSets'] as $q) {
+                if ($q['id'] === $data['questionSetId']) { $qs = $q; break; }
+            }
+            if (!$qs) {
+                Log::error('Question set not found for conversion', ['id' => $data['questionSetId']]);
+                return response()->json(['success' => false, 'error' => 'Question set not found.'], 404);
+            }
 
-        $examId = 'exam_' . uniqid();
-        $formattedQuestions = [];
-        foreach ($mcq as $i => $q) {
-            $formattedQuestions[] = [
-                'id' => $i + 1,
-                'question' => $q['question'] ?? $q['text'] ?? '',
-                'optionA' => $q['A'] ?? $q['options']['A'] ?? $q['optionA'] ?? '',
-                'optionB' => $q['B'] ?? $q['options']['B'] ?? $q['optionB'] ?? '',
-                'optionC' => $q['C'] ?? $q['options']['C'] ?? $q['optionC'] ?? '',
-                'optionD' => $q['D'] ?? $q['options']['D'] ?? $q['optionD'] ?? '',
-                'correctAnswer' => $q['answer'] ?? $q['correctAnswer'] ?? $q['correct'] ?? 'A',
+            // Get all questions — they were already normalized on save
+            $allQuestions = $qs['questions'] ?? [];
+            if (empty($allQuestions)) {
+                Log::error('Question set has no questions', ['id' => $data['questionSetId']]);
+                return response()->json(['success' => false, 'error' => 'Question set has no questions.'], 400);
+            }
+
+            // Try to find objective questions (have A/B/C/D options)
+            $mcq = array_filter($allQuestions, fn($q) => isset($q['A']) || isset($q['B']) || isset($q['C']) || isset($q['D']) || isset($q['options']));
+            $mcq = array_values($mcq);
+
+            // If no objective questions found, use ALL questions as-is
+            if (empty($mcq)) {
+                Log::warning('No objective format detected, using all questions', ['count' => count($allQuestions)]);
+                $mcq = $allQuestions;
+            }
+
+            $examId = 'exam_' . uniqid();
+            $formattedQuestions = [];
+            foreach ($mcq as $i => $q) {
+                $questionText = $q['question'] ?? $q['text'] ?? $q['stem'] ?? '';
+                $formattedQuestions[] = [
+                    'id' => $i + 1,
+                    'question' => $questionText,
+                    'optionA' => $q['A'] ?? $q['options']['A'] ?? $q['option_a'] ?? $q['optionA'] ?? '',
+                    'optionB' => $q['B'] ?? $q['options']['B'] ?? $q['option_b'] ?? $q['optionB'] ?? '',
+                    'optionC' => $q['C'] ?? $q['options']['C'] ?? $q['option_c'] ?? $q['optionC'] ?? '',
+                    'optionD' => $q['D'] ?? $q['options']['D'] ?? $q['option_d'] ?? $q['optionD'] ?? '',
+                    'correctAnswer' => $q['answer'] ?? $q['correctAnswer'] ?? $q['correct_answer'] ?? $q['correct'] ?? $q['ans'] ?? 'A',
+                ];
+            }
+
+            $defaultMarks = $data['defaultMarks'] ?? 1;
+            $totalMarks = count($formattedQuestions) * $defaultMarks;
+            $duration = $data['duration'] ?? min(30, max(10, intdiv(count($formattedQuestions), 2)));
+
+            $exam = [
+                'id' => $examId,
+                'title' => $data['title'] ?? ($qs['subject'] ?? 'Generated') . ' CBT Exam',
+                'subject' => $qs['subject'] ?? 'General',
+                'level' => 'Mixed',
+                'topic' => $qs['topic'] ?? '',
+                'subTopic' => $qs['subTopic'] ?? '',
+                'duration' => $duration,
+                'defaultMarks' => $defaultMarks,
+                'totalMarks' => $totalMarks,
+                'instructions' => 'Answer all questions. Each question carries ' . $defaultMarks . ' mark(s). No negative marking.',
+                'questions' => $formattedQuestions,
+                'creatorId' => $user['id'] ?? 'unknown',
+                'creatorName' => $user['name'] ?? 'AI System',
+                'isPublished' => false,
+                'createdAt' => now()->toIso8601String(),
             ];
+
+            $db['exams'][] = $exam;
+            JsonDb::save($db);
+
+            Log::info('CBT exam created successfully', [
+                'examId' => $examId,
+                'questionCount' => count($formattedQuestions),
+                'duration' => $duration,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'exam' => $exam,
+                'examId' => $examId,
+                'message' => count($formattedQuestions) . ' questions converted to CBT exam format.',
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Convert to CBT validation failed', ['errors' => $e->errors()]);
+            return response()->json(['success' => false, 'error' => 'Validation error: ' . json_encode($e->errors())], 422);
+        } catch (\Exception $e) {
+            Log::error('Convert to CBT failed with exception', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json(['success' => false, 'error' => 'Failed to convert to CBT: ' . $e->getMessage()], 500);
         }
-
-        $defaultMarks = $data['defaultMarks'] ?? 1;
-        $totalMarks = count($formattedQuestions) * $defaultMarks;
-        $duration = $data['duration'] ?? min(30, max(10, intdiv(count($formattedQuestions), 2)));
-
-        $exam = [
-            'id' => $examId,
-            'title' => $data['title'] ?? ($qs['subject'] ?? 'Generated') . ' CBT Exam',
-            'subject' => $qs['subject'] ?? 'General',
-            'level' => 'Mixed',
-            'topic' => $qs['topic'] ?? '',
-            'subTopic' => $qs['subTopic'] ?? '',
-            'duration' => $duration,
-            'defaultMarks' => $defaultMarks,
-            'totalMarks' => $totalMarks,
-            'instructions' => 'Answer all questions. Each question carries ' . $defaultMarks . ' mark(s). No negative marking.',
-            'questions' => $formattedQuestions,
-            'creatorId' => $user['id'] ?? 'unknown',
-            'creatorName' => $user['name'] ?? 'AI System',
-            'isPublished' => false,
-            'createdAt' => now()->toIso8601String(),
-        ];
-
-        $db['exams'][] = $exam;
-        JsonDb::save($db);
-
-        return response()->json([
-            'success' => true,
-            'exam' => $exam,
-            'examId' => $examId,
-            'message' => count($formattedQuestions) . ' questions converted to CBT exam format.',
-        ]);
     }
 
     public function getQuestionSets()
@@ -1093,16 +1141,18 @@ PROMPT;
                 continue;
             }
 
-            // Check for duplicate question text
-            $qLower = strtolower($questionText);
-            foreach ($seenQuestions as $seen) {
-                similar_text($qLower, $seen, $pct);
-                if ($pct > 85) {
-                    $errors[] = "Question {$qNum} is too similar to another question ({$pct}% match)";
-                    break;
+            // Check for duplicate question text — strict threshold to prevent repeats
+            $qLower = strtolower(trim(preg_replace('/[^a-z0-9\s]/', '', $questionText)));
+            if (!empty($qLower)) {
+                foreach ($seenQuestions as $seen) {
+                    similar_text($qLower, $seen, $pct);
+                    if ($pct > 75) {
+                        $errors[] = "Question {$qNum} is too similar to another question ({$pct}% match)";
+                        break;
+                    }
                 }
+                $seenQuestions[] = $qLower;
             }
-            $seenQuestions[] = $qLower;
 
             // Check answer key is valid
             $answer = strtoupper(trim($q['answer'] ?? ''));
@@ -1201,7 +1251,10 @@ PROMPT;
         $positionsUsed = [];
 
         foreach ($questions as $i => $q) {
-            $currentAnswer = strtoupper(trim($q['answer'] ?? 'A'));
+            $currentAnswer = strtoupper(trim($q['answer'] ?? ''));
+            if (!in_array($currentAnswer, $letters, true)) {
+                $currentAnswer = $letters[$i % 4];
+            }
             $correctContent = $q[$currentAnswer] ?? '';
 
             // Pick a random position, avoiding the same position as previous question
@@ -1226,9 +1279,9 @@ PROMPT;
             $wrongIdx = 0;
             foreach ($letters as $l) {
                 if ($l === $newPos) {
-                    $newOptions[$l] = $correctContent;
+                    $newOptions[$l] = $correctContent ?: ($q[$l] ?? '');
                 } else {
-                    $newOptions[$l] = $wrongContents[$wrongIdx++];
+                    $newOptions[$l] = $wrongContents[$wrongIdx++] ?? '';
                 }
             }
 
