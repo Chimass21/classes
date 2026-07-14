@@ -366,6 +366,9 @@ class AIController extends Controller
             }
             $questionItems = $validated;
 
+            // Normalize field names from various AI output formats
+            $questionItems = $this->normalizeQuestionFields($questionItems);
+
             // Shuffle answers for better distribution
             $questionItems = $this->shuffleAnswers($questionItems);
 
@@ -408,6 +411,9 @@ class AIController extends Controller
         ]);
 
         $questions = $request->input('questions');
+
+        // Normalize question field names before validation
+        $questions = $this->normalizeQuestionFields($questions);
 
         // Validate questions before saving
         $validationErrors = $this->validateQuestionPool($questions, $data['topic'], $data['subject']);
@@ -912,6 +918,7 @@ PROMPT;
                 if (is_array($retryData) && !empty($retryData)) {
                     $items = $retryData['objectives'] ?? $retryData;
                     if (is_array($items) && !empty($items) && isset($items[0])) {
+                        $items = $this->normalizeQuestionFields($items);
                         $items = $this->shuffleAnswers($items);
                         return response()->json([
                             'success' => true,
@@ -1096,6 +1103,29 @@ PROMPT;
      * Randomly shuffle the correct answer position among A/B/C/D
      * while keeping the correct answer content attached to the new position.
      */
+    /**
+     * Normalize question field names from various AI output formats to standard names.
+     * Maps: text/stem/questionText -> question, correctAnswer/correct_answer/ans -> answer,
+     * option_a/options.A -> A, etc.
+     */
+    private function normalizeQuestionFields(array $questions): array
+    {
+        $normalized = [];
+        foreach ($questions as $i => $q) {
+            $item = [
+                'id' => $q['id'] ?? ($i + 1),
+                'question' => $q['question'] ?? $q['text'] ?? $q['stem'] ?? $q['questionText'] ?? $q['q'] ?? '',
+                'A' => $q['A'] ?? $q['option_a'] ?? (isset($q['options']['A']) ? $q['options']['A'] : ''),
+                'B' => $q['B'] ?? $q['option_b'] ?? (isset($q['options']['B']) ? $q['options']['B'] : ''),
+                'C' => $q['C'] ?? $q['option_c'] ?? (isset($q['options']['C']) ? $q['options']['C'] : ''),
+                'D' => $q['D'] ?? $q['option_d'] ?? (isset($q['options']['D']) ? $q['options']['D'] : ''),
+                'answer' => $q['answer'] ?? $q['correctAnswer'] ?? $q['correct_answer'] ?? $q['ans'] ?? '',
+            ];
+            $normalized[] = $item;
+        }
+        return $normalized;
+    }
+
     private function shuffleAnswers(array $questions): array
     {
         $letters = ['A', 'B', 'C', 'D'];
