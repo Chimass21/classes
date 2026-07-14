@@ -451,9 +451,11 @@ class CsvImportController extends Controller
             'defaultMarks' => 'nullable|integer|min:1|max:100',
             'creatorId' => 'nullable|string',
             'creatorName' => 'nullable|string',
+            'duplicate_handling' => 'nullable|in:import_all,skip,replace',
         ]);
 
         $user = Session::get('user');
+        $duplicateHandling = $validated['duplicate_handling'] ?? 'import_all';
 
         // Direct file read/write avoids full JsonDb::init() which loads SQLite data
         $dbPath = base_path('brain_db.json');
@@ -468,13 +470,38 @@ class CsvImportController extends Controller
         if (!isset($db['exams'])) $db['exams'] = [];
 
         $defaultMarks = $validated['defaultMarks'] ?? 1;
+        $subjectKey = strtolower(trim($validated['subject']));
 
-        // Batch-build questions array in a single pass
-        $questions = [];
+        // Build index of existing questions for this subject — O(1) lookup per row
+        $existingQuestionIndex = [];
+        $examWithQuestion = [];
+        if ($duplicateHandling !== 'import_all') {
+            foreach ($db['exams'] as $exam) {
+                if (strtolower(trim($exam['subject'] ?? '')) !== $subjectKey) continue;
+                foreach ($exam['questions'] as $qIdx => $eq) {
+                    $key = strtolower(trim($eq['question'] ?? ''));
+                    if ($key !== '') {
+                        $existingQuestionIndex[$key] = true;
+                        $examWithQuestion[$key] = ['examId' => $exam['id'], 'questionIndex' => $qIdx];
+                    }
+                }
+            }
+        }
+
+        // Batch-build questions with duplicate handling
+        $finalQuestions = [];
+        $imported = 0;
+        $skipped = 0;
+        $replaced = 0;
+        $examId = 'exam_' . uniqid();
+        $handleReplace = $duplicateHandling === 'replace';
+
         foreach ($validated['questions'] as $i => $q) {
-            $questions[] = [
+            $qText = trim($q['question']);
+            $qKey = strtolower($qText);
+            $questionEntry = [
                 'id' => $i + 1,
-                'question' => $q['question'],
+                'question' => $qText,
                 'optionA' => $q['optionA'],
                 'optionB' => $q['optionB'],
                 'optionC' => $q['optionC'],
@@ -482,28 +509,56 @@ class CsvImportController extends Controller
                 'correctAnswer' => strtoupper($q['correctAnswer']),
                 'marks' => $defaultMarks,
             ];
+
+            if ($duplicateHandling !== 'import_all' && isset($existingQuestionIndex[$qKey])) {
+                if ($duplicateHandling === 'skip') {
+                    $skipped++;
+                    continue;
+                }
+                if ($handleReplace) {
+                    $replaced++;
+                    // Update in-place in existing exam
+                    $loc = $examWithQuestion[$qKey];
+                    foreach ($db['exams'] as &$exam) {
+                        if ($exam['id'] === $loc['examId']) {
+                            $exam['questions'][$loc['questionIndex']] = $questionEntry;
+                            break;
+                        }
+                    }
+                    unset($exam);
+                    continue;
+                }
+            }
+
+            if ($duplicateHandling !== 'import_all') {
+                $existingQuestionIndex[$qKey] = true;
+            }
+
+            $finalQuestions[] = $questionEntry;
+            $imported++;
         }
 
-        $count = count($questions);
-        $examId = 'exam_' . uniqid();
-        $duration = $validated['duration'] ?? max(10, min(120, intdiv($count, 2)));
+        if (!empty($finalQuestions)) {
+            $count = count($finalQuestions);
+            $duration = $validated['duration'] ?? max(10, min(120, intdiv($count, 2)));
 
-        $db['exams'][] = [
-            'id' => $examId,
-            'title' => $validated['title'] ?? ($validated['subject'] . ' CBT Exam'),
-            'subject' => $validated['subject'],
-            'level' => $validated['level'] ?? 'Mixed',
-            'duration' => $duration,
-            'defaultMarks' => $defaultMarks,
-            'totalMarks' => $count * $defaultMarks,
-            'instructions' => "Answer all questions. Each question carries {$defaultMarks} mark(s).",
-            'questions' => $questions,
-            'creatorId' => $validated['creatorId'] ?? $user['id'] ?? 'unknown',
-            'creatorName' => $validated['creatorName'] ?? $user['name'] ?? 'CSV Import',
-            'isPublished' => false,
-            'source' => 'csv_import',
-            'createdAt' => now()->toIso8601String(),
-        ];
+            $db['exams'][] = [
+                'id' => $examId,
+                'title' => $validated['title'] ?? ($validated['subject'] . ' CBT Exam'),
+                'subject' => $validated['subject'],
+                'level' => $validated['level'] ?? 'Mixed',
+                'duration' => $duration,
+                'defaultMarks' => $defaultMarks,
+                'totalMarks' => $count * $defaultMarks,
+                'instructions' => "Answer all questions. Each question carries {$defaultMarks} mark(s).",
+                'questions' => $finalQuestions,
+                'creatorId' => $validated['creatorId'] ?? $user['id'] ?? 'unknown',
+                'creatorName' => $validated['creatorName'] ?? $user['name'] ?? 'CSV Import',
+                'isPublished' => false,
+                'source' => 'csv_import',
+                'createdAt' => now()->toIso8601String(),
+            ];
+        }
 
         // Direct file write — skips full JsonDb init/sync cycle
         $written = @file_put_contents($dbPath, json_encode($db, JSON_UNESCAPED_UNICODE));
@@ -517,14 +572,22 @@ class CsvImportController extends Controller
 
         Log::info('CSV questions converted to CBT exam', [
             'examId' => $examId,
-            'questionCount' => $count,
+            'imported' => $imported,
+            'skipped' => $skipped,
+            'replaced' => $replaced,
             'subject' => $validated['subject'],
         ]);
 
         return response()->json([
             'success' => true,
             'examId' => $examId,
-            'message' => "{$count} questions imported and CBT exam created successfully.",
+            'imported' => $imported,
+            'skipped' => $skipped,
+            'replaced' => $replaced,
+            'message' => $imported . ' questions imported' .
+                ($skipped > 0 ? ', ' . $skipped . ' skipped' : '') .
+                ($replaced > 0 ? ', ' . $replaced . ' replaced' : '') .
+                '.',
         ]);
     }
 

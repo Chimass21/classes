@@ -206,6 +206,7 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
   const [csvConvertResult, setCsvConvertResult] = useState<{ success: boolean; examId?: string; message: string } | null>(null);
   const [csvProgressStep, setCsvProgressStep] = useState<string>("");
   const [csvProgressWidth, setCsvProgressWidth] = useState("0%");
+  const [csvDuplicateHandling, setCsvDuplicateHandling] = useState<"import_all" | "skip" | "replace">("import_all");
 
   // 2. AI LESSON PLAN FORM STATE
   const [spinSchool, setSpinSchool] = useState("Swiftstudy International Academy");
@@ -1047,6 +1048,7 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
           defaultMarks: 1,
           creatorId: user.id,
           creatorName: user.name,
+          duplicate_handling: csvDuplicateHandling,
         }),
       });
 
@@ -1060,7 +1062,11 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
         await new Promise((r) => setTimeout(r, 200));
         setCsvProgressStep("");
         setCsvProgressWidth("0%");
-        setCsvConvertResult({ success: true, examId: data.examId, message: `${qCount} questions imported successfully.` });
+        const parts: string[] = [];
+        if (data.imported > 0) parts.push(`${data.imported} imported`);
+        if (data.skipped > 0) parts.push(`${data.skipped} skipped`);
+        if (data.replaced > 0) parts.push(`${data.replaced} replaced`);
+        setCsvConvertResult({ success: true, examId: data.examId, message: parts.length > 0 ? parts.join(", ") + "." : `${qCount} questions imported successfully.` });
         setCsvParsedQuestions([]);
         setUploadedFileName("");
         setCsvSuccess("");
@@ -1789,6 +1795,34 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                                 </p>
                               </div>
                               <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shrink-0" />
+                            </div>
+
+                            <div>
+                              <p className="text-[11px] font-extrabold text-slate-600 mb-1.5">Duplicate Handling</p>
+                              <div className="flex flex-col sm:flex-row gap-1.5">
+                                {[
+                                  { value: "import_all" as const, label: "Import All", desc: "Import everything including duplicates" },
+                                  { value: "skip" as const, label: "Skip Duplicates", desc: "Skip questions that already exist" },
+                                  { value: "replace" as const, label: "Replace Existing", desc: "Update matching questions" },
+                                ].map((opt) => (
+                                  <button
+                                    key={opt.value}
+                                    type="button"
+                                    disabled={csvConverting}
+                                    onClick={() => setCsvDuplicateHandling(opt.value)}
+                                    className={`flex-1 py-2 px-3 rounded-lg text-[11px] font-bold text-left transition cursor-pointer border-2 ${
+                                      csvDuplicateHandling === opt.value
+                                        ? "bg-indigo-50 border-indigo-400 text-indigo-800"
+                                        : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+                                    }`}
+                                  >
+                                    <span className="block">{opt.label}</span>
+                                    <span className={`block text-[10px] font-medium mt-0.5 ${csvDuplicateHandling === opt.value ? "text-indigo-600" : "text-slate-400"}`}>
+                                      {opt.desc}
+                                    </span>
+                                  </button>
+                                ))}
+                              </div>
                             </div>
 
                             <div className="flex flex-col sm:flex-row sm:items-center gap-2">
