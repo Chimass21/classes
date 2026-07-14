@@ -722,12 +722,11 @@ async function loadTeacherData() {
         renderNoteFilters();
         renderQsFilters();
 
-        // Auto-display the most recent lesson note and switch to its tab
+        // Load the most recent lesson note (if any) without switching tabs
         if (teacherData.notes.length > 0) {
             const last = teacherData.notes[teacherData.notes.length - 1];
             currentNoteId = last.id;
             displayLessonNote(last);
-            switchTab('lesson-notes');
         }
 
         document.getElementById('loading').classList.add('hidden');

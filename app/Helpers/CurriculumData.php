@@ -110,7 +110,7 @@ class CurriculumData
             $weeks[] = [
                 'week' => $w,
                 'topic' => $topics[$w - 1] ?? 'General Revision',
-                'subtopics' => ['Core concepts', 'Key definitions', 'Practical applications'],
+                'subtopics' => ['Core concepts', 'Key definitions', 'Practical applications', 'Real-world examples', 'Common misconceptions'],
             ];
         }
         return $weeks;

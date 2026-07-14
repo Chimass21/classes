@@ -667,13 +667,10 @@ class AIController extends Controller
         }
 
         $numSources = count($objectiveSources);
-        $evalCount = $numSources > 0 ? $numSources : 5;
-        $stepCountInstruction = '';
-        if ($numSources > 0) {
-            $stepCountInstruction = "Generate exactly {$numSources} behavioural objectives, {$numSources} lesson steps, and {$numSources} evaluation questions. Objective 1 → Step 1 → Evaluation Q1, Objective 2 → Step 2 → Evaluation Q2, etc.";
-        } else {
-            $stepCountInstruction = "Generate exactly 5 behavioural objectives, 5 lesson steps, and 5 evaluation questions. Objective 1 → Step 1 → Evaluation Q1, etc. This ensures the lesson plan fills the entire A4 page.";
-        }
+        $minSteps = max(4, $numSources);
+        $maxSteps = max(6, $numSources + 2);
+        $evalCount = $minSteps;
+        $stepCountInstruction = "Generate {$minSteps}-{$maxSteps} behavioural objectives, {$minSteps}-{$maxSteps} corresponding lesson steps, and {$minSteps}-{$maxSteps} evaluation questions. The exact number depends on how many distinct sub-topics naturally arise from \"{$topic}\". Each sub-topic becomes one objective → one step → one evaluation question. Aim for at least 4 steps; use up to {$maxSteps} if the topic merits it.";
 
         return <<<PROMPT
 You are a Nigerian curriculum expert and professional lesson plan writer for the Nigerian (NERDC/UBEC) curriculum.
@@ -699,14 +696,14 @@ CRITICAL — FILL THE ENTIRE A4 PAGE:
 - Write each behavioural objective as a full, detailed sentence (not a phrase).
 - Each step's teacherActivities and learnerActivities must be 2-3 detailed sentences each (not just one line).
 - learningPoints must be a substantive paragraph.
-- Evaluation must contain {$evalCount} numbered questions (one per objective), each a full sentence.
+- Evaluation must contain {$evalCount}-{$maxSteps} numbered questions (one per objective), each a full sentence.
 - Summary and conclusion must each be at least 3-4 sentences.
 - Previous knowledge must be 2-3 sentences about what students already know.
 
-Return ONLY valid JSON with this exact structure (no markdown, no code fences):
+Return ONLY valid JSON with this exact structure (no markdown, no code fences). The arrays must have the SAME length (behaviouralObjectives count === lessonSteps count === evaluation question count):
 {
-  "behaviouralObjectives": ["Full detailed objective sentence 1.", "Full detailed objective sentence 2.", "Full detailed objective sentence 3."],
-  "instructionalMaterials": ["Material 1", "Material 2", "Material 3"],
+  "behaviouralObjectives": ["Full detailed objective sentence 1.", "Full detailed objective sentence 2.", ...],
+  "instructionalMaterials": ["Material 1", "Material 2", "Material 3", ...],
   "previousKnowledge": "2-3 sentences about what students already know related to this topic.",
   "lessonSteps": [
     {
@@ -716,7 +713,7 @@ Return ONLY valid JSON with this exact structure (no markdown, no code fences):
       "learningPoints": "Substantive paragraph about the key learning point from this step."
     }
   ],
-  "evaluation": "1. First evaluation question (matches Objective 1)?\\n2. Second evaluation question (matches Objective 2)?\\n3. Third evaluation question (matches Objective 3)?",
+  "evaluation": "1. First evaluation question?\\n2. Second evaluation question?\\n3. Third evaluation question?\\n...",
   "assignment": "Detailed take-home assignment (2-3 sentences).",
   "summary": "Substantive summary of the lesson (3-4 sentences).",
   "conclusion": "Concluding remarks connecting to next lesson (3-4 sentences)."
