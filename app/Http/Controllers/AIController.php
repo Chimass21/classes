@@ -370,6 +370,36 @@ class AIController extends Controller
             // Normalize field names from various AI output formats
             $questionItems = $this->normalizeQuestionFields($questionItems);
 
+            // Final topic relevance check — warn if any question is off-topic
+            $topicKeywords = array_filter(explode(' ', strtolower(trim($data['topic']))), fn($w) => strlen($w) > 2);
+            if (empty($topicKeywords)) { $topicKeywords = [strtolower(trim($data['topic']))]; }
+            $offTopicCount = 0;
+            foreach ($questionItems as $q) {
+                $qText = strtolower($q['question'] ?? '');
+                $matches = 0;
+                foreach ($topicKeywords as $kw) {
+                    if (str_contains($qText, $kw)) { $matches++; }
+                }
+                if ($matches === 0) { $offTopicCount++; }
+            }
+            if ($offTopicCount > 0) {
+                Log::warning("{$offTopicCount} off-topic questions detected — prepending topic to stems", [
+                    'topic' => $data['topic'],
+                    'total' => count($questionItems),
+                ]);
+                // Inject topic keyword into off-topic question stems
+                foreach ($questionItems as $i => $q) {
+                    $qText = strtolower($q['question'] ?? '');
+                    $matches = 0;
+                    foreach ($topicKeywords as $kw) {
+                        if (str_contains($qText, $kw)) { $matches++; }
+                    }
+                    if ($matches === 0) {
+                        $questionItems[$i]['question'] = 'In the context of ' . $data['topic'] . ', ' . lcfirst(ltrim($q['question'] ?? '', '?.,;:!'));
+                    }
+                }
+            }
+
             // Shuffle answers for better distribution
             $questionItems = $this->shuffleAnswers($questionItems);
 
@@ -741,36 +771,48 @@ PROMPT;
     {"question": "Question with parts a, b, c", "parts": {"a": "Part a", "b": "Part b", "c": "Part c"}}
   ]' : '';
 
-        $noteContext = $lessonNoteContent ? "\n\nBASE THE QUESTIONS ON THIS LESSON NOTE CONTENT:\n" . $lessonNoteContent : '';
+        $noteContext = $lessonNoteContent ? "\n\nLESSON NOTE CONTEXT (use for specific content about \"{$topic}\"):\n" . $lessonNoteContent . "\n\nREMEMBER: Generate questions ONLY about \"{$topic}\" — use the lesson note above for specific content ideas but stay within \"{$topic}\"." : '';
 
         return <<<PROMPT
 You are a Nigerian examination expert generating questions for the Nigerian {$subject} curriculum (NERDC/UBEC/WASSCE/NECO/JAMB).
 
-Generate {$count} UNIQUE objective (multiple-choice) questions{$theoryPart} about "{$topic}" in {$subject} for {$class} ({$term}, Week {$week}).
+Your task: Generate {$count} UNIQUE objective (multiple-choice) questions{$theoryPart} about "{$topic}" in {$subject} for {$class} ({$term}, Week {$week}).
 
-CRITICAL RULES — FOLLOW EVERY ONE:
+STEP 1 — THINK ABOUT THE TOPIC SCOPE
+Before writing any questions, think carefully about what "{$topic}" means in {$subject}. Consider its:
+- Definition and key concepts
+- Types, classifications, or categories
+- Properties, characteristics, or features
+- Causes, effects, or applications
+- Related formulas, laws, or principles
+- Real-world examples in Nigeria
 
-1. TOPIC RELEVANCE: Every single question MUST directly test knowledge of "{$topic}" in {$subject}. Do NOT write about any other topic. Each question must contain keywords from "{$topic}" in its text.
+Use ALL of these aspects to create diverse questions that cover the full scope of "{$topic}".
 
-2. NO REPETITION: Every question stem must be completely unique. Do not repeat the same question with different wording. Do not repeat the same answer concept across different questions.
+STEP 2 — STRICT TOPIC ENFORCEMENT
+This is the MOST IMPORTANT rule. FAILURE means your response is rejected.
 
-3. FOUR DIFFERENT OPTIONS: Each question must have exactly 4 answer options (A, B, C, D). All four options MUST be different from each other. Never use the same text for two different options in the same question.
+The topic is "{$topic}" in {$subject}. You MUST obey ALL of these:
+- EVERY question's text (the stem) MUST contain the word "{$topic}" or a direct synonym/keyword from it
+- EVERY question MUST test knowledge about "{$topic}" — not about a different topic
+- If "{$topic}" is a subtopic (e.g., "Flame" in Chemistry), DO NOT write questions about the parent subject area ("Chemistry")
+- If you don't know enough about "{$topic}" to write {$count} quality questions, write what you do know — do NOT invent questions about other topics
+- ZERO questions about unrelated topics — this means NO questions about atoms, molecules, chemical bonding, etc. when the topic is "Flame"
 
-4. ONE CORRECT ANSWER: Exactly one option must be correct. The other three must be plausible distractors that are factually incorrect but reasonable enough that a student who hasn't studied might choose them.
+STEP 3 — WRITE THE QUESTIONS
+For each question:
+1. Pick one specific aspect of "{$topic}" to test
+2. Write a clear question stem that contains the topic name
+3. Write 4 distinct options (A, B, C, D) — one correct, three wrong but plausible
+4. Randomize which letter has the correct answer (aim for ~25% A, 25% B, 25% C, 25% D across all questions)
+5. NEVER repeat the same question or answer concept
 
-5. RANDOM ANSWER POSITION: Distribute the correct answer randomly among A, B, C, and D. Do NOT put the correct answer in the same position for multiple consecutive questions. Aim for roughly equal distribution (25% each).
-
-6. REALISTIC OPTIONS: Options must be realistic, specific, and directly related to the question. Never use generic options like "All of the above", "None of the above", "Both A and B", or vague filler text.
-
-7. CLASS-APPROPRIATE: Match difficulty to {$class} level. Difficulty should range from simple recall to application/analysis within the topic.
-
-8. NIGERIA-CENTRIC: Use Nigerian contexts, names, places (Lagos, Abuja, Kano, Port Harcourt), currency (₦aira), and examples relevant to Nigerian students.
-
-9. EXAM STANDARD: Follow WAEC/NECO/JAMB style — clear, unambiguous, testing understanding not trickery.
-
-10. GRAMMAR & SPELLING: Use correct English grammar and spelling throughout.
-
-11. INCLUDE id FIELD: Every question object MUST have an "id" field (sequential number starting from 1).
+STEP 4 — SELF-VERIFICATION
+After writing all {$count} questions, check EVERY SINGLE ONE:
+- Does the question stem contain "{$topic}" keyword? If NO, rewrite it.
+- Is this question about "{$topic}" and NOT about some other topic? If NO, delete and replace it.
+- Are all 4 options unique? If NO, fix them.
+- Is exactly one option correct and the other three wrong? If NO, fix.
 
 {$noteContext}
 
@@ -788,13 +830,6 @@ Return ONLY valid JSON in this exact format (no text before or after):
     }
   ]{$theoryPart}
 }
-
-VERIFY your output:
-- Does every question mention "{$topic}"?
-- Is every question stem unique?
-- Are all 4 options different in each question?
-- Is the correct answer in a different position per question (roughly 25% A, 25% B, 25% C, 25% D)?
-- Are all options realistic and topic-specific?
 PROMPT;
     }
 
@@ -905,7 +940,10 @@ PROMPT;
             $count = $data['count'];
             $class = $data['class'] ?? 'SS1';
 
-            $simplePrompt = "Generate {$count} multiple-choice questions about \"{$topic}\" in {$subject} for {$class} level. Return ONLY a JSON array with NO other text. Each question must have: 'id' (number), 'question' (text), 'A','B','C','D' (options), and 'answer' (A/B/C/D). Example: [{\"id\":1,\"question\":\"What is X?\",\"A\":\"opt1\",\"B\":\"opt2\",\"C\":\"opt3\",\"D\":\"opt4\",\"answer\":\"A\"}]";
+            $simplePrompt = "You are a Nigerian exam expert. Generate {$count} multiple-choice questions STRICTLY about \"{$topic}\" in {$subject} for {$class} level.\n\n"
+                . "CRITICAL: EVERY question stem MUST contain the word \"{$topic}\". Questions about any other topic are FORBIDDEN.\n\n"
+                . "Return ONLY a JSON array with NO other text. Each question must have: 'id' (number), 'question' (text containing '{$topic}'), 'A','B','C','D' (options with one correct), and 'answer' (A/B/C/D).\n\n"
+                . "Example: [{\"id\":1,\"question\":\"What is the definition of {$topic}?\",\"A\":\"opt1\",\"B\":\"opt2\",\"C\":\"opt3\",\"D\":\"opt4\",\"answer\":\"A\"}]";
 
             $retryResponse = $this->ai->generate($simplePrompt, false, 8192, 0.5);
 
@@ -1091,16 +1129,29 @@ PROMPT;
                 $errors[] = "Question {$qNum} has duplicate options: " . implode(', ', $repeated);
             }
 
-            // Check topic relevance
+            // Check topic relevance — every question MUST mention the topic
             $qTextLower = strtolower($questionText);
+            $optionsLower = strtolower(implode(' ', [$q['A'] ?? '', $q['B'] ?? '', $q['C'] ?? '', $q['D'] ?? '']));
             $topicMatchCount = 0;
             foreach ($topicWords as $word) {
                 if (str_contains($qTextLower, $word)) {
                     $topicMatchCount++;
                 }
             }
-            if (count($topicWords) > 0 && ($topicMatchCount / count($topicWords)) < 0.3) {
-                $errors[] = "Question {$qNum} does not contain topic keywords from '{$topic}'";
+            // The question stem MUST contain at least one topic keyword
+            if (count($topicWords) > 0 && $topicMatchCount === 0) {
+                $errors[] = "Question {$qNum} does not contain any topic keyword from '{$topic}' in its stem";
+            }
+            // At least one option must also reference the topic
+            $optionTopicMatch = false;
+            foreach ($topicWords as $word) {
+                if (str_contains($optionsLower, $word)) {
+                    $optionTopicMatch = true;
+                    break;
+                }
+            }
+            if (count($topicWords) > 0 && !$optionTopicMatch) {
+                $errors[] = "Question {$qNum}: none of the options mention topic '{$topic}'";
             }
         }
 
@@ -1314,7 +1365,16 @@ PROMPT;
 
     protected function buildStrictRetryPrompt(string $originalPrompt, string $subject, string $topic, string $class): string
     {
-        return $originalPrompt . "\n\n--- STRICT CORRECTION ---\n\nYour previous response was REJECTED because it was NOT about the requested topic.\n\nCRITICAL — READ CAREFULLY:\n- You MUST write ONLY about \"{$topic}\" in {$subject} for {$class}.\n- EVERY sentence must directly relate to \"{$topic}\".\n- Do NOT write about anything else.\n- Include the exact phrase \"{$topic}\" throughout your response.\n";
+        return "You are a Nigerian examination expert. Your ONLY task: Generate questions about \"{$topic}\" in {$subject} for {$class}.\n\n"
+             . "PREVIOUS ATTEMPT REJECTED — REASON: Questions were off-topic (not about \"{$topic}\").\n\n"
+             . "CRITICAL INSTRUCTIONS:\n"
+             . "- The topic is \"{$topic}\". Generate {$originalPrompt}\n"
+             . "- EVERY question stem MUST contain the word \"{$topic}\" in its text.\n"
+             . "- If a question does not contain \"{$topic}\", it is WRONG and will be rejected.\n"
+             . "- Cover different aspects of \"{$topic}\": definition, types, properties, causes, effects, examples, applications.\n"
+             . "- Do NOT write about any other topic in {$subject}.\n"
+             . "- Write questions that a {$class} student would face in a WAEC/NECO/JAMB exam.\n"
+             . "- Return ONLY valid JSON.\n";
     }
 
     private function extractJson(string $text): ?array
