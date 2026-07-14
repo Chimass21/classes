@@ -780,12 +780,15 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
 
       setCsvParsedQuestions(parsedRowsFinal);
       setCsvConvertResult(null);
+      // Auto-import immediately after parsing — truly one-click workflow
+      setTimeout(() => handleConvertCSVToCBT(parsedRowsFinal), 50);
     } catch (err: any) {
       setCsvError(err.message || "CSV parse malfunction. Verify standard headers.");
     }
   };
 
   const readAndParseCSV = (file: File) => {
+    if (csvConverting) return;
     setUploadedFileName(file.name);
     setCsvError("");
     setCsvSuccess("");
@@ -1013,13 +1016,14 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
     }
   };
 
-  const handleConvertCSVToCBT = async () => {
-    if (csvParsedQuestions.length === 0) {
+  const handleConvertCSVToCBT = async (questions?: Question[]) => {
+    const qs = questions || csvParsedQuestions;
+    if (qs.length === 0) {
       alert("No questions to upload. Upload a valid CSV file first.");
       return;
     }
 
-    const qCount = csvParsedQuestions.length;
+    const qCount = qs.length;
     setCsvConverting(true);
     setCsvConvertResult(null);
     setCsvProgressStep("Validating questions...");
@@ -1044,7 +1048,7 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
         headers: { "Content-Type": "application/json" },
         signal: controller.signal,
         body: JSON.stringify({
-          questions: csvParsedQuestions,
+          questions: qs,
           title: examTitle || `${examSubject} CSV Import`,
           subject: examSubject,
           level: examLevel,
