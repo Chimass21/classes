@@ -55,20 +55,25 @@ class ContentGenerator
 
     public static function generateQuestions(string $subject, string $topic, int $count, bool $includeTheory): array
     {
-        $bank = self::getQuestionBank($subject, $topic);
         $objectives = [];
 
+        // Try to get topic-specific questions first, then fall back to subject-wide bank
+        $bank = self::getQuestionBank($subject, $topic);
         if (!empty($bank)) {
-            $bank = array_filter($bank, fn($q) => stripos($q['topic'] ?? '', $topic) !== false || stripos($q['subject'] ?? '', $subject) !== false);
-            if (empty($bank)) {
-                $bank = self::getQuestionBank($subject, $topic);
+            // Shuffle to vary order, then cycle through with offset to avoid same sequence
+            $bankCopy = $bank;
+            shuffle($bankCopy);
+            $bankSize = count($bankCopy);
+            $offset = crc32($topic) % $bankSize;
+            for ($i = 0; $i < $count; $i++) {
+                $idx = ($offset + $i) % $bankSize;
+                $q = $bankCopy[$idx];
+                $q['id'] = $i + 1;
+                $objectives[] = $q;
             }
-        }
-
-        for ($i = 1; $i <= $count; $i++) {
-            if (!empty($bank) && isset($bank[$i - 1])) {
-                $objectives[] = $bank[$i - 1];
-            } else {
+        } else {
+            // No bank questions available — use archetype generator
+            for ($i = 1; $i <= $count; $i++) {
                 $objectives[] = self::generateSingleQuestion($subject, $topic, $i + ($i * 7));
             }
         }
@@ -105,19 +110,141 @@ class ContentGenerator
 
         self::$subjectQuestionBanks = [
 
-            'mathematics' => [],
+            'mathematics' => [
+                ['question' => 'What is the value of 25 + 17?', 'A' => '32', 'B' => '42', 'C' => '37', 'D' => '52', 'answer' => 'B', 'topic' => 'addition'],
+                ['question' => 'Which of the following is a prime number?', 'A' => '15', 'B' => '21', 'C' => '17', 'D' => '27', 'answer' => 'C', 'topic' => 'prime numbers'],
+                ['question' => 'The square root of 144 is:', 'A' => '11', 'B' => '14', 'C' => '12', 'D' => '13', 'answer' => 'C', 'topic' => 'square roots'],
+                ['question' => 'Convert 0.25 to a fraction in its simplest form:', 'A' => '1/2', 'B' => '2/5', 'C' => '1/4', 'D' => '3/4', 'answer' => 'C', 'topic' => 'fractions'],
+                ['question' => 'What is the LCM of 12 and 18?', 'A' => '24', 'B' => '36', 'C' => '48', 'D' => '72', 'answer' => 'B', 'topic' => 'lcm'],
+                ['question' => 'A triangle with all sides equal is called:', 'A' => 'Isosceles', 'B' => 'Scalene', 'C' => 'Right-angled', 'D' => 'Equilateral', 'answer' => 'D', 'topic' => 'triangles'],
+                ['question' => 'What is 20% of 250?', 'A' => '25', 'B' => '50', 'C' => '75', 'D' => '100', 'answer' => 'B', 'topic' => 'percentages'],
+                ['question' => 'The perimeter of a square with side 8 cm is:', 'A' => '16 cm', 'B' => '24 cm', 'C' => '32 cm', 'D' => '64 cm', 'answer' => 'C', 'topic' => 'perimeter'],
+                ['question' => 'Solve for x: 2x + 5 = 15', 'A' => '2', 'B' => '5', 'C' => '10', 'D' => '3', 'answer' => 'B', 'topic' => 'algebra'],
+                ['question' => 'What is the product of 15 and 8?', 'A' => '105', 'B' => '120', 'C' => '115', 'D' => '125', 'answer' => 'B', 'topic' => 'multiplication'],
+                ['question' => 'If a shirt costs ₦3,500 and there is a 10% discount, what is the discount amount?', 'A' => '₦250', 'B' => '₦300', 'C' => '₦350', 'D' => '₦400', 'answer' => 'C', 'topic' => 'discount'],
+                ['question' => 'What is the next number in the sequence: 2, 4, 6, 8, ?', 'A' => '9', 'B' => '10', 'C' => '11', 'D' => '12', 'answer' => 'B', 'topic' => 'sequences'],
+                ['question' => 'How many degrees are in a right angle?', 'A' => '45°', 'B' => '60°', 'C' => '90°', 'D' => '180°', 'answer' => 'C', 'topic' => 'angles'],
+                ['question' => 'What is the area of a rectangle with length 5 cm and width 3 cm?', 'A' => '8 cm²', 'B' => '15 cm²', 'C' => '16 cm²', 'D' => '10 cm²', 'answer' => 'B', 'topic' => 'area'],
+                ['question' => 'Simplify: 3/4 + 1/2', 'A' => '4/6', 'B' => '1', 'C' => '5/4', 'D' => '3/2', 'answer' => 'C', 'topic' => 'fractions'],
+                ['question' => 'What is the value of 3³?', 'A' => '6', 'B' => '9', 'C' => '27', 'D' => '81', 'answer' => 'C', 'topic' => 'indices'],
+                ['question' => 'If a student scores 28 out of 40 in a test, what is the percentage score?', 'A' => '60%', 'B' => '65%', 'C' => '70%', 'D' => '75%', 'answer' => 'C', 'topic' => 'percentages'],
+                ['question' => 'What is the mode of the numbers: 2, 3, 4, 4, 5, 6?', 'A' => '2', 'B' => '3', 'C' => '4', 'D' => '5', 'answer' => 'C', 'topic' => 'statistics'],
+                ['question' => 'How many sides does a hexagon have?', 'A' => '4', 'B' => '5', 'C' => '6', 'D' => '8', 'answer' => 'C', 'topic' => 'polygons'],
+                ['question' => 'What is the value of 2³ × 2²?', 'A' => '8', 'B' => '16', 'C' => '32', 'D' => '64', 'answer' => 'C', 'topic' => 'indices'],
+                ['question' => 'If the ratio of boys to girls in a class is 3:2 and there are 30 students, how many are boys?', 'A' => '12', 'B' => '15', 'C' => '18', 'D' => '20', 'answer' => 'C', 'topic' => 'ratios'],
+                ['question' => 'What is the sum of the interior angles of a triangle?', 'A' => '90°', 'B' => '180°', 'C' => '270°', 'D' => '360°', 'answer' => 'B', 'topic' => 'angles'],
+                ['question' => 'Solve: 5(x - 2) = 20. What is x?', 'A' => '4', 'B' => '6', 'C' => '8', 'D' => '10', 'answer' => 'B', 'topic' => 'algebra'],
+                ['question' => 'What is the place value of 7 in the number 3,742?', 'A' => '7', 'B' => '70', 'C' => '700', 'D' => '7,000', 'answer' => 'C', 'topic' => 'place value'],
+                ['question' => 'If a car travels 120 km in 2 hours, what is its average speed?', 'A' => '40 km/h', 'B' => '50 km/h', 'C' => '60 km/h', 'D' => '80 km/h', 'answer' => 'C', 'topic' => 'speed'],
+            ],
 
-            'english_language' => [],
+            'english_language' => [
+                ['question' => 'Which of the following is a noun?', 'A' => 'Run', 'B' => 'Happiness', 'C' => 'Quickly', 'D' => 'Under', 'answer' => 'B', 'topic' => 'parts of speech'],
+                ['question' => 'The opposite of "generous" is:', 'A' => 'Kind', 'B' => 'Selfish', 'C' => 'Stingy', 'D' => 'Mean', 'answer' => 'C', 'topic' => 'antonyms'],
+                ['question' => 'Choose the correct spelling:', 'A' => 'Beautifull', 'B' => 'Beauteful', 'C' => 'Beautiful', 'D' => 'Bautiful', 'answer' => 'C', 'topic' => 'spelling'],
+                ['question' => '"The boy ran quickly." The word "quickly" is a/an:', 'A' => 'Noun', 'B' => 'Verb', 'C' => 'Adjective', 'D' => 'Adverb', 'answer' => 'D', 'topic' => 'adverbs'],
+                ['question' => 'Which sentence is in the past tense?', 'A' => 'He walks home.', 'B' => 'He walked home.', 'C' => 'He will walk home.', 'D' => 'He is walking home.', 'answer' => 'B', 'topic' => 'tenses'],
+                ['question' => 'A synonym for "happy" is:', 'A' => 'Sad', 'B' => 'Angry', 'C' => 'Joyful', 'D' => 'Tired', 'answer' => 'C', 'topic' => 'synonyms'],
+                ['question' => 'Which of the following is a complete sentence?', 'A' => 'Running fast.', 'B' => 'The boy.', 'C' => 'The sun is bright.', 'D' => 'Under the table.', 'answer' => 'C', 'topic' => 'sentences'],
+                ['question' => 'The plural of "child" is:', 'A' => 'Childs', 'B' => 'Childes', 'C' => 'Children', 'D' => 'Childrens', 'answer' => 'C', 'topic' => 'plurals'],
+                ['question' => 'Which word is an adjective?', 'A' => 'Quickly', 'B' => 'Beautiful', 'C' => 'Run', 'D' => 'They', 'answer' => 'B', 'topic' => 'adjectives'],
+                ['question' => 'Identify the pronoun: "She went to school."', 'A' => 'Went', 'B' => 'To', 'C' => 'She', 'D' => 'School', 'answer' => 'C', 'topic' => 'pronouns'],
+                ['question' => 'What is the past tense of "go"?', 'A' => 'Goed', 'B' => 'Went', 'C' => 'Gone', 'D' => 'Going', 'answer' => 'B', 'topic' => 'tenses'],
+                ['question' => 'Which of the following is a preposition?', 'A' => 'Under', 'B' => 'Run', 'C' => 'Beautiful', 'D' => 'They', 'answer' => 'A', 'topic' => 'prepositions'],
+                ['question' => 'Choose the correct article: "___ elephant is a large animal."', 'A' => 'A', 'B' => 'An', 'C' => 'The', 'D' => 'None', 'answer' => 'B', 'topic' => 'articles'],
+                ['question' => 'What is the comparative form of "tall"?', 'A' => 'Taller', 'B' => 'Tallest', 'C' => 'More tall', 'D' => 'Most tall', 'answer' => 'A', 'topic' => 'comparison'],
+                ['question' => 'Which sentence uses correct punctuation?', 'A' => 'Where are you going', 'B' => 'Where are you going?', 'C' => 'Where are you going.', 'D' => 'Where are you going!', 'answer' => 'B', 'topic' => 'punctuation'],
+                ['question' => 'The word "careless" means:', 'A' => 'Full of care', 'B' => 'Without care', 'C' => 'Care again', 'D' => 'Care before', 'answer' => 'B', 'topic' => 'prefixes and suffixes'],
+                ['question' => 'Which is a compound word?', 'A' => 'Happiness', 'B' => 'Sunlight', 'C' => 'Running', 'D' => 'Quickly', 'answer' => 'B', 'topic' => 'compound words'],
+                ['question' => 'What type of sentence gives a command?', 'A' => 'Declarative', 'B' => 'Interrogative', 'C' => 'Imperative', 'D' => 'Exclamatory', 'answer' => 'C', 'topic' => 'sentences'],
+                ['question' => 'Identify the conjunction: "I like tea AND coffee."', 'A' => 'I', 'B' => 'Like', 'C' => 'And', 'D' => 'Coffee', 'answer' => 'C', 'topic' => 'conjunctions'],
+                ['question' => 'The opposite of "light" (weight) is:', 'A' => 'Bright', 'B' => 'Dark', 'C' => 'Heavy', 'D' => 'Small', 'answer' => 'C', 'topic' => 'antonyms'],
+            ],
 
-            'physics' => [],
+            'physics' => [
+                ['question' => 'What is the SI unit of force?', 'A' => 'Joule', 'B' => 'Newton', 'C' => 'Watt', 'D' => 'Pascal', 'answer' => 'B', 'topic' => 'force'],
+                ['question' => 'The speed of light in a vacuum is approximately:', 'A' => '3.0 × 10⁶ m/s', 'B' => '3.0 × 10⁷ m/s', 'C' => '3.0 × 10⁸ m/s', 'D' => '3.0 × 10⁹ m/s', 'answer' => 'C', 'topic' => 'light'],
+                ['question' => 'Which of these is a vector quantity?', 'A' => 'Speed', 'B' => 'Mass', 'C' => 'Temperature', 'D' => 'Velocity', 'answer' => 'D', 'topic' => 'vectors'],
+                ['question' => 'What is the unit of electric current?', 'A' => 'Volt', 'B' => 'Ampere', 'C' => 'Ohm', 'D' => 'Watt', 'answer' => 'B', 'topic' => 'electricity'],
+                ['question' => 'Which law states that energy cannot be created or destroyed?', 'A' => 'Newton\'s First Law', 'B' => 'Law of Conservation of Energy', 'C' => 'Ohm\'s Law', 'D' => 'Boyle\'s Law', 'answer' => 'B', 'topic' => 'energy'],
+                ['question' => 'The process by which heat travels through a solid is called:', 'A' => 'Convection', 'B' => 'Radiation', 'C' => 'Conduction', 'D' => 'Evaporation', 'answer' => 'C', 'topic' => 'heat transfer'],
+                ['question' => 'What is the device used to measure electric current?', 'A' => 'Voltmeter', 'B' => 'Thermometer', 'C' => 'Ammeter', 'D' => 'Barometer', 'answer' => 'C', 'topic' => 'electricity'],
+                ['question' => 'What is the acceleration due to gravity on Earth approximately?', 'A' => '7.8 m/s²', 'B' => '9.8 m/s²', 'C' => '11.8 m/s²', 'D' => '5.8 m/s²', 'answer' => 'B', 'topic' => 'gravity'],
+                ['question' => 'The unit of electrical resistance is the:', 'A' => 'Volt', 'B' => 'Ampere', 'C' => 'Ohm', 'D' => 'Watt', 'answer' => 'C', 'topic' => 'electricity'],
+                ['question' => 'What type of lens converges light rays?', 'A' => 'Concave', 'B' => 'Convex', 'C' => 'Diverging', 'D' => 'Plane', 'answer' => 'B', 'topic' => 'optics'],
+                ['question' => 'Which of these is NOT a renewable energy source?', 'A' => 'Solar', 'B' => 'Wind', 'C' => 'Natural gas', 'D' => 'Hydroelectric', 'answer' => 'C', 'topic' => 'energy'],
+                ['question' => 'Sound waves cannot travel through:', 'A' => 'Air', 'B' => 'Water', 'C' => 'Steel', 'D' => 'Vacuum', 'answer' => 'D', 'topic' => 'sound'],
+                ['question' => 'What is the unit of work?', 'A' => 'Newton', 'B' => 'Watt', 'C' => 'Joule', 'D' => 'Pascal', 'answer' => 'C', 'topic' => 'work'],
+                ['question' => 'The SI unit of pressure is:', 'A' => 'Newton', 'B' => 'Joule', 'C' => 'Watt', 'D' => 'Pascal', 'answer' => 'D', 'topic' => 'pressure'],
+                ['question' => 'Which of the following is a scalar quantity?', 'A' => 'Force', 'B' => 'Velocity', 'C' => 'Speed', 'D' => 'Acceleration', 'answer' => 'C', 'topic' => 'scalars'],
+                ['question' => 'What instrument is used to measure atmospheric pressure?', 'A' => 'Thermometer', 'B' => 'Barometer', 'C' => 'Hygrometer', 'D' => 'Manometer', 'answer' => 'B', 'topic' => 'pressure'],
+            ],
 
-            'chemistry' => [],
+            'chemistry' => [
+                ['question' => 'The basic unit of an element is the:', 'A' => 'Molecule', 'B' => 'Atom', 'C' => 'Electron', 'D' => 'Proton', 'answer' => 'B', 'topic' => 'atoms'],
+                ['question' => 'What is the chemical symbol for water?', 'A' => 'H2O', 'B' => 'CO2', 'C' => 'NaCl', 'D' => 'H2SO4', 'answer' => 'A', 'topic' => 'chemical formulae'],
+                ['question' => 'The process by which a solid turns directly into a gas is called:', 'A' => 'Evaporation', 'B' => 'Melting', 'C' => 'Sublimation', 'D' => 'Condensation', 'answer' => 'C', 'topic' => 'sublimation'],
+                ['question' => 'What is the pH of a neutral solution?', 'A' => '0', 'B' => '7', 'C' => '14', 'D' => '1', 'answer' => 'B', 'topic' => 'acids and bases'],
+                ['question' => 'Which gas is produced when zinc reacts with hydrochloric acid?', 'A' => 'Oxygen', 'B' => 'Chlorine', 'C' => 'Hydrogen', 'D' => 'Carbon dioxide', 'answer' => 'C', 'topic' => 'acids and bases'],
+                ['question' => 'What is the atomic number of carbon?', 'A' => '4', 'B' => '6', 'C' => '8', 'D' => '12', 'answer' => 'B', 'topic' => 'atoms'],
+                ['question' => 'The formula for common salt is:', 'A' => 'KCl', 'B' => 'NaCl', 'C' => 'CaCl2', 'D' => 'MgCl2', 'answer' => 'B', 'topic' => 'chemical formulae'],
+                ['question' => 'Which of the following is an example of a physical change?', 'A' => 'Burning wood', 'B' => 'Rusting iron', 'C' => 'Melting ice', 'D' => 'Digesting food', 'answer' => 'C', 'topic' => 'physical changes'],
+                ['question' => 'What is the symbol for potassium?', 'A' => 'Po', 'B' => 'Pt', 'C' => 'K', 'D' => 'P', 'answer' => 'C', 'topic' => 'elements'],
+                ['question' => 'Which gas is used in the Haber process to produce ammonia?', 'A' => 'Oxygen', 'B' => 'Chlorine', 'C' => 'Nitrogen', 'D' => 'Hydrogen', 'answer' => 'C', 'topic' => 'industrial chemistry'],
+                ['question' => 'What is the chemical name for CaCO3?', 'A' => 'Calcium oxide', 'B' => 'Calcium carbonate', 'C' => 'Calcium chloride', 'D' => 'Calcium hydroxide', 'answer' => 'B', 'topic' => 'chemical formulae'],
+                ['question' => 'What is the characteristic color of a non-luminous flame?', 'A' => 'Yellow', 'B' => 'Red', 'C' => 'Blue', 'D' => 'Orange', 'answer' => 'C', 'topic' => 'flame'],
+                ['question' => 'Which part of a Bunsen burner flame is the hottest?', 'A' => 'Top of the flame', 'B' => 'Middle of the flame', 'C' => 'Blue region near the base', 'D' => 'Outer yellow region', 'answer' => 'C', 'topic' => 'flame'],
+                ['question' => 'A luminous flame is produced when the air hole of a Bunsen burner is:', 'A' => 'Fully open', 'B' => 'Partially open', 'C' => 'Completely closed', 'D' => 'Half open', 'answer' => 'C', 'topic' => 'flame'],
+                ['question' => 'Which of the following is true about a non-luminous flame?', 'A' => 'It is yellow and smoky', 'B' => 'It is blue and very hot', 'C' => 'It is quiet and luminous', 'D' => 'It is produced when the air hole is closed', 'answer' => 'B', 'topic' => 'flame'],
+                ['question' => 'What is the main cause of the yellow color in a luminous flame?', 'A' => 'Complete combustion', 'B' => 'Incomplete combustion of carbon particles', 'C' => 'Presence of sulfur', 'D' => 'Excess oxygen', 'answer' => 'B', 'topic' => 'flame'],
+                ['question' => 'A non-luminous flame is preferred for heating because it:', 'A' => 'Is cheaper', 'B' => 'Is brighter', 'C' => 'Is hotter and cleaner', 'D' => 'Uses less gas', 'answer' => 'C', 'topic' => 'flame'],
+                ['question' => 'Which of these indicates that a chemical reaction has taken place?', 'A' => 'Change of state', 'B' => 'Change of color', 'C' => 'Dissolving', 'D' => 'Melting', 'answer' => 'B', 'topic' => 'chemical reactions'],
+                ['question' => 'What is the name of the process by which a liquid changes to gas at its surface?', 'A' => 'Boiling', 'B' => 'Evaporation', 'C' => 'Condensation', 'D' => 'Sublimation', 'answer' => 'B', 'topic' => 'evaporation'],
+                ['question' => 'Which of the following elements is a noble gas?', 'A' => 'Oxygen', 'B' => 'Chlorine', 'C' => 'Helium', 'D' => 'Nitrogen', 'answer' => 'C', 'topic' => 'elements'],
+                ['question' => 'What is the formula for sulfuric acid?', 'A' => 'HCl', 'B' => 'HNO3', 'C' => 'H2SO4', 'D' => 'CH3COOH', 'answer' => 'C', 'topic' => 'acids and bases'],
+                ['question' => 'Which of the following is a mixture?', 'A' => 'Water', 'B' => 'Common salt', 'C' => 'Air', 'D' => 'Sugar', 'answer' => 'C', 'topic' => 'mixtures'],
+                ['question' => 'The number of electrons in a neutral atom of oxygen (atomic number 8) is:', 'A' => '4', 'B' => '6', 'C' => '8', 'D' => '16', 'answer' => 'C', 'topic' => 'atoms'],
+                ['question' => 'What is the chemical symbol for gold?', 'A' => 'Go', 'B' => 'Gd', 'C' => 'Au', 'D' => 'Ag', 'answer' => 'C', 'topic' => 'elements'],
+            ],
 
-            'biology' => [],
+            'biology' => [
+                ['question' => 'The basic unit of life is the:', 'A' => 'Tissue', 'B' => 'Cell', 'C' => 'Organ', 'D' => 'System', 'answer' => 'B', 'topic' => 'cells'],
+                ['question' => 'Which organ pumps blood around the body?', 'A' => 'Lungs', 'B' => 'Liver', 'C' => 'Heart', 'D' => 'Kidney', 'answer' => 'C', 'topic' => 'circulatory system'],
+                ['question' => 'The process by which plants make food is called:', 'A' => 'Respiration', 'B' => 'Transpiration', 'C' => 'Photosynthesis', 'D' => 'Digestion', 'answer' => 'C', 'topic' => 'photosynthesis'],
+                ['question' => 'What gas do plants absorb from the atmosphere?', 'A' => 'Oxygen', 'B' => 'Nitrogen', 'C' => 'Carbon dioxide', 'D' => 'Hydrogen', 'answer' => 'C', 'topic' => 'photosynthesis'],
+                ['question' => 'Which of these is NOT a sense organ?', 'A' => 'Eye', 'B' => 'Ear', 'C' => 'Heart', 'D' => 'Skin', 'answer' => 'C', 'topic' => 'sense organs'],
+                ['question' => 'What is the largest organ in the human body?', 'A' => 'Liver', 'B' => 'Brain', 'C' => 'Skin', 'D' => 'Heart', 'answer' => 'C', 'topic' => 'skin'],
+                ['question' => 'Which of the following is a primary consumer?', 'A' => 'Lion', 'B' => 'Grass', 'C' => 'Cow', 'D' => 'Snake', 'answer' => 'C', 'topic' => 'ecology'],
+                ['question' => 'The function of the red blood cells is to:', 'A' => 'Fight infection', 'B' => 'Carry oxygen', 'C' => 'Clot blood', 'D' => 'Produce hormones', 'answer' => 'B', 'topic' => 'blood'],
+                ['question' => 'What is the name of the process by which organisms produce offspring?', 'A' => 'Respiration', 'B' => 'Reproduction', 'C' => 'Digestion', 'D' => 'Excretion', 'answer' => 'B', 'topic' => 'reproduction'],
+                ['question' => 'Which of these animals undergoes metamorphosis?', 'A' => 'Dog', 'B' => 'Cat', 'C' => 'Frog', 'D' => 'Goat', 'answer' => 'C', 'topic' => 'metamorphosis'],
+                ['question' => 'The green pigment in plants that captures sunlight is called:', 'A' => 'Melanin', 'B' => 'Chlorophyll', 'C' => 'Carotene', 'D' => 'Xanthophyll', 'answer' => 'B', 'topic' => 'photosynthesis'],
+                ['question' => 'Where does digestion of protein begin in the human body?', 'A' => 'Mouth', 'B' => 'Stomach', 'C' => 'Small intestine', 'D' => 'Large intestine', 'answer' => 'B', 'topic' => 'digestive system'],
+                ['question' => 'Which of the following is a disease caused by a virus?', 'A' => 'Malaria', 'B' => 'Cholera', 'C' => 'HIV/AIDS', 'D' => 'Tuberculosis', 'answer' => 'C', 'topic' => 'diseases'],
+                ['question' => 'The organ responsible for filtering blood in the body is the:', 'A' => 'Liver', 'B' => 'Heart', 'C' => 'Kidney', 'D' => 'Lungs', 'answer' => 'C', 'topic' => 'excretory system'],
+                ['question' => 'What is the primary function of the roots of a plant?', 'A' => 'Photosynthesis', 'B' => 'Support and absorption', 'C' => 'Reproduction', 'D' => 'Transpiration', 'answer' => 'B', 'topic' => 'plants'],
+                ['question' => 'Which of the following is a cold-blooded animal?', 'A' => 'Bird', 'B' => 'Lizard', 'C' => 'Dog', 'D' => 'Cow', 'answer' => 'B', 'topic' => 'classification'],
+                ['question' => 'The main function of the nervous system is to:', 'A' => 'Pump blood', 'B' => 'Digest food', 'C' => 'Coordinate body activities', 'D' => 'Filter waste', 'answer' => 'C', 'topic' => 'nervous system'],
+                ['question' => 'What is the name of the bone that protects the brain?', 'A' => 'Femur', 'B' => 'Rib cage', 'C' => 'Skull', 'D' => 'Spine', 'answer' => 'C', 'topic' => 'skeletal system'],
+            ],
 
-            'economics' => [],
+            'economics' => [
+                ['question' => 'What is the basic economic problem?', 'A' => 'Unemployment', 'B' => 'Scarcity', 'C' => 'Inflation', 'D' => 'Poverty', 'answer' => 'B', 'topic' => 'basic concepts'],
+                ['question' => 'The demand for a good increases when its price:', 'A' => 'Rises', 'B' => 'Falls', 'C' => 'Stays constant', 'D' => 'Fluctuates', 'answer' => 'B', 'topic' => 'demand'],
+                ['question' => 'The supply curve slopes:', 'A' => 'Downward', 'B' => 'Upward', 'C' => 'Horizontal', 'D' => 'Vertical', 'answer' => 'B', 'topic' => 'supply'],
+                ['question' => 'When demand exceeds supply, the price tends to:', 'A' => 'Fall', 'B' => 'Rise', 'C' => 'Stay the same', 'D' => 'Become zero', 'answer' => 'B', 'topic' => 'demand and supply'],
+                ['question' => 'Which of these is a direct tax?', 'A' => 'VAT', 'B' => 'Excise duty', 'C' => 'Income tax', 'D' => 'Import duty', 'answer' => 'C', 'topic' => 'taxation'],
+                ['question' => 'Land as a factor of production includes:', 'A' => 'Only soil', 'B' => 'All natural resources', 'C' => 'Buildings only', 'D' => 'Money', 'answer' => 'B', 'topic' => 'factors of production'],
+                ['question' => 'The Central Bank of Nigeria is responsible for:', 'A' => 'Printing money', 'B' => 'Accepting deposits', 'C' => 'Granting loans to individuals', 'D' => 'Issuing currency', 'answer' => 'D', 'topic' => 'money and banking'],
+            ],
 
-            'government' => [],
+            'government' => [
+                ['question' => 'Nigeria became a republic in the year:', 'A' => '1960', 'B' => '1963', 'C' => '1966', 'D' => '1979', 'answer' => 'B', 'topic' => 'constitution'],
+                ['question' => 'The head of the executive arm of government in Nigeria is the:', 'A' => 'Chief Justice', 'B' => 'Senate President', 'C' => 'Speaker', 'D' => 'President', 'answer' => 'D', 'topic' => 'executive'],
+                ['question' => 'Which of the following is a function of the legislature?', 'A' => 'Interpreting laws', 'B' => 'Making laws', 'C' => 'Executing laws', 'D' => 'Enforcing laws', 'answer' => 'B', 'topic' => 'legislature'],
+                ['question' => 'The highest court in Nigeria is the:', 'A' => 'High Court', 'B' => 'Appeal Court', 'C' => 'Supreme Court', 'D' => 'Magistrate Court', 'answer' => 'C', 'topic' => 'judiciary'],
+                ['question' => 'A constitution that is difficult to amend is said to be:', 'A' => 'Flexible', 'B' => 'Written', 'C' => 'Rigid', 'D' => 'Unwritten', 'answer' => 'C', 'topic' => 'constitution'],
+            ],
         ];
 
         return self::$subjectQuestionBanks[$key] ?? [];
