@@ -763,6 +763,8 @@ CRITICAL RULES — FOLLOW EVERY ONE:
 
 10. GRAMMAR & SPELLING: Use correct English grammar and spelling throughout.
 
+11. INCLUDE id FIELD: Every question object MUST have an "id" field (sequential number starting from 1).
+
 {$noteContext}
 
 Return ONLY valid JSON in this exact format (no text before or after):
@@ -895,7 +897,7 @@ PROMPT;
             $count = $data['count'];
             $class = $data['class'] ?? 'SS1';
 
-            $simplePrompt = "Generate {$count} multiple-choice questions about \"{$topic}\" in {$subject} for {$class} level. Return ONLY a JSON array with NO other text. Each question must have: 'question' text, 'A','B','C','D' options, and 'answer' key (A/B/C/D). All questions must be about \"{$topic}\". Example format: [{\"question\":\"What is X?\",\"A\":\"opt1\",\"B\":\"opt2\",\"C\":\"opt3\",\"D\":\"opt4\",\"answer\":\"A\"}]";
+            $simplePrompt = "Generate {$count} multiple-choice questions about \"{$topic}\" in {$subject} for {$class} level. Return ONLY a JSON array with NO other text. Each question must have: 'id' (number), 'question' (text), 'A','B','C','D' (options), and 'answer' (A/B/C/D). Example: [{\"id\":1,\"question\":\"What is X?\",\"A\":\"opt1\",\"B\":\"opt2\",\"C\":\"opt3\",\"D\":\"opt4\",\"answer\":\"A\"}]";
 
             $retryResponse = $this->ai->generate($simplePrompt, false, 8192, 0.5);
 

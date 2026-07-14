@@ -1105,16 +1105,16 @@ function displayQuestions(qs) {
     let html = '';
     if (objectives.length) {
         html += `<h3 class="text-base font-bold text-slate-800 mb-3">Objective Questions (${objectives.length})</h3>`;
-        html += objectives.map(q => `
+        html += objectives.map((q, idx) => `
             <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg mb-2">
-                <p class="text-sm font-medium mb-1">${q.id}. ${q.question}</p>
+                <p class="text-sm font-medium mb-1">${q.id || (idx + 1)}. ${q.question || q.text || ''}</p>
                 <ul class="text-xs text-slate-600 grid grid-cols-2 gap-1 pl-4">
-                    <li>A. ${q.A || ''}</li>
-                    <li>B. ${q.B || ''}</li>
-                    <li>C. ${q.C || ''}</li>
-                    <li>D. ${q.D || ''}</li>
+                    <li>A. ${q.A || q.option_a || q.options?.A || ''}</li>
+                    <li>B. ${q.B || q.option_b || q.options?.B || ''}</li>
+                    <li>C. ${q.C || q.option_c || q.options?.C || ''}</li>
+                    <li>D. ${q.D || q.option_d || q.options?.D || ''}</li>
                 </ul>
-                <p class="text-xs text-emerald-700 font-bold mt-1">Answer: ${q.answer || ''}</p>
+                <p class="text-xs text-emerald-700 font-bold mt-1">Answer: ${q.answer || q.correctAnswer || q.correct_answer || ''}</p>
             </div>
         `).join('');
     }
