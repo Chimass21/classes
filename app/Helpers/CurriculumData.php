@@ -13,7 +13,11 @@ class CurriculumData
             'Civic Education', 'Basic Science', 'Basic Technology',
             'Social Studies', 'Home Economics', 'Physical Education',
             'Christian Religious Studies', 'Islamic Studies',
-            'French', 'Yoruba', 'Igbo', 'Hausa', 'Music', 'Art & Design'
+            'French', 'Yoruba', 'Igbo', 'Hausa', 'Music', 'Art & Design',
+            'Intermediate Science', 'Cultural and Creative Arts (CCA)',
+            'Nigerian History', 'Artificial Intelligence', 'Phonics',
+            'Vocational Studies', 'Physical and Health Education (PHE)',
+            'Coding', 'Verbal Reasoning', 'Craft and Art',
         ];
     }
 

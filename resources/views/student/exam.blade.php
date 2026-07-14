@@ -5,13 +5,9 @@
   @media print {
     body { background-color: white !important; color: black !important; }
     header, .print-hidden, button, nav, footer, .floating-support, #cbt-header { display: none !important; }
-    #print-section-certificate, #printable-result-slip, #printable-graded-script { display: block !important; visibility: visible !important; width: 100% !important; }
+    #print-section-certificate, #printable-result-slip { display: block !important; visibility: visible !important; width: 100% !important; }
     #print-section-certificate { page-break-inside: avoid !important; page-break-before: always !important; }
-    body:not(.printing-graded):not(.printing-combined) #printable-graded-script { display: none !important; }
-    body.printing-graded #print-section-certificate, body.printing-graded #printable-result-slip { display: none !important; }
-    body.printing-combined #printable-graded-script { display: block !important; }
-    body.printing-combined #printable-result-slip { display: block !important; page-break-before: always !important; }
-    body.printing-combined #print-section-certificate { display: block !important; page-break-inside: avoid !important; }
+    #printable-graded-script { display: none !important; }
     * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
   }
   .nav-btn { transition: all 0.15s ease; }
@@ -609,7 +605,7 @@ function showResults() {
     <!-- Download / Action Buttons -->
     <div class="p-5 sm:p-6 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl shadow-xs print-hidden slide-up">
       <div class="flex flex-wrap items-center gap-3">
-        <button onclick="handlePrintFullResult()" class="px-5 py-3 bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-600 hover:to-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer ring-2 ring-emerald-300">
+        <button onclick="window.open('/api/download/graded-script/${examId}/${result.id}', '_blank')" class="px-5 py-3 bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-600 hover:to-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-lg flex items-center gap-2 cursor-pointer ring-2 ring-emerald-300">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           Download Full Result (PDF)
         </button>
@@ -621,7 +617,7 @@ function showResults() {
           <svg class="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           Download Result Slip (PDF)
         </button>
-        <button onclick="handlePrintGradedScript()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
+        <button onclick="window.open('/api/download/graded-script/${examId}/${result.id}', '_blank')" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
           Download Graded Script (PDF)
         </button>
@@ -707,11 +703,11 @@ function showResults() {
       </div>
       <div class="flex flex-wrap items-center gap-3 pt-4 border-t border-slate-200 mt-6">
         <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mr-2">Download:</span>
-        <button onclick="handlePrintFullResult()" class="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-600 hover:to-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
+        <button onclick="window.open('/api/download/graded-script/${examId}/${result.id}', '_blank')" class="px-4 py-2.5 bg-gradient-to-r from-amber-500 to-emerald-600 hover:from-amber-600 hover:to-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
           Full Result (PDF)
         </button>
-        <button onclick="handlePrintGradedScript()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
+        <button onclick="window.open('/api/download/graded-script/${examId}/${result.id}', '_blank')" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold text-xs rounded-xl transition-all shadow-md flex items-center gap-2 cursor-pointer">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
           Graded Script (PDF)
         </button>
@@ -744,20 +740,6 @@ function handlePrintCertificate() {
 function handlePrintResultSlip() {
   alert('To Save as PDF:\n1. Change destination to \'Save as PDF\'.\n2. Set Layout to \'Portrait\'.\n3. Click Save.');
   window.print();
-}
-
-function handlePrintGradedScript() {
-  document.body.classList.add('printing-graded');
-  alert('To Save as PDF:\n1. Change destination to \'Save as PDF\'.\n2. Set Layout to \'Portrait\'.\n3. Click Save.');
-  window.print();
-  setTimeout(() => document.body.classList.remove('printing-graded'), 500);
-}
-
-function handlePrintFullResult() {
-  document.body.classList.add('printing-combined');
-  alert('To Save as PDF:\n1. Change destination to \'Save as PDF\'.\n2. Set Layout to \'Portrait\'.\n3. Ensure background graphics are ON.\n4. Click Save.');
-  window.print();
-  setTimeout(() => document.body.classList.remove('printing-combined'), 500);
 }
 
 function handleRetake() {

@@ -106,17 +106,17 @@ export default function LandingPage({ onGetStarted, onLoginClick, onSelectExam }
 
   const subjects = [
     { name: 'Mathematics', icon: '📐', level: 'Primary & Secondary' },
+    { name: 'English Language', icon: '✍', level: 'All Levels' },
     { name: 'Physics', icon: '⚡', level: 'Senior Secondary' },
     { name: 'Chemistry', icon: '🧪', level: 'Senior Secondary' },
     { name: 'Biology', icon: '🧬', level: 'Senior Secondary' },
-    { name: 'English Language', icon: '✍', level: 'All Levels' },
-    { name: 'Accounting', icon: '📊', level: 'Secondary' },
     { name: 'Economics', icon: '📉', level: 'All Levels' },
-    { name: 'Government', icon: '🏛️', level: 'Secondary' },
-    { name: 'Basic Science', icon: '🔬', level: 'Junior Secondary' },
-    { name: 'Literature', icon: '📚', level: 'Senior Secondary' },
-    { name: 'ICT', icon: '💻', level: 'All Levels' },
-    { name: 'Agriculture', icon: '🌱', level: 'Primary & Secondary' },
+    { name: 'Coding', icon: '💻', level: 'All Levels' },
+    { name: 'Artificial Intelligence', icon: '🤖', level: 'All Levels' },
+    { name: 'Cultural & Creative Arts', icon: '🎨', level: 'Primary & Secondary' },
+    { name: 'Social Studies', icon: '🌍', level: 'Primary & Secondary' },
+    { name: 'Physical & Health Education', icon: '⚽', level: 'All Levels' },
+    { name: 'Phonics', icon: '🔤', level: 'Primary' },
   ];
 
   const features = [

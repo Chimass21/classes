@@ -63,6 +63,190 @@ class DownloadController extends Controller
         return abort(400);
     }
 
+    public function downloadGradedScript($examId, $resultId)
+    {
+        JsonDb::init();
+        $db = JsonDb::get();
+
+        $exam = null;
+        foreach ($db['exams'] as $e) {
+            if ($e['id'] === $examId) { $exam = $e; break; }
+        }
+        if (!$exam) return abort(404, 'Exam not found');
+
+        $result = null;
+        foreach ($db['results'] as $r) {
+            if ($r['id'] === $resultId && ($r['examId'] ?? '') === $examId) { $result = $r; break; }
+        }
+        if (!$result) return abort(404, 'Result not found');
+
+        $html = $this->buildGradedScriptHtml($exam, $result);
+        return $this->downloadPdf($html, 'graded_script_' . $resultId);
+    }
+
+    protected function buildGradedScriptHtml(array $exam, array $result): string
+    {
+        $title = $exam['title'] ?? 'Examination';
+        $subject = $exam['subject'] ?? '';
+        $studentName = $result['studentName'] ?? 'Student';
+        $studentId = $result['studentId'] ?? '';
+        $score = $result['score'] ?? 0;
+        $totalPossible = $result['totalPossibleMarks'] ?? 0;
+        $percentage = $result['percentage'] ?? 0;
+        $correctAnswers = $result['correctAnswers'] ?? 0;
+        $totalQuestions = $result['totalQuestions'] ?? 0;
+        $timeSpent = $result['timeSpent'] ?? 0;
+        $isPassed = $percentage >= 50;
+        $failedQuestions = $result['failedQuestions'] ?? [];
+        $date = $result['date'] ?? now()->toIso8601String();
+        $resultId = $result['id'] ?? '';
+
+        $timeStr = $timeSpent < 60 ? $timeSpent . 's' : floor($timeSpent / 60) . 'm ' . ($timeSpent % 60) . 's';
+
+        $questionsHtml = '';
+        foreach ($failedQuestions as $idx => $item) {
+            $qNum = $idx + 1;
+            $isCorrect = $item['selectedAnswer'] === $item['correctAnswer'];
+            $isNotAnswered = !$item['selectedAnswer'];
+            $statusBadge = $isCorrect
+                ? '<span style="color:#059669;font-weight:800;font-size:10px">✓ Correct</span>'
+                : ($isNotAnswered
+                    ? '<span style="color:#d97706;font-weight:800;font-size:10px">— Not Answered</span>'
+                    : '<span style="color:#dc2626;font-weight:800;font-size:10px">✗ Wrong</span>');
+
+            $optKeys = ['A', 'B', 'C', 'D'];
+            $optLabels = [];
+            foreach ($optKeys as $k) {
+                $v = $item['option' . $k] ?? $item['options'][$k] ?? $item[$k] ?? '';
+                $optLabels[] = ['k' => $k, 'v' => $v];
+            }
+
+            $optsHtml = '';
+            foreach ($optLabels as $opt) {
+                $isCorrectOpt = $opt['k'] === $item['correctAnswer'];
+                $isSelectedOpt = $opt['k'] === $item['selectedAnswer'];
+                $bg = '#ffffff';
+                $border = '#e2e8f0';
+                $marker = '#f1f5f9';
+                $mark = '';
+                $markColor = 'transparent';
+                if ($isCorrectOpt) {
+                    $bg = '#f0fdf4';
+                    $border = '#86efac';
+                    $marker = '#22c55e';
+                    $mark = ' ✓';
+                    $markColor = '#059669';
+                } elseif ($isSelectedOpt && !$isCorrectOpt) {
+                    $bg = '#fff1f2';
+                    $border = '#fda4af';
+                    $marker = '#e11d48';
+                    $mark = ' ✗';
+                    $markColor = '#dc2626';
+                }
+                $optsHtml .= '<div style="padding:5px 8px;border:1px solid ' . $border . ';border-radius:4px;background:' . $bg . ';font-size:10px;font-weight:600;color:#334155;display:flex;align-items:center;gap:6px;page-break-inside:avoid;break-inside:avoid">'
+                    . '<span style="width:18px;height:18px;border-radius:3px;display:inline-flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:#fff;background:' . $marker . ';border:1px solid ' . $border . '">' . $opt['k'] . '</span>'
+                    . '<span style="flex:1">' . e($opt['v']) . '</span>'
+                    . ($mark ? '<span style="font-size:10px;font-weight:800;color:' . $markColor . '">' . $mark . '</span>' : '')
+                    . '</div>';
+            }
+
+            $explanation = $item['explanation'] ?? ('The correct answer is Option ' . $item['correctAnswer'] . '.');
+
+            $questionsHtml .= '
+            <div style="border:1px solid #e2e8f0;border-radius:6px;padding:10px;margin-bottom:10px;page-break-inside:avoid;break-inside:avoid">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+                    <span style="font-size:9px;font-weight:800;color:#64748b">Question ' . $qNum . ' of ' . $totalQuestions . '</span>
+                    ' . $statusBadge . '
+                </div>
+                <p style="font-size:11px;font-weight:700;color:#1e293b;margin-bottom:6px;line-height:1.4">' . e($item['question']) . '</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px">' . $optsHtml . '</div>
+                <div style="margin-top:6px;padding:6px 10px;background:#eef2ff;border:1px solid #e0e7ff;border-radius:4px;font-size:10px;color:#334155;line-height:1.3"><strong style="color:#4338ca">Explanation:</strong> ' . e($explanation) . '</div>
+            </div>';
+        }
+
+        $dateFormatted = date('M j, Y', strtotime($date));
+
+        $body = '
+        <div style="max-width:190mm;margin:0 auto;padding:5mm 0">
+            <!-- School Header -->
+            <div style="text-align:center;border-bottom:3px double #1e293b;padding-bottom:6px;margin-bottom:12px">
+                <h1 style="font-size:16px;font-weight:900;color:#0f172a;margin:0;text-transform:uppercase;letter-spacing:1px">Republic of Education Class Portal</h1>
+                <p style="font-size:8px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:2px;margin:2px 0 0 0">Official Assessment Center &bull; Computer Based Testing Division</p>
+            </div>
+
+            <!-- Title & Summary -->
+            <div style="margin-bottom:12px">
+                <h2 style="font-size:14px;font-weight:900;color:#0f172a;margin:0 0 4px 0">' . e($title) . '</h2>
+                <p style="font-size:9px;color:#64748b;margin:0;font-weight:600">Subject: ' . e($subject) . ' &bull; Student: ' . e($studentName) . ' (' . e($studentId) . ') &bull; Date: ' . $dateFormatted . '</p>
+            </div>
+
+            <!-- Score Card -->
+            <div style="background:' . ($isPassed ? '#059669' : '#dc2626') . ';color:#fff;border-radius:6px;padding:10px 14px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center">
+                <div>
+                    <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:0.9;margin:0 0 2px 0">Final Score</p>
+                    <p style="font-size:22px;font-weight:900;margin:0">' . $score . ' / ' . $totalPossible . '</p>
+                </div>
+                <div style="text-align:right">
+                    <p style="font-size:26px;font-weight:900;margin:0">' . $percentage . '%</p>
+                    <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1px;opacity:0.9;margin:2px 0 0 0">' . ($isPassed ? 'Passed' : 'Failed') . '</p>
+                </div>
+            </div>
+
+            <!-- Stats Row -->
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-bottom:14px">
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:6px 8px;text-align:center">
+                    <p style="font-size:7px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin:0 0 2px 0">Score</p>
+                    <p style="font-size:13px;font-weight:900;color:#0f172a;margin:0">' . $score . '/' . $totalPossible . '</p>
+                </div>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:6px 8px;text-align:center">
+                    <p style="font-size:7px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin:0 0 2px 0">Correct</p>
+                    <p style="font-size:13px;font-weight:900;color:#0f172a;margin:0">' . $correctAnswers . '/' . $totalQuestions . '</p>
+                </div>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:6px 8px;text-align:center">
+                    <p style="font-size:7px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin:0 0 2px 0">Percentage</p>
+                    <p style="font-size:13px;font-weight:900;color:' . ($isPassed ? '#059669' : '#dc2626') . ';margin:0">' . $percentage . '%</p>
+                </div>
+                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:6px 8px;text-align:center">
+                    <p style="font-size:7px;font-weight:700;text-transform:uppercase;color:#94a3b8;margin:0 0 2px 0">Time</p>
+                    <p style="font-size:13px;font-weight:900;color:#0f172a;margin:0">' . $timeStr . '</p>
+                </div>
+            </div>
+
+            <!-- Questions -->
+            <h3 style="font-size:11px;font-weight:900;color:#0f172a;text-transform:uppercase;border-bottom:2px solid #1e293b;padding-bottom:4px;margin:0 0 10px 0">Question-by-Question Breakdown</h3>
+            ' . $questionsHtml . '
+
+            <!-- Certificate Section (if passed) -->
+            ' . ($isPassed ? '
+            <div style="page-break-before:always;break-before:page;margin-top:20px">
+                <div style="border:4px double #d97706;padding:20px 16px;text-align:center;background:linear-gradient(135deg, #fffbeb 0%, #ffffff 100%);border-radius:8px;position:relative">
+                    <div style="position:absolute;top:8px;left:8px;width:24px;height:24px;border-top:3px solid #d97706;border-left:3px solid #d97706;border-radius:4px 0 0 0"></div>
+                    <div style="position:absolute;top:8px;right:8px;width:24px;height:24px;border-top:3px solid #d97706;border-right:3px solid #d97706;border-radius:0 4px 0 0"></div>
+                    <div style="position:absolute;bottom:8px;left:8px;width:24px;height:24px;border-bottom:3px solid #d97706;border-left:3px solid #d97706;border-radius:0 0 0 4px"></div>
+                    <div style="position:absolute;bottom:8px;right:8px;width:24px;height:24px;border-bottom:3px solid #d97706;border-right:3px solid #d97706;border-radius:0 0 4px 0"></div>
+                    <h2 style="font-size:18px;font-weight:900;color:#92400e;text-transform:uppercase;letter-spacing:2px;margin:0 0 4px 0;font-family:serif">Certificate of Excellence</h2>
+                    <div style="width:60px;height:2px;background:#d97706;margin:6px auto;border-radius:2px"></div>
+                    <p style="font-size:10px;color:#64748b;font-style:italic;margin:4px 0">Presented to</p>
+                    <h3 style="font-size:20px;font-weight:900;color:#0f172a;margin:4px 0;text-transform:uppercase;text-decoration:underline;text-underline-offset:6px;font-family:serif">' . e($studentName) . '</h3>
+                    <p style="font-size:10px;color:#475569;max-width:400px;margin:6px auto;line-height:1.5">For completing the computer-based evaluation test in <strong>' . e($title) . ' (' . e($subject) . ')</strong> with a final score percentage of:</p>
+                    <p style="font-size:36px;font-weight:900;color:#d97706;margin:8px 0">' . $percentage . '%</p>
+                    <div style="display:flex;justify-content:space-between;align-items:center;font-size:8px;color:#94a3b8;margin-top:20px;padding-top:10px;border-top:1px dashed #d97706">
+                        <div style="text-align:left">Principal Assessor:<br><strong style="color:#1e293b;font-size:10px">Nwaigbo Augustine</strong></div>
+                        <div style="text-align:right">Verification Code:<br><strong style="color:#1e293b;font-family:monospace;font-size:9px">' . e($resultId) . '</strong></div>
+                    </div>
+                </div>
+            </div>
+            ' : '') . '
+
+            <!-- Footer -->
+            <div style="margin-top:16px;padding-top:8px;border-top:1px solid #e2e8f0;font-size:7px;color:#94a3b8;text-align:center">
+                Generated on ' . date('F j, Y \a\t g:i A') . ' &bull; Republic of Education Class Portal &bull; Official Document
+            </div>
+        </div>';
+
+        return $this->wrapHtml($body);
+    }
+
     protected function buildNoteHtml(array $note): string
     {
         $topic = $note['topic'] ?? 'Lesson Note';

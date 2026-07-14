@@ -119,6 +119,7 @@ Route::prefix('api')->group(function () {
     Route::get('/download/lesson-note/{id}/{format}', [DownloadController::class, 'downloadLessonNote']);
     Route::get('/download/lesson-plan/{id}/{format}', [DownloadController::class, 'downloadLessonPlan']);
     Route::get('/download/exam/{id}/{format}', [DownloadController::class, 'downloadExam']);
+    Route::get('/download/graded-script/{examId}/{resultId}/{format?}', [DownloadController::class, 'downloadGradedScript']);
     Route::delete('/lesson-notes/{id}', [AIController::class, 'deleteLessonNote']);
     Route::delete('/lesson-plans/{id}', [AIController::class, 'deleteLessonPlan']);
 

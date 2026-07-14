@@ -418,7 +418,15 @@ export default function StudentDashboard({ user, onLogout, onTakeExam }: Student
     "ICT",
     "CCA (Cultural and Creative Arts)",
     "Social and Citizenship Education",
-    "Artificial Intelligence"
+    "Artificial Intelligence",
+    "Intermediate Science",
+    "Nigerian History",
+    "Social Studies",
+    "Vocational Studies",
+    "Physical and Health Education (PHE)",
+    "Coding",
+    "Verbal Reasoning",
+    "Craft and Art"
   ];
   const [subjects, setSubjects] = useState<string[]>(FALLBACK_SUBJECTS);
 
