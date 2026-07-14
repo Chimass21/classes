@@ -329,13 +329,7 @@
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Count</label>
-                                        <select id="q-count" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
-                                            <option value="10">10 Questions</option>
-                                            <option value="20" selected>20 Questions</option>
-                                            <option value="30">30 Questions</option>
-                                            <option value="50">50 Questions</option>
-                                            <option value="100">100 Questions</option>
-                                        </select>
+                                        <input type="number" id="q-count" required min="1" max="200" value="20" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
@@ -1040,9 +1034,14 @@ async function deleteNote() {
 async function generateQuestionsFromNote() {
     if (!currentNoteId) return;
     document.getElementById('q-subject').value = document.getElementById('note-subject').value;
+    document.getElementById('q-class').value = document.getElementById('note-class').value;
+    document.getElementById('q-term').value = document.getElementById('note-term').value;
+    document.getElementById('q-week').value = document.getElementById('note-week').value;
     document.getElementById('q-topic').value = document.getElementById('note-topic').value;
-    alert('Switched to Question Pool tab. Click Generate to create questions from this note.');
+    document.getElementById('q-subtopic').value = document.getElementById('note-subtopic').value;
+    document.getElementById('q-count').value = 20;
     switchTab('questions');
+    setTimeout(() => document.getElementById('questions-form').requestSubmit(), 300);
 }
 
 // ====== READ ALOUD ======

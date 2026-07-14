@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Helpers\ContentGenerator;
+
 use App\Helpers\CurriculumData;
 use App\Helpers\JsonDb;
 use App\Services\OpenAIService;
@@ -280,7 +280,7 @@ class AIController extends Controller
                 'class' => 'nullable|string',
                 'term' => 'nullable|string',
                 'week' => 'nullable|integer',
-                'count' => 'required|integer|in:10,20,30,50,100',
+                'count' => 'required|integer|min:1|max:200',
                 'includeTheory' => 'nullable|boolean',
                 'lessonNoteId' => 'nullable|string',
             ]);
@@ -321,12 +321,12 @@ class AIController extends Controller
 
             // If AI returned empty after all retries, fall back immediately
             if (empty(trim($response))) {
-                Log::warning('AI returned empty response for questions, falling back to ContentGenerator');
+                Log::warning('AI returned empty response for questions, retrying with simpler prompt');
                 return $this->fallbackToContentGenerator($data);
             }
 
             if ($this->isRefusal($response)) {
-                Log::warning('AI refused questions request', ['topic' => $data['topic']]);
+                Log::warning('AI refused questions request, retrying with simpler prompt', ['topic' => $data['topic']]);
                 return $this->fallbackToContentGenerator($data);
             }
 
@@ -340,7 +340,7 @@ class AIController extends Controller
             }
 
             if (!is_array($questions) || empty($questions)) {
-                Log::warning('AI returned non-JSON for questions, falling back to ContentGenerator', [
+                Log::warning('AI returned non-JSON for questions, retrying with simpler prompt', [
                     'response_length' => strlen($response),
                     'response_preview' => substr($response, 0, 3000),
                 ]);
@@ -389,7 +389,7 @@ class AIController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Questions generation failed, falling back to ContentGenerator', [
+            Log::error('Questions generation failed, retrying with simpler prompt', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -878,35 +878,61 @@ PROMPT;
     }
 
     /**
-     * Fall back to ContentGenerator when AI fails to produce valid questions.
+     * Last-resort fallback when AI fails to produce valid questions.
+     * Tries one final AI call with a minimal prompt, then returns error.
      */
     private function fallbackToContentGenerator(array $data): \Illuminate\Http\JsonResponse
     {
-        Log::warning('Falling back to ContentGenerator for questions', [
+        Log::warning('Attempting last-resort AI fallback for questions', [
             'subject' => $data['subject'],
             'topic' => $data['topic'],
             'count' => $data['count'],
         ]);
 
-        $fallback = ContentGenerator::generateQuestions(
-            $data['subject'], $data['topic'], $data['count'],
-            $data['includeTheory'] ?? false
-        );
+        try {
+            $subject = $data['subject'];
+            $topic = $data['topic'];
+            $count = $data['count'];
+            $class = $data['class'] ?? 'SS1';
 
-        // Shuffle answers for better distribution
-        $items = $fallback['objectives'] ?? $fallback;
-        if (is_array($items)) {
-            $items = $this->shuffleAnswers($items);
-            $fallback['objectives'] = $items;
+            $simplePrompt = "Generate {$count} multiple-choice questions about \"{$topic}\" in {$subject} for {$class} level. Return ONLY a JSON array with NO other text. Each question must have: 'question' text, 'A','B','C','D' options, and 'answer' key (A/B/C/D). All questions must be about \"{$topic}\". Example format: [{\"question\":\"What is X?\",\"A\":\"opt1\",\"B\":\"opt2\",\"C\":\"opt3\",\"D\":\"opt4\",\"answer\":\"A\"}]";
+
+            $retryResponse = $this->ai->generate($simplePrompt, false, 8192, 0.5);
+
+            if (!empty(trim($retryResponse))) {
+                $retryData = json_decode($retryResponse, true);
+                if (!is_array($retryData) || empty($retryData)) {
+                    $cleaned = $this->extractJson($retryResponse);
+                    if ($cleaned !== null) {
+                        $retryData = $cleaned;
+                    }
+                }
+                if (is_array($retryData) && !empty($retryData)) {
+                    $items = $retryData['objectives'] ?? $retryData;
+                    if (is_array($items) && !empty($items) && isset($items[0])) {
+                        $items = $this->shuffleAnswers($items);
+                        return response()->json([
+                            'success' => true,
+                            'questions' => ['objectives' => $items],
+                            'count' => $count,
+                            'message' => $count . ' questions generated.',
+                        ]);
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Last-resort AI fallback also failed', ['error' => $e->getMessage()]);
         }
 
-        return response()->json([
-            'success' => true,
-            'questions' => $fallback,
-            'count' => $data['count'],
-            'message' => 'Questions generated using fallback.',
-            'fallback' => true,
+        Log::error('All question generation attempts failed, returning error to user', [
+            'subject' => $data['subject'],
+            'topic' => $data['topic'],
         ]);
+
+        return response()->json([
+            'success' => false,
+            'error' => 'Unable to generate questions at this time. Please try again with a different topic or try again later.',
+        ], 503);
     }
 
     /**
