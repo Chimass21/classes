@@ -319,12 +319,15 @@ class AIController extends Controller
                 'response_preview' => substr($response, 0, 500),
             ]);
 
+            // If AI returned empty after all retries, fall back immediately
+            if (empty(trim($response))) {
+                Log::warning('AI returned empty response for questions, falling back to ContentGenerator');
+                return $this->fallbackToContentGenerator($data);
+            }
+
             if ($this->isRefusal($response)) {
                 Log::warning('AI refused questions request', ['topic' => $data['topic']]);
-                return response()->json([
-                    'success' => false,
-                    'error' => 'The AI model declined to generate questions for this topic. Please rephrase your topic or try a different subject.',
-                ], 422);
+                return $this->fallbackToContentGenerator($data);
             }
 
             $questions = json_decode($response, true);
@@ -341,18 +344,7 @@ class AIController extends Controller
                     'response_length' => strlen($response),
                     'response_preview' => substr($response, 0, 3000),
                 ]);
-
-                $fallback = ContentGenerator::generateQuestions(
-                    $data['subject'], $data['topic'], $data['count'],
-                    $data['includeTheory'] ?? false
-                );
-                return response()->json([
-                    'success' => true,
-                    'questions' => $fallback,
-                    'count' => $data['count'],
-                    'message' => 'Questions generated using fallback.',
-                    'fallback' => true,
-                ]);
+                return $this->fallbackToContentGenerator($data);
             }
 
             $questionsArray = $questions['objectives'] ?? $questions;
@@ -397,14 +389,11 @@ class AIController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Questions generation failed', [
+            Log::error('Questions generation failed, falling back to ContentGenerator', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            return response()->json([
-                'success' => false,
-                'error' => 'Generation failed: ' . $e->getMessage(),
-            ], 500);
+            return $this->fallbackToContentGenerator($data);
         }
     }
 

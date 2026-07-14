@@ -33,17 +33,20 @@ class OpenAIService
         }
 
         $lastError = null;
+        $triedWithoutJsonMode = false;
 
         for ($attempt = 1; $attempt <= $this->maxRetries; $attempt++) {
             try {
+                $useJsonMode = $jsonMode;
+
                 Log::debug('AI API Request', [
                     'model' => $this->model,
-                    'json_mode' => $jsonMode,
+                    'json_mode' => $useJsonMode,
                     'prompt_length' => strlen($prompt),
                     'attempt' => $attempt,
                 ]);
 
-                $payload = $this->buildPayload($prompt, $jsonMode, $maxTokens, $temperature ?? null);
+                $payload = $this->buildPayload($prompt, $useJsonMode, $maxTokens, $temperature ?? null);
 
                 $response = Http::timeout($this->timeout)
                     ->withHeaders([
@@ -59,6 +62,7 @@ class OpenAIService
                     $usage = $data['usage'] ?? [];
                     Log::debug('AI API Response', [
                         'model' => $this->model,
+                        'json_mode' => $useJsonMode,
                         'response_length' => strlen($text),
                         'response_preview' => substr($text, 0, 500),
                         'finish_reason' => $data['choices'][0]['finish_reason'] ?? 'unknown',
@@ -68,7 +72,14 @@ class OpenAIService
                     ]);
 
                     if (empty(trim($text))) {
-                        Log::warning('AI returned empty response');
+                        Log::warning("AI returned empty response (attempt {$attempt}, json_mode={$useJsonMode})");
+                        // If json_mode was on and we haven't tried without it, retry without json_mode
+                        if ($useJsonMode && !$triedWithoutJsonMode) {
+                            $triedWithoutJsonMode = true;
+                            Log::info('Retrying without json_mode');
+                            $lastError = new \RuntimeException('Empty response with json_mode');
+                            continue;
+                        }
                         throw new \RuntimeException('The AI returned an empty response. Please try again.');
                     }
 
@@ -121,7 +132,9 @@ class OpenAIService
             } catch (\RuntimeException $e) {
                 $lastError = $e;
                 if ($attempt >= $this->maxRetries) {
-                    throw $e;
+                    // Return empty string instead of throwing, so callers can fallback
+                    Log::error('AI API failed after all retries', ['error' => $e->getMessage()]);
+                    return '';
                 }
                 Log::warning("AI API attempt {$attempt} failed: {$e->getMessage()}");
             } catch (\Exception $e) {
@@ -131,14 +144,15 @@ class OpenAIService
                         'error' => $e->getMessage(),
                         'trace' => $e->getTraceAsString(),
                     ]);
-                    throw new \RuntimeException('Failed to connect to AI API: ' . $e->getMessage());
+                    return '';
                 }
                 Log::warning("AI connection attempt {$attempt} failed: {$e->getMessage()}, retrying...");
                 sleep($attempt * 2);
             }
         }
 
-        throw new \RuntimeException('AI API request failed after ' . $this->maxRetries . ' attempts: ' . ($lastError?->getMessage() ?? 'Unknown error'));
+        Log::error('AI API request failed after all retries', ['error' => $lastError?->getMessage() ?? 'Unknown error']);
+        return '';
     }
 
     public function generateStream(string $prompt, callable $onChunk, bool $jsonMode = false): void
