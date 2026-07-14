@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Session;
 class AIController extends Controller
 {
     protected OpenAIService $ai;
-    protected const MAX_RETRIES = 1;
+    protected const MAX_RETRIES = 2;
 
     public function __construct(OpenAIService $ai)
     {
@@ -359,97 +359,41 @@ class AIController extends Controller
             $hasValidFormat = is_array($questionsArray) && !empty($questionsArray) && isset($questionsArray[0]);
 
             if (!$hasValidFormat) {
-                Log::warning('Questions rejected - invalid format, falling back to ContentGenerator', [
+                Log::warning('Questions rejected - invalid format', [
                     'decoded_structure' => is_array($questions) ? array_keys($questions) : 'not_array',
                 ]);
-
-                $fallback = ContentGenerator::generateQuestions(
-                    $data['subject'], $data['topic'], $data['count'],
-                    $data['includeTheory'] ?? false
-                );
-                return response()->json([
-                    'success' => true,
-                    'questions' => $fallback,
-                    'count' => $data['count'],
-                    'message' => 'Questions generated using fallback.',
-                    'fallback' => true,
-                ]);
+                return $this->fallbackToContentGenerator($data);
             }
 
             $questionItems = $questions['objectives'] ?? $questions;
-            $hasOptions = !empty($questionItems) && (
-                isset($questionItems[0]['A']) ||
-                isset($questionItems[0]['options']) ||
-                isset($questionItems[0]['optionA'])
-            );
 
-            if (!$hasOptions) {
-                Log::warning('Questions rejected - no options found in response');
-
-                if (self::MAX_RETRIES > 0) {
-                    $retryResponse = $this->ai->generate($this->buildStrictRetryPrompt($prompt, $data['subject'], $data['topic'], $data['class'] ?? 'SS1'), true);
-
-                    Log::info('AI Questions Retry Response', [
-                        'response_length' => strlen($retryResponse),
-                        'response_preview' => substr($retryResponse, 0, 500),
-                    ]);
-
-                    if ($this->isRefusal($retryResponse)) {
-                        return response()->json([
-                            'success' => false,
-                            'error' => 'The AI model declined to generate questions. Please try again.',
-                        ], 422);
-                    }
-
-                    $questions = json_decode($retryResponse, true);
-                    if (!is_array($questions) || empty($questions)) {
-                        $cleaned = $this->extractJson($retryResponse);
-                        if ($cleaned !== null) {
-                            $questions = $cleaned;
-                        }
-                    }
-                    if (is_array($questions) && !empty($questions)) {
-                        $questionItems = $questions['objectives'] ?? $questions;
-                        $hasOptionsAfterRetry = !empty($questionItems) && (
-                            isset($questionItems[0]['A']) ||
-                            isset($questionItems[0]['options']) ||
-                            isset($questionItems[0]['optionA'])
-                        );
-                        if ($hasOptionsAfterRetry) {
-                            $questionsArray = $questionItems;
-                            $hasValidFormat = true;
-                        }
-                    }
-                }
-
-                if (!$hasValidFormat) {
-                    Log::warning('Questions rejected - no options after retry, falling back to ContentGenerator', [
-                        'retry_response_length' => strlen($retryResponse ?? ''),
-                    ]);
-
-                    $fallback = ContentGenerator::generateQuestions(
-                        $data['subject'], $data['topic'], $data['count'],
-                        $data['includeTheory'] ?? false
-                    );
-                    return response()->json([
-                        'success' => true,
-                        'questions' => $fallback,
-                        'count' => $data['count'],
-                        'message' => 'Questions generated using fallback.',
-                        'fallback' => true,
-                    ]);
-                }
+            // Validate quality and retry if needed
+            $validated = $this->validateAndRetryQuestions($questionItems, $prompt, $data);
+            if ($validated === null) {
+                return $this->fallbackToContentGenerator($data);
             }
+            $questionItems = $validated;
 
-            if (isset($questions['objectives'])) {
-                $questionsArray = $questions['objectives'];
+            // Shuffle answers for better distribution
+            $questionItems = $this->shuffleAnswers($questionItems);
+
+            // Build response preserving theory questions if present
+            $responseData = ['objectives' => $questionItems];
+            if (!empty($questions['theoryQuestions'])) {
+                $responseData['theoryQuestions'] = $questions['theoryQuestions'];
+            }
+            if (!empty($questions['essayQuestions'])) {
+                $responseData['essayQuestions'] = $questions['essayQuestions'];
+            }
+            if (!empty($questions['structuredQuestions'])) {
+                $responseData['structuredQuestions'] = $questions['structuredQuestions'];
             }
 
             return response()->json([
                 'success' => true,
-                'questions' => $questions,
+                'questions' => $responseData,
                 'count' => $data['count'],
-                'message' => $data['count'] . ' questions generated with ' . (($data['includeTheory'] ?? false) ? 'theory questions' : 'MCQ only') . '.',
+                'message' => $data['count'] . ' questions generated successfully.',
             ]);
 
         } catch (\Exception $e) {
@@ -474,6 +418,22 @@ class AIController extends Controller
             'questions.*.question' => 'required|string',
         ]);
 
+        $questions = $request->input('questions');
+
+        // Validate questions before saving
+        $validationErrors = $this->validateQuestionPool($questions, $data['topic'], $data['subject']);
+        if (!empty($validationErrors)) {
+            Log::warning('Save questions rejected due to quality issues', [
+                'errors' => $validationErrors,
+                'count' => count($questions),
+            ]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Questions failed quality check: ' . implode('; ', array_slice($validationErrors, 0, 5)),
+                'details' => $validationErrors,
+            ], 422);
+        }
+
         $user = Session::get('user');
         JsonDb::init();
         $db = JsonDb::get();
@@ -484,7 +444,7 @@ class AIController extends Controller
             'teacherId' => $user['id'] ?? 'unknown',
             'source' => 'ai_generated',
             'sourceId' => null,
-            'questions' => $request->input('questions'),
+            'questions' => $questions,
             'subject' => $data['subject'],
             'topic' => $data['topic'],
             'subTopic' => $data['subTopic'] ?? '',
@@ -788,39 +748,55 @@ PROMPT;
         $noteContext = $lessonNoteContent ? "\n\nBASE THE QUESTIONS ON THIS LESSON NOTE CONTENT:\n" . $lessonNoteContent : '';
 
         return <<<PROMPT
-You are a Nigerian examination expert. Generate questions for the Nigerian curriculum.
+You are a Nigerian examination expert generating questions for the Nigerian {$subject} curriculum (NERDC/UBEC/WASSCE/NECO/JAMB).
 
-Generate {$count} OBJECTIVE (multiple-choice) questions{$theoryPart} about "{$topic}" in {$subject} for {$class} ({$term}, Week {$week}).
+Generate {$count} UNIQUE objective (multiple-choice) questions{$theoryPart} about "{$topic}" in {$subject} for {$class} ({$term}, Week {$week}).
 
-CRITICAL: Every question MUST be directly about "{$topic}" in {$subject}. Do NOT write questions about any other topic.
+CRITICAL RULES — FOLLOW EVERY ONE:
+
+1. TOPIC RELEVANCE: Every single question MUST directly test knowledge of "{$topic}" in {$subject}. Do NOT write about any other topic. Each question must contain keywords from "{$topic}" in its text.
+
+2. NO REPETITION: Every question stem must be completely unique. Do not repeat the same question with different wording. Do not repeat the same answer concept across different questions.
+
+3. FOUR DIFFERENT OPTIONS: Each question must have exactly 4 answer options (A, B, C, D). All four options MUST be different from each other. Never use the same text for two different options in the same question.
+
+4. ONE CORRECT ANSWER: Exactly one option must be correct. The other three must be plausible distractors that are factually incorrect but reasonable enough that a student who hasn't studied might choose them.
+
+5. RANDOM ANSWER POSITION: Distribute the correct answer randomly among A, B, C, and D. Do NOT put the correct answer in the same position for multiple consecutive questions. Aim for roughly equal distribution (25% each).
+
+6. REALISTIC OPTIONS: Options must be realistic, specific, and directly related to the question. Never use generic options like "All of the above", "None of the above", "Both A and B", or vague filler text.
+
+7. CLASS-APPROPRIATE: Match difficulty to {$class} level. Difficulty should range from simple recall to application/analysis within the topic.
+
+8. NIGERIA-CENTRIC: Use Nigerian contexts, names, places (Lagos, Abuja, Kano, Port Harcourt), currency (₦aira), and examples relevant to Nigerian students.
+
+9. EXAM STANDARD: Follow WAEC/NECO/JAMB style — clear, unambiguous, testing understanding not trickery.
+
+10. GRAMMAR & SPELLING: Use correct English grammar and spelling throughout.
 
 {$noteContext}
 
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON in this exact format (no text before or after):
 {
   "objectives": [
     {
       "id": 1,
-      "question": "Question text?",
-      "A": "Option A",
-      "B": "Option B",
-      "C": "Option C",
-      "D": "Option D",
-      "answer": "A"
+      "question": "Unique question text about {$topic}?",
+      "A": "First unique option",
+      "B": "Second unique option",
+      "C": "Third unique option",
+      "D": "Fourth unique option",
+      "answer": "C"
     }
   ]{$theoryPart}
 }
 
-RULES:
-- Every single question must test knowledge of "{$topic}"
-- Strictly multiple-choice with exactly 4 options (A, B, C, D)
-- Each question must have exactly one correct answer
-- Questions should test understanding, not just recall
-- Difficulty should range from simple to challenging for {$class} level
-- Follow WAEC/NECO/JAMB standards
-- Use Nigeria-centric contexts, names, and examples
-- Ensure the correct answer is accurate
-- Do NOT write about any topic other than "{$topic}"
+VERIFY your output:
+- Does every question mention "{$topic}"?
+- Is every question stem unique?
+- Are all 4 options different in each question?
+- Is the correct answer in a different position per question (roughly 25% A, 25% B, 25% C, 25% D)?
+- Are all options realistic and topic-specific?
 PROMPT;
     }
 
@@ -910,6 +886,244 @@ PROMPT;
         $db['lessonPlans'] = array_values(array_filter($db['lessonPlans'], fn($p) => $p['id'] !== $planId));
         JsonDb::save($db);
         return response()->json(['success' => true, 'message' => 'Lesson plan deleted.']);
+    }
+
+    /**
+     * Fall back to ContentGenerator when AI fails to produce valid questions.
+     */
+    private function fallbackToContentGenerator(array $data): \Illuminate\Http\JsonResponse
+    {
+        Log::warning('Falling back to ContentGenerator for questions', [
+            'subject' => $data['subject'],
+            'topic' => $data['topic'],
+            'count' => $data['count'],
+        ]);
+
+        $fallback = ContentGenerator::generateQuestions(
+            $data['subject'], $data['topic'], $data['count'],
+            $data['includeTheory'] ?? false
+        );
+
+        // Shuffle answers for better distribution
+        $items = $fallback['objectives'] ?? $fallback;
+        if (is_array($items)) {
+            $items = $this->shuffleAnswers($items);
+            $fallback['objectives'] = $items;
+        }
+
+        return response()->json([
+            'success' => true,
+            'questions' => $fallback,
+            'count' => $data['count'],
+            'message' => 'Questions generated using fallback.',
+            'fallback' => true,
+        ]);
+    }
+
+    /**
+     * Validate questions quality and retry up to MAX_RETRIES times
+     * if validation fails. Returns the validated items array or null
+     * if all retries are exhausted (caller should handle fallback).
+     */
+    private function validateAndRetryQuestions(array $questionItems, string $prompt, array $data): ?array
+    {
+        $subject = $data['subject'];
+        $topic = $data['topic'];
+        $class = $data['class'] ?? 'SS1';
+        $currentItems = $questionItems;
+
+        for ($attempt = 0; $attempt <= self::MAX_RETRIES; $attempt++) {
+            if ($attempt > 0) {
+                // Retry with strict prompt
+                try {
+                    $retryPrompt = $this->buildStrictRetryPrompt($prompt, $subject, $topic, $class);
+                    if (!empty($validationErrors)) {
+                        $retryPrompt .= "\n\nPREVIOUS QUALITY ISSUES TO FIX:\n" . implode("\n", array_slice($validationErrors, 0, 5));
+                    }
+                    // Lower temperature for retries to get more focused/factual responses
+                    $retryResponse = $this->ai->generate($retryPrompt, true, 16384, 0.4);
+
+                    if ($this->isRefusal($retryResponse)) {
+                        return null;
+                    }
+
+                    $retryData = json_decode($retryResponse, true);
+                    if (!is_array($retryData) || empty($retryData)) {
+                        $cleaned = $this->extractJson($retryResponse);
+                        if ($cleaned !== null) {
+                            $retryData = $cleaned;
+                        }
+                    }
+                    if (!is_array($retryData) || empty($retryData)) {
+                        continue;
+                    }
+                    $currentItems = $retryData['objectives'] ?? $retryData;
+                } catch (\Exception $e) {
+                    Log::warning('Question retry attempt failed', ['error' => $e->getMessage()]);
+                    continue;
+                }
+            }
+
+            // Validate the current items
+            $validationErrors = $this->validateQuestionPool($currentItems, $topic, $subject);
+
+            if (empty($validationErrors)) {
+                return $currentItems;
+            }
+
+            Log::warning("Question validation failed (attempt {$attempt})", [
+                'errors' => $validationErrors,
+                'question_count' => count($currentItems),
+            ]);
+        }
+
+        return null;
+    }
+
+    // --- QUALITY VALIDATION ---
+
+    /**
+     * Validate a set of questions for quality:
+     * - No duplicate question text
+     * - All 4 options are unique within each question
+     * - Answer key is valid (A/B/C/D)
+     * - Topic keywords appear in question text
+     */
+    private function validateQuestionPool(array $questions, string $topic, string $subject): array
+    {
+        $errors = [];
+        $seenQuestions = [];
+        $answerCount = ['A' => 0, 'B' => 0, 'C' => 0, 'D' => 0];
+        $topicLower = strtolower(trim($topic));
+        $topicWords = array_filter(explode(' ', $topicLower), fn($w) => strlen($w) > 2);
+        if (empty($topicWords)) {
+            $topicWords = [$topicLower];
+        }
+
+        foreach ($questions as $i => $q) {
+            $qNum = $i + 1;
+            $questionText = trim($q['question'] ?? '');
+
+            // Check question text exists
+            if (empty($questionText)) {
+                $errors[] = "Question {$qNum} has empty question text";
+                continue;
+            }
+
+            // Check for duplicate question text
+            $qLower = strtolower($questionText);
+            foreach ($seenQuestions as $seen) {
+                similar_text($qLower, $seen, $pct);
+                if ($pct > 85) {
+                    $errors[] = "Question {$qNum} is too similar to another question ({$pct}% match)";
+                    break;
+                }
+            }
+            $seenQuestions[] = $qLower;
+
+            // Check answer key is valid
+            $answer = strtoupper(trim($q['answer'] ?? ''));
+            if (!in_array($answer, ['A', 'B', 'C', 'D'], true)) {
+                $errors[] = "Question {$qNum} has invalid answer '{$answer}' (must be A, B, C, or D)";
+                continue;
+            }
+            $answerCount[$answer]++;
+
+            // Collect options
+            $options = [];
+            foreach (['A', 'B', 'C', 'D'] as $letter) {
+                $opt = trim($q[$letter] ?? '');
+                if (empty($opt)) {
+                    $errors[] = "Question {$qNum} option {$letter} is empty";
+                }
+                $options[$letter] = $opt;
+            }
+
+            // Check all 4 options are different
+            $uniqueOptions = array_unique(array_values($options));
+            if (count($uniqueOptions) < 4) {
+                $repeated = array_keys(array_filter(array_count_values(array_map('strtolower', $options)), fn($c) => $c > 1));
+                $errors[] = "Question {$qNum} has duplicate options: " . implode(', ', $repeated);
+            }
+
+            // Check topic relevance
+            $qTextLower = strtolower($questionText);
+            $topicMatchCount = 0;
+            foreach ($topicWords as $word) {
+                if (str_contains($qTextLower, $word)) {
+                    $topicMatchCount++;
+                }
+            }
+            if (count($topicWords) > 0 && ($topicMatchCount / count($topicWords)) < 0.3) {
+                $errors[] = "Question {$qNum} does not contain topic keywords from '{$topic}'";
+            }
+        }
+
+        // Check answer distribution (should be roughly even)
+        $total = count($questions);
+        if ($total >= 10) {
+            $expected = $total / 4;
+            foreach ($answerCount as $letter => $count) {
+                if ($count === 0) {
+                    $errors[] = "No correct answers placed in option {$letter} — distribution is severely imbalanced";
+                } elseif ($total >= 20 && $count < $expected * 0.3) {
+                    $errors[] = "Option {$letter} has only {$count} correct answers (expected ~{$expected}) — distribution is imbalanced";
+                }
+            }
+        }
+
+        return $errors;
+    }
+
+    /**
+     * Randomly shuffle the correct answer position among A/B/C/D
+     * while keeping the correct answer content attached to the new position.
+     */
+    private function shuffleAnswers(array $questions): array
+    {
+        $letters = ['A', 'B', 'C', 'D'];
+        $positionsUsed = [];
+
+        foreach ($questions as $i => $q) {
+            $currentAnswer = strtoupper(trim($q['answer'] ?? 'A'));
+            $correctContent = $q[$currentAnswer] ?? '';
+
+            // Pick a random position, avoiding the same position as previous question
+            $available = $letters;
+            if (!empty($positionsUsed)) {
+                $lastPos = end($positionsUsed);
+                $available = array_values(array_filter($letters, fn($l) => $l !== $lastPos));
+            }
+            $newPos = $available[array_rand($available)];
+            $positionsUsed[] = $newPos;
+
+            // Build new option set with correct answer at new position
+            $newOptions = [];
+            $wrongContents = [];
+            foreach ($letters as $l) {
+                if ($l !== $currentAnswer) {
+                    $wrongContents[] = $q[$l] ?? '';
+                }
+            }
+            shuffle($wrongContents);
+
+            $wrongIdx = 0;
+            foreach ($letters as $l) {
+                if ($l === $newPos) {
+                    $newOptions[$l] = $correctContent;
+                } else {
+                    $newOptions[$l] = $wrongContents[$wrongIdx++];
+                }
+            }
+
+            $questions[$i]['A'] = $newOptions['A'];
+            $questions[$i]['B'] = $newOptions['B'];
+            $questions[$i]['C'] = $newOptions['C'];
+            $questions[$i]['D'] = $newOptions['D'];
+            $questions[$i]['answer'] = $newPos;
+        }
+
+        return $questions;
     }
 
     // --- VALIDATION ---

@@ -25,7 +25,7 @@ class OpenAIService
         $this->timeout = max(30, (int) config('services.openai.timeout', 120));
     }
 
-    public function generate(string $prompt, bool $jsonMode = false, int $maxTokens = 16384): string
+    public function generate(string $prompt, bool $jsonMode = false, int $maxTokens = 16384, ?float $temperature = null): string
     {
         if (empty($this->apiKey)) {
             Log::error('API key not configured. Set OPENAI_API_KEY in .env');
@@ -43,7 +43,7 @@ class OpenAIService
                     'attempt' => $attempt,
                 ]);
 
-                $payload = $this->buildPayload($prompt, $jsonMode, $maxTokens);
+                $payload = $this->buildPayload($prompt, $jsonMode, $maxTokens, $temperature ?? null);
 
                 $response = Http::timeout($this->timeout)
                     ->withHeaders([
@@ -190,7 +190,7 @@ class OpenAIService
         }
     }
 
-    protected function buildPayload(string $prompt, bool $jsonMode, int $maxTokens): array
+    protected function buildPayload(string $prompt, bool $jsonMode, int $maxTokens, ?float $temperature = null): array
     {
         $payload = [
             'model' => $this->model,
@@ -198,7 +198,7 @@ class OpenAIService
                 ['role' => 'system', 'content' => self::SYSTEM_PROMPT],
                 ['role' => 'user', 'content' => $prompt],
             ],
-            'temperature' => 0.7,
+            'temperature' => $temperature ?? 0.85,
             'max_tokens' => $maxTokens,
         ];
 

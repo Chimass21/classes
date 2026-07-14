@@ -845,41 +845,90 @@ class ContentGenerator
 
     private static function generateSingleQuestion(string $subject, string $topic, int $num): array
     {
-        $questions = [
-            "What is {$topic} in {$subject}?",
-            "Which of the following best describes {$topic}?",
-            "The concept of {$topic} refers to:",
-            "One of the main features of {$topic} is:",
-            "The importance of {$topic} in {$subject} is:",
-            "Which of the following is NOT a characteristic of {$topic}?",
-            "{$topic} can be classified into:",
-            "A practical example of {$topic} is:",
-            "The term '{$topic}' in {$subject} means:",
-            "All of the following are types of {$topic} EXCEPT:",
-        ];
-        $answers = [
-            "The correct definition of {$topic}",
-            "The correct description of {$topic}",
-            "A key concept in {$subject} related to {$topic}",
-            "A defining feature of {$topic}",
-            "Its relevance to {$subject} in the context of {$topic}",
-            "An unrelated characteristic not associated with {$topic}",
-            "The various categories of {$topic}",
-            "A real-world application of {$topic}",
-            "Its meaning in the context of {$subject}",
-            "A type that is not related to {$topic}",
+        srand(crc32($topic . $subject . $num));
+
+        $templates = [
+            "What is the primary focus of {$topic} in {$subject}?",
+            "Which of the following best defines {$topic}?",
+            "The concept of {$topic} in {$subject} refers to:",
+            "One of the key characteristics of {$topic} is:",
+            "Why is {$topic} important in {$subject}?",
+            "Which of the following is NOT a feature of {$topic}?",
+            "{$topic} can be best described as:",
+            "A practical application of {$topic} in everyday life is:",
+            "The term '{$topic}' in the context of {$subject} means:",
+            "All of the following are aspects of {$topic} EXCEPT:",
+            "Which of the following statements about {$topic} is correct?",
+            "The study of {$topic} in {$subject} helps us understand:",
+            "Which of the following is a direct consequence of {$topic}?",
+            "In {$subject}, {$topic} is primarily concerned with:",
+            "Which of the following best illustrates {$topic}?",
+            "A student learning {$topic} in {$subject} should be able to:",
+            "The relationship between {$topic} and other concepts in {$subject} is:",
+            "Which of the following is a common misconception about {$topic}?",
+            "{$topic} plays a crucial role in {$subject} because it:",
+            "When studying {$topic}, one must first understand:",
+            "Which of the following correctly applies the principles of {$topic}?",
+            "The historical development of {$topic} in {$subject} shows:",
         ];
 
-        $qIndex = abs($num) % count($questions);
-        $q = $questions[$qIndex];
+        $qIndex = abs($num + crc32($topic)) % count($templates);
+        $q = $templates[$qIndex];
+        // Vary phrasing based on question number to reduce repetition
+        $prefixes = ['', 'Specifically, ', 'Generally, ', 'In practice, ', 'Typically, ', 'Fundamentally, '];
+        $q = $prefixes[$num % count($prefixes)] . $q;
+
+        $distractors = [
+            "A fundamental aspect of {$topic} in {$subject}",
+            "A related but distinct concept from {$topic}",
+            "An unrelated topic in {$subject}",
+            "The opposite of what {$topic} represents",
+            "A common feature found in similar subjects",
+            "A well-known principle from another field",
+            "A basic assumption that contradicts {$topic}",
+            "A secondary aspect not central to {$topic}",
+            "A frequently confused term with {$topic}",
+            "An application of {$topic} in a different context",
+            "A theoretical construct unrelated to {$subject}",
+            "A practical skill developed through studying {$topic}",
+            "A common exam question about {$subject}",
+            "An advanced concept that builds upon {$topic}",
+            "A different perspective on {$subject} altogether",
+            "A simplified version of {$topic} for beginners",
+            "An advanced extension of {$topic} not in the curriculum",
+            "A common error students make about {$topic}",
+            "A related topic studied before {$topic}",
+            "A prerequisite concept needed for {$topic}",
+        ];
+
         $correctIdx = rand(0, 3);
         $letters = ['A', 'B', 'C', 'D'];
-        $options = [];
-        for ($j = 0; $j < 4; $j++) {
-            $options[$letters[$j]] = $j === $correctIdx
-                ? ($answers[$qIndex] ?? "The correct answer related to {$topic}.")
-                : "An incorrect option related to {$topic}.";
+
+        // Generate 4 different options
+        $pool = $distractors;
+        shuffle($pool);
+        $wrongOptions = array_slice($pool, 0, 3);
+
+        // Ensure wrong options differ from each other
+        while (count($wrongOptions) < 3 || (isset($wrongOptions[0]) && isset($wrongOptions[1]) && $wrongOptions[0] === $wrongOptions[1])) {
+            $wrongOptions[] = "Another aspect of {$subject} related to {$topic}";
+            $wrongOptions = array_unique($wrongOptions);
         }
+        $wrongOptions = array_values(array_slice($wrongOptions, 0, 3));
+
+        $correctAnswer = "The accurate description and definition of {$topic} in {$subject}";
+
+        $options = [];
+        $optIdx = 0;
+        for ($j = 0; $j < 4; $j++) {
+            if ($j === $correctIdx) {
+                $options[$letters[$j]] = $correctAnswer;
+            } else {
+                $options[$letters[$j]] = $wrongOptions[$optIdx++];
+            }
+        }
+
+        srand();
 
         return [
             'id' => $num,
