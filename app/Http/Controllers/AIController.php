@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 
+use App\Helpers\ContentGenerator;
 use App\Helpers\CurriculumData;
 use App\Helpers\JsonDb;
 use App\Services\OpenAIService;
@@ -887,7 +888,7 @@ PROMPT;
 
     /**
      * Last-resort fallback when AI fails to produce valid questions.
-     * Tries one final AI call with a minimal prompt, then returns error.
+     * Tries one final AI call with a minimal prompt, then falls back to ContentGenerator.
      */
     private function fallbackToContentGenerator(array $data): \Illuminate\Http\JsonResponse
     {
@@ -897,6 +898,7 @@ PROMPT;
             'count' => $data['count'],
         ]);
 
+        // First try: simple AI prompt without json_mode
         try {
             $subject = $data['subject'];
             $topic = $data['topic'];
@@ -930,14 +932,33 @@ PROMPT;
                 }
             }
         } catch (\Exception $e) {
-            Log::error('Last-resort AI fallback also failed', ['error' => $e->getMessage()]);
+            Log::error('Simple AI fallback failed', ['error' => $e->getMessage()]);
         }
 
-        Log::error('All question generation attempts failed, returning error to user', [
-            'subject' => $data['subject'],
-            'topic' => $data['topic'],
-        ]);
+        // Second try: ContentGenerator as absolute last resort
+        Log::warning('Falling back to ContentGenerator for questions', $data);
+        try {
+            $fallback = ContentGenerator::generateQuestions(
+                $data['subject'], $data['topic'], $data['count'],
+                $data['includeTheory'] ?? false
+            );
+            $items = $fallback['objectives'] ?? $fallback;
+            if (is_array($items) && !empty($items)) {
+                $items = $this->normalizeQuestionFields($items);
+                $items = $this->shuffleAnswers($items);
+                return response()->json([
+                    'success' => true,
+                    'questions' => ['objectives' => $items],
+                    'count' => $data['count'],
+                    'message' => $data['count'] . ' questions generated.',
+                    'fallback' => true,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('ContentGenerator fallback also failed', ['error' => $e->getMessage()]);
+        }
 
+        Log::error('All question generation attempts failed');
         return response()->json([
             'success' => false,
             'error' => 'Unable to generate questions at this time. Please try again with a different topic or try again later.',
