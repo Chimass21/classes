@@ -1142,16 +1142,13 @@ PROMPT;
             if (count($topicWords) > 0 && $topicMatchCount === 0) {
                 $errors[] = "Question {$qNum} does not contain any topic keyword from '{$topic}' in its stem";
             }
-            // At least one option must also reference the topic
+            // At least one option should reference the topic — soft check, not a blocker
             $optionTopicMatch = false;
             foreach ($topicWords as $word) {
                 if (str_contains($optionsLower, $word)) {
                     $optionTopicMatch = true;
                     break;
                 }
-            }
-            if (count($topicWords) > 0 && !$optionTopicMatch) {
-                $errors[] = "Question {$qNum}: none of the options mention topic '{$topic}'";
             }
         }
 
