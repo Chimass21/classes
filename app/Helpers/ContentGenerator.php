@@ -845,86 +845,98 @@ class ContentGenerator
 
     private static function generateSingleQuestion(string $subject, string $topic, int $num): array
     {
-        srand(crc32($topic . $subject . $num));
+        $seed = crc32($topic . $subject . $num);
+        srand($seed);
 
-        $templates = [
-            "What is the primary focus of {$topic} in {$subject}?",
-            "Which of the following best defines {$topic}?",
-            "The concept of {$topic} in {$subject} refers to:",
-            "One of the key characteristics of {$topic} is:",
-            "Why is {$topic} important in {$subject}?",
-            "Which of the following is NOT a feature of {$topic}?",
-            "{$topic} can be best described as:",
-            "A practical application of {$topic} in everyday life is:",
-            "The term '{$topic}' in the context of {$subject} means:",
-            "All of the following are aspects of {$topic} EXCEPT:",
-            "Which of the following statements about {$topic} is correct?",
-            "The study of {$topic} in {$subject} helps us understand:",
-            "Which of the following is a direct consequence of {$topic}?",
-            "In {$subject}, {$topic} is primarily concerned with:",
-            "Which of the following best illustrates {$topic}?",
-            "A student learning {$topic} in {$subject} should be able to:",
-            "The relationship between {$topic} and other concepts in {$subject} is:",
-            "Which of the following is a common misconception about {$topic}?",
-            "{$topic} plays a crucial role in {$subject} because it:",
-            "When studying {$topic}, one must first understand:",
-            "Which of the following correctly applies the principles of {$topic}?",
-            "The historical development of {$topic} in {$subject} shows:",
+        // Each template is [question_stem, correct_answer_pattern]
+        // The options are generated per-question using the topic/seed to vary
+        $pairs = [
+            ["What is the main focus of {$topic} in {$subject}?", "The study of {$topic} focuses on {$topic}-related concepts within {$subject}"],
+            ["Which of the following best defines {$topic}?", "{$topic} is a key concept in {$subject} that deals with specific principles and applications"],
+            ["The term '{$topic}' in {$subject} refers to:", "{$topic} refers to the core ideas and practices related to this topic in {$subject}"],
+            ["One of the key characteristics of {$topic} is:", "A defining characteristic of {$topic} is its focus on relevant {$subject} principles"],
+            ["Why is {$topic} important in the study of {$subject}?", "{$topic} is important because it forms the foundation for understanding advanced {$subject} concepts"],
+            ["Which of the following is NOT directly related to {$topic}?", "An unrelated concept from a different area of {$subject} that does not involve {$topic}"],
+            ["{$topic} can best be described as:", "{$topic} encompasses the fundamental ideas and methods used in this area of {$subject}"],
+            ["A practical application of {$topic} in real life is:", "Applying {$topic} principles helps solve real-world problems in {$subject}-related fields"],
+            ["All of the following are aspects of {$topic} EXCEPT:", "A topic from {$subject} that is studied separately from {$topic}"],
+            ["Which statement about {$topic} is correct?", "{$topic} involves understanding key principles and applying them to {$subject} problems"],
+            ["The study of {$topic} helps students to:", "Students learn to apply {$topic} concepts to analyze and solve {$subject} problems effectively"],
+            ["In {$subject}, the concept of {$topic} is used to:", "{$topic} provides the tools and framework for understanding {$subject} at a deeper level"],
+            ["Which of the following best illustrates {$topic}?", "A real-world example or scenario that demonstrates {$topic} in the context of {$subject}"],
+            ["A student mastering {$topic} should be able to:", "Identify and apply the key principles of {$topic} to solve {$subject} problems independently"],
+            ["Which of the following is a common misunderstanding about {$topic}?", "Confusing {$topic} with a related but different concept taught elsewhere in {$subject}"],
+            ["{$topic} contributes to {$subject} by:", "Providing essential knowledge and skills that are built upon in more advanced {$subject} topics"],
+            ["When learning {$topic}, it is important to first understand:", "The prerequisite concepts in {$subject} that form the basis for studying {$topic}"],
+            ["Which of the following correctly applies {$topic} principles?", "Using {$topic} methods to correctly analyze a given {$subject} scenario or problem"],
+            ["The scope of {$topic} in {$subject} includes:", "The key areas, subtopics, and applications that fall under {$topic} within {$subject}"],
+            ["Which question would {$topic} help a {$subject} student answer?", "A question that requires knowledge of {$topic} to solve or explain in {$subject}"],
+            ["A key skill developed through studying {$topic} is:", "The ability to apply {$topic}-specific reasoning to {$subject} problems and questions"],
+            ["{$topic} relates to other {$subject} topics by:", "Building on previously learned concepts and providing groundwork for more advanced study"],
+            ["The best way to understand {$topic} is to:", "Study the core principles of {$topic} and practice applying them to {$subject} examples"],
+            ["Which of the following is a direct application of {$topic}?", "Using {$topic} knowledge to address a specific problem or question in {$subject}"],
         ];
 
-        $qIndex = abs($num + crc32($topic)) % count($templates);
-        $q = $templates[$qIndex];
-        // Vary phrasing based on question number to reduce repetition
-        $prefixes = ['', 'Specifically, ', 'Generally, ', 'In practice, ', 'Typically, ', 'Fundamentally, '];
+        $index = abs($num + $seed) % count($pairs);
+        $q = $pairs[$index][0];
+        $correctAnswer = $pairs[$index][1];
+
+        // Vary phrasing to reduce repetition across large question sets
+        $prefixes = ['', 'Specifically, ', 'In practice, ', 'Generally speaking, ', 'In the context of this topic, '];
         $q = $prefixes[$num % count($prefixes)] . $q;
 
-        $distractors = [
-            "A fundamental aspect of {$topic} in {$subject}",
-            "A related but distinct concept from {$topic}",
-            "An unrelated topic in {$subject}",
-            "The opposite of what {$topic} represents",
-            "A common feature found in similar subjects",
-            "A well-known principle from another field",
-            "A basic assumption that contradicts {$topic}",
-            "A secondary aspect not central to {$topic}",
-            "A frequently confused term with {$topic}",
-            "An application of {$topic} in a different context",
-            "A theoretical construct unrelated to {$subject}",
-            "A practical skill developed through studying {$topic}",
-            "A common exam question about {$subject}",
-            "An advanced concept that builds upon {$topic}",
-            "A different perspective on {$subject} altogether",
-            "A simplified version of {$topic} for beginners",
-            "An advanced extension of {$topic} not in the curriculum",
-            "A common error students make about {$topic}",
-            "A related topic studied before {$topic}",
-            "A prerequisite concept needed for {$topic}",
+        // Replace placeholders in question and correct answer
+        $q = str_replace(['{$topic}', '{$subject}'], [$topic, $subject], $q);
+        $correctAnswer = str_replace(['{$topic}', '{$subject}'], [$topic, $subject], $correctAnswer);
+
+        // Generate per-question wrong options that differ from the correct answer and from each other
+        $wrongPatterns = [
+            'An unrelated concept from a different part of {$subject}',
+            'A common error where students confuse {$topic} with another topic',
+            'A simplified explanation that omits key details about {$topic}',
+            'A topic from {$subject} that is studied in a different term',
+            'The opposite or inverse of the correct {$topic} principle',
+            'A concept that applies to a different subject, not {$subject}',
+            'An outdated or incorrect understanding of {$topic}',
+            'A general statement about {$subject} that does not specifically relate to {$topic}',
+            'A definition that applies to a different topic within {$subject}',
+            'An example from outside {$subject} that does not illustrate {$topic}',
+            'A principle that contradicts the established understanding of {$topic}',
+            'A vague description that could apply to many topics, not just {$topic}',
+            'A concept studied before {$topic} that provides background but is not {$topic} itself',
+            'An advanced topic that requires knowledge of {$topic} but is not {$topic}',
+            'A memorization-based approach rather than understanding {$topic} concepts',
+            'A definition that confuses {$topic} with a broader {$subject} concept',
+            'An incorrect application of {$topic} principles to a {$subject} problem',
+            'A topic that is related to {$subject} but outside the current curriculum scope',
         ];
 
-        $correctIdx = rand(0, 3);
-        $letters = ['A', 'B', 'C', 'D'];
+        // Replace placeholders in wrong patterns
+        $wrongPatterns = array_map(fn($p) => str_replace(['{$topic}', '{$subject}'], [$topic, $subject], $p), $wrongPatterns);
 
-        // Generate 4 different options
-        $pool = $distractors;
-        shuffle($pool);
-        $wrongOptions = array_slice($pool, 0, 3);
+        // Pick 3 unique wrong options using a seeded shuffle
+        shuffle($wrongPatterns);
+        $selectedWrong = array_slice($wrongPatterns, 0, 3);
 
-        // Ensure wrong options differ from each other
-        while (count($wrongOptions) < 3 || (isset($wrongOptions[0]) && isset($wrongOptions[1]) && $wrongOptions[0] === $wrongOptions[1])) {
-            $wrongOptions[] = "Another aspect of {$subject} related to {$topic}";
-            $wrongOptions = array_unique($wrongOptions);
+        // Ensure all 4 options are different
+        $allOptions = [$correctAnswer, ...$selectedWrong];
+        $attempts = 0;
+        while (count(array_unique($allOptions)) < 4 && $attempts < 10) {
+            $allOptions[] = "Another aspect of {$subject} related to but not the same as {$topic}";
+            $allOptions = array_unique(array_values($allOptions));
+            $attempts++;
         }
-        $wrongOptions = array_values(array_slice($wrongOptions, 0, 3));
+        $allOptions = array_values(array_slice($allOptions, 0, 4));
 
-        $correctAnswer = "The accurate description and definition of {$topic} in {$subject}";
-
+        // Shuffle options and track which one is the correct answer
+        $letters = ['A', 'B', 'C', 'D'];
+        shuffle($allOptions);
         $options = [];
-        $optIdx = 0;
-        for ($j = 0; $j < 4; $j++) {
-            if ($j === $correctIdx) {
-                $options[$letters[$j]] = $correctAnswer;
-            } else {
-                $options[$letters[$j]] = $wrongOptions[$optIdx++];
+        $correctLetter = 'A';
+        foreach ($letters as $i => $letter) {
+            $options[$letter] = $allOptions[$i];
+            if ($allOptions[$i] === $correctAnswer) {
+                $correctLetter = $letter;
             }
         }
 
@@ -937,7 +949,7 @@ class ContentGenerator
             'B' => $options['B'],
             'C' => $options['C'],
             'D' => $options['D'],
-            'answer' => $letters[$correctIdx],
+            'answer' => $correctLetter,
         ];
     }
 
