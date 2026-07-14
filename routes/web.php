@@ -127,6 +127,7 @@ Route::prefix('api')->group(function () {
     Route::get('/csv-import/template', [CsvImportController::class, 'downloadTemplate']);
     Route::post('/csv-import/preview', [CsvImportController::class, 'preview']);
     Route::post('/csv-import/import', [CsvImportController::class, 'import']);
+    Route::post('/csv-import/convert-json', [CsvImportController::class, 'convertJsonToExam']);
 });
 
 // Migrate legacy plaintext passwords to hashed

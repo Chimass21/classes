@@ -10,6 +10,15 @@ class ContentGenerator
 {
     private static array $subjectQuestionBanks = [];
 
+    /**
+     * Reset the static question bank cache so the next generation
+     * starts from a completely fresh state with no cached questions.
+     */
+    public static function reset(): void
+    {
+        self::$subjectQuestionBanks = [];
+    }
+
     public static function generateLessonPlan(string $subject, string $class, string $term, int $week, string $topic, string $schoolName, string $teacherName, string $duration, string $ageRange): array
     {
         $objectives = self::generateObjectives($subject, $class, $topic);

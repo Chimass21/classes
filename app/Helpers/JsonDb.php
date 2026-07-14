@@ -44,7 +44,22 @@ class JsonDb {
             self::$db = $data;
         }
         self::syncToDb();
-        $written = @file_put_contents(self::$dbPath, json_encode(self::$db, JSON_PRETTY_PRINT));
+        $written = @file_put_contents(self::$dbPath, json_encode(self::$db, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+        if ($written === false) {
+            throw new \RuntimeException('Failed to write database file: ' . self::$dbPath . '. Check file permissions.');
+        }
+    }
+
+    /**
+     * Save without syncing to SQLite — used for bulk imports where
+     * per-row Eloquent operations are the dominant bottleneck.
+     * The SQLite sync will happen on the next regular save() call.
+     */
+    public static function saveWithoutSync($data = null) {
+        if ($data !== null) {
+            self::$db = $data;
+        }
+        $written = @file_put_contents(self::$dbPath, json_encode(self::$db, JSON_UNESCAPED_UNICODE));
         if ($written === false) {
             throw new \RuntimeException('Failed to write database file: ' . self::$dbPath . '. Check file permissions.');
         }

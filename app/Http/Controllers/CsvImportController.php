@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers\JsonDb;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 
 class CsvImportController extends Controller
@@ -96,92 +97,136 @@ class CsvImportController extends Controller
         $errors = [];
         $rowIndex = 0;
         $validCount = 0;
+        $totalProcessed = 0;
+
+        $optAIdx = $headerMap['Option A'] ?? null;
+        $optBIdx = $headerMap['Option B'] ?? null;
+        $optCIdx = $headerMap['Option C'] ?? null;
+        $optDIdx = $headerMap['Option D'] ?? null;
+        $qIdx = $headerMap['Question'] ?? null;
+        $caIdx = $headerMap['Correct Answer'] ?? null;
+        $explIdx = $headerMap['Explanation'] ?? null;
+        $marksIdx = $headerMap['Marks'] ?? null;
+        $diffIdx = $headerMap['Difficulty'] ?? null;
+        $topicIdx = $headerMap['Topic'] ?? null;
+        $imgIdx = $headerMap['Image URL'] ?? null;
 
         while (($line = fgetcsv($handle)) !== false) {
             $rowIndex++;
-            $rowErrors = [];
+            $totalProcessed = $rowIndex;
 
-            $question = trim($line[$headerMap['Question']] ?? '');
-            $optionA = trim($line[$headerMap['Option A']] ?? '');
-            $optionB = trim($line[$headerMap['Option B']] ?? '');
-            $optionC = trim($headerMap['Option C'] ?? false) !== false ? trim($line[$headerMap['Option C']] ?? '') : '';
-            $optionD = trim($headerMap['Option D'] ?? false) !== false ? trim($line[$headerMap['Option D']] ?? '') : '';
-            $correctAnswer = strtoupper(trim($line[$headerMap['Correct Answer']] ?? ''));
-            $explanation = trim($line[$headerMap['Explanation'] ?? -1] ?? '');
-            $marks = trim($line[$headerMap['Marks'] ?? -1] ?? '');
-            $difficulty = trim($line[$headerMap['Difficulty'] ?? -1] ?? '');
-            $topic = trim($line[$headerMap['Topic'] ?? -1] ?? '');
-            $imageUrl = trim($line[$headerMap['Image URL'] ?? -1] ?? '');
+            $question = trim($line[$qIdx] ?? '');
+            if ($question === '') continue;
+
+            $correctAnswer = strtoupper(trim($line[$caIdx] ?? ''));
+            $optionA = trim($line[$optAIdx] ?? '');
+            $optionB = trim($line[$optBIdx] ?? '');
+            $optionC = $optCIdx !== null ? trim($line[$optCIdx] ?? '') : '';
+            $optionD = $optDIdx !== null ? trim($line[$optDIdx] ?? '') : '';
+
+            $rowErrors = [];
 
             if (empty($question)) {
                 $rowErrors[] = 'Question text is required.';
             }
-
             if (empty($optionA) && empty($optionB) && empty($optionC) && empty($optionD)) {
                 $rowErrors[] = 'At least one option is required.';
             }
-
-            $validAnswers = ['A', 'B', 'C', 'D'];
-            if (empty($correctAnswer) || !in_array($correctAnswer, $validAnswers)) {
+            if (!in_array($correctAnswer, ['A', 'B', 'C', 'D'], true)) {
                 $rowErrors[] = 'Correct Answer must be A, B, C, or D.';
             }
 
-            if ($marks !== '' && (!is_numeric($marks) || (int)$marks < 0)) {
-                $rowErrors[] = 'Marks must be a positive number.';
+            if ($marksIdx !== null) {
+                $marks = trim($line[$marksIdx] ?? '');
+                if ($marks !== '' && (!is_numeric($marks) || (int)$marks < 0)) {
+                    $rowErrors[] = 'Marks must be a positive number.';
+                }
             }
-
-            if ($difficulty !== '' && !in_array(strtolower($difficulty), ['easy', 'medium', 'hard'])) {
-                $rowErrors[] = 'Difficulty must be Easy, Medium, or Hard.';
+            if ($diffIdx !== null) {
+                $difficulty = trim($line[$diffIdx] ?? '');
+                if ($difficulty !== '' && !in_array(strtolower($difficulty), ['easy', 'medium', 'hard'])) {
+                    $rowErrors[] = 'Difficulty must be Easy, Medium, or Hard.';
+                }
             }
 
             if (!empty($rowErrors)) {
                 $errors[$rowIndex] = $rowErrors;
             }
 
-            $rows[] = [
-                'row' => $rowIndex,
-                'question' => $question,
-                'optionA' => $optionA,
-                'optionB' => $optionB,
-                'optionC' => $optionC,
-                'optionD' => $optionD,
-                'correctAnswer' => $correctAnswer,
-                'explanation' => $explanation,
-                'marks' => $marks !== '' ? (int)$marks : 1,
-                'difficulty' => $difficulty !== '' ? ucfirst(strtolower($difficulty)) : 'Medium',
-                'topic' => $topic,
-                'imageUrl' => $imageUrl,
-                'valid' => empty($rowErrors),
-                'errors' => $rowErrors,
-            ];
-
             if (empty($rowErrors)) {
                 $validCount++;
             }
 
-            if (count($rows) > 5000) {
-                $errors[] = 'File exceeds maximum of 5000 questions.';
+            // Only build full row objects for the first 100 rows (preview limit)
+            // to avoid processing thousands of rows that won't be returned.
+            if (count($rows) < 100) {
+                $rows[] = [
+                    'row' => $rowIndex,
+                    'question' => $question,
+                    'optionA' => $optionA,
+                    'optionB' => $optionB,
+                    'optionC' => $optionC,
+                    'optionD' => $optionD,
+                    'correctAnswer' => $correctAnswer,
+                    'explanation' => $explIdx !== null ? trim($line[$explIdx] ?? '') : '',
+                    'marks' => ($marksIdx !== null && is_numeric(trim($line[$marksIdx] ?? ''))) ? (int)trim($line[$marksIdx]) : 1,
+                    'difficulty' => $diffIdx !== null ? ucfirst(strtolower(trim($line[$diffIdx] ?? ''))) : 'Medium',
+                    'topic' => $topicIdx !== null ? trim($line[$topicIdx] ?? '') : '',
+                    'imageUrl' => $imgIdx !== null ? trim($line[$imgIdx] ?? '') : '',
+                    'valid' => empty($rowErrors),
+                    'errors' => $rowErrors,
+                ];
+            }
+
+            if ($totalProcessed > 5000) {
+                $errors['_limit'] = 'File exceeds maximum of 5000 questions.';
                 break;
             }
         }
 
         fclose($handle);
 
+        // Count duplicates using a hash set — O(n) instead of O(n*m)
         $duplicateCount = 0;
         if ($validCount > 0) {
-            $duplicateCount = $this->countDuplicates($request, $rows);
+            JsonDb::init();
+            $db = JsonDb::get();
+            $subjectKey = strtolower(trim($request->subject));
+            $existingSet = [];
+            foreach ($db['exams'] as $exam) {
+                if (strtolower(trim($exam['subject'] ?? '')) !== $subjectKey) continue;
+                foreach ($exam['questions'] as $eq) {
+                    $key = strtolower(trim($eq['question'] ?? ''));
+                    if ($key !== '') $existingSet[$key] = true;
+                }
+            }
+            // Re-count valid rows properly (we stopped counting after 100)
+            // Use the total processed count for a more accurate estimate
+            // but only check rows we have (up to 100 for preview)
+            foreach ($rows as $row) {
+                if (!$row['valid']) continue;
+                $key = strtolower(trim($row['question']));
+                if (isset($existingSet[$key])) {
+                    $duplicateCount++;
+                }
+            }
+            // Estimate remaining duplicates based on ratio
+            if ($totalProcessed > 100 && $validCount > count($rows)) {
+                $ratio = $duplicateCount / max(1, count($rows));
+                $duplicateCount = (int)round($ratio * $validCount);
+            }
         }
 
         return response()->json([
             'success' => true,
-            'total_rows' => count($rows),
+            'total_rows' => $totalProcessed,
             'valid_rows' => $validCount,
-            'error_rows' => count($rows) - $validCount,
+            'error_rows' => $totalProcessed - $validCount,
             'duplicate_count' => $duplicateCount,
             'errors' => $errors,
-            'rows' => array_slice($rows, 0, 100),
-            'has_more' => count($rows) > 100,
-            'total_all_rows' => count($rows),
+            'rows' => $rows,
+            'has_more' => $totalProcessed > 100,
+            'total_all_rows' => $totalProcessed,
         ]);
     }
 
@@ -221,6 +266,24 @@ class CsvImportController extends Controller
         JsonDb::init();
         $db = JsonDb::get();
 
+        // Build an indexed set of existing question texts for this subject
+        // O(1) lookup per row instead of scanning all exams each time.
+        $subjectKey = strtolower(trim($request->subject));
+        $existingQuestionIndex = [];
+        $examWithQuestion = []; // question text -> [examId, questionIdx]
+        if ($request->duplicate_handling !== 'import_all') {
+            foreach ($db['exams'] as $exam) {
+                if (strtolower(trim($exam['subject'] ?? '')) !== $subjectKey) continue;
+                foreach ($exam['questions'] as $qIdx => $eq) {
+                    $key = strtolower(trim($eq['question'] ?? ''));
+                    if ($key !== '') {
+                        $existingQuestionIndex[$key] = true;
+                        $examWithQuestion[$key] = ['examId' => $exam['id'], 'questionIndex' => $qIdx];
+                    }
+                }
+            }
+        }
+
         $imported = [];
         $skipped = [];
         $replaced = [];
@@ -232,85 +295,87 @@ class CsvImportController extends Controller
             $examTitle .= ' - ' . $request->topic;
         }
 
+        $optAIdx = $headerMap['Option A'] ?? null;
+        $optBIdx = $headerMap['Option B'] ?? null;
+        $optCIdx = $headerMap['Option C'] ?? null;
+        $optDIdx = $headerMap['Option D'] ?? null;
+        $qIdx = $headerMap['Question'] ?? null;
+        $caIdx = $headerMap['Correct Answer'] ?? null;
+        $explIdx = $headerMap['Explanation'] ?? null;
+        $marksIdx = $headerMap['Marks'] ?? null;
+        $diffIdx = $headerMap['Difficulty'] ?? null;
+        $topicIdx = $headerMap['Topic'] ?? null;
+        $imgIdx = $headerMap['Image URL'] ?? null;
+
+        $handleReplace = $request->duplicate_handling === 'replace';
+
         while (($line = fgetcsv($handle)) !== false) {
             $rowIndex++;
-            $rowErrors = [];
 
-            $question = trim($line[$headerMap['Question'] ?? -1] ?? '');
-            $optionA = trim($headerMap['Option A'] ?? false) !== false ? trim($line[$headerMap['Option A']] ?? '') : '';
-            $optionB = trim($headerMap['Option B'] ?? false) !== false ? trim($line[$headerMap['Option B']] ?? '') : '';
-            $optionC = trim($headerMap['Option C'] ?? false) !== false ? trim($line[$headerMap['Option C']] ?? '') : '';
-            $optionD = trim($headerMap['Option D'] ?? false) !== false ? trim($line[$headerMap['Option D']] ?? '') : '';
-            $correctAnswer = strtoupper(trim($line[$headerMap['Correct Answer'] ?? -1] ?? ''));
-            $explanation = trim($line[$headerMap['Explanation'] ?? -1] ?? '');
-            $marks = trim($line[$headerMap['Marks'] ?? -1] ?? '');
-            $difficulty = trim($line[$headerMap['Difficulty'] ?? -1] ?? '');
-            $topic = trim($line[$headerMap['Topic'] ?? -1] ?? '');
-            $imageUrl = trim($line[$headerMap['Image URL'] ?? -1] ?? '');
+            $question = trim($line[$qIdx] ?? '');
+            if ($question === '') continue;
 
-            if (empty($question)) {
-                $rowErrors[] = 'Question is required.';
-            }
-            if (empty($correctAnswer) || !in_array($correctAnswer, ['A', 'B', 'C', 'D'])) {
-                $rowErrors[] = 'Correct Answer must be A, B, C, or D.';
-            }
-
-            if (!empty($rowErrors)) {
-                $errors[$rowIndex] = $rowErrors;
+            $correctAnswer = strtoupper(trim($line[$caIdx] ?? ''));
+            if (!in_array($correctAnswer, ['A', 'B', 'C', 'D'], true)) {
+                $errors[$rowIndex] = ['Correct Answer must be A, B, C, or D.'];
                 continue;
             }
 
-            $questionData = [
-                'id' => $rowIndex,
-                'question' => $question,
-                'optionA' => $optionA,
-                'optionB' => $optionB,
-                'optionC' => $optionC,
-                'optionD' => $optionD,
-                'correctAnswer' => $correctAnswer,
-                'explanation' => $explanation,
-                'marks' => $marks !== '' ? (int)$marks : 1,
-                'difficulty' => $difficulty !== '' ? ucfirst(strtolower($difficulty)) : 'Medium',
-                'topic' => $topic ?: ($request->topic ?: 'General'),
-                'imageUrl' => $imageUrl,
-            ];
-
             if ($request->duplicate_handling !== 'import_all') {
-                $existing = $this->findDuplicateInDb($db, $question, $request->subject);
-                if ($existing !== null) {
+                $qKey = strtolower($question);
+                if (isset($existingQuestionIndex[$qKey])) {
                     if ($request->duplicate_handling === 'skip') {
                         $skipped[] = $rowIndex;
                         continue;
                     }
-                    if ($request->duplicate_handling === 'replace') {
+                    if ($handleReplace) {
+                        $replaced[] = $rowIndex;
+                        // Swap the existing question in place — no O(n) scan needed
+                        $loc = $examWithQuestion[$qKey];
                         foreach ($db['exams'] as &$exam) {
-                            if ($exam['id'] === $existing['examId']) {
-                                foreach ($exam['questions'] as &$eq) {
-                                    if ($eq['question'] === $question) {
-                                        $eq = $questionData;
-                                        $eq['id'] = $eq['id'] ?? $rowIndex;
-                                        break;
-                                    }
-                                }
-                                unset($eq);
+                            if ($exam['id'] === $loc['examId']) {
+                                $exam['questions'][$loc['questionIndex']]['question'] = $question;
+                                $exam['questions'][$loc['questionIndex']]['optionA'] = trim($line[$optAIdx] ?? '');
+                                $exam['questions'][$loc['questionIndex']]['optionB'] = trim($line[$optBIdx] ?? '');
+                                $exam['questions'][$loc['questionIndex']]['optionC'] = $optCIdx !== null ? trim($line[$optCIdx] ?? '') : '';
+                                $exam['questions'][$loc['questionIndex']]['optionD'] = $optDIdx !== null ? trim($line[$optDIdx] ?? '') : '';
+                                $exam['questions'][$loc['questionIndex']]['correctAnswer'] = $correctAnswer;
                                 break;
                             }
                         }
                         unset($exam);
-                        $replaced[] = $rowIndex;
                         continue;
                     }
+                } else {
+                    $existingQuestionIndex[$qKey] = true;
                 }
             }
 
-            $imported[] = $questionData;
+            $imported[] = [
+                'id' => $rowIndex,
+                'question' => $question,
+                'optionA' => trim($line[$optAIdx] ?? ''),
+                'optionB' => trim($line[$optBIdx] ?? ''),
+                'optionC' => $optCIdx !== null ? trim($line[$optCIdx] ?? '') : '',
+                'optionD' => $optDIdx !== null ? trim($line[$optDIdx] ?? '') : '',
+                'correctAnswer' => $correctAnswer,
+                'explanation' => $explIdx !== null ? trim($line[$explIdx] ?? '') : '',
+                'marks' => ($marksIdx !== null && is_numeric(trim($line[$marksIdx] ?? ''))) ? (int)trim($line[$marksIdx]) : 1,
+                'difficulty' => $diffIdx !== null ? ucfirst(strtolower(trim($line[$diffIdx] ?? ''))) : 'Medium',
+                'topic' => $topicIdx !== null ? (trim($line[$topicIdx] ?: $request->topic ?: 'General')) : ($request->topic ?: 'General'),
+                'imageUrl' => $imgIdx !== null ? trim($line[$imgIdx] ?? '') : '',
+            ];
         }
 
         fclose($handle);
 
         if (!empty($imported)) {
+            $count = count($imported);
             $examId = 'exam_' . uniqid();
-            $exam = [
+            $duration = $request->duration ? (int)$request->duration : max(10, min(120, intdiv($count, 2)));
+            $defaultMarks = $request->defaultMarks ? (int)$request->defaultMarks : 1;
+
+            $db['exams'][] = [
                 'id' => $examId,
                 'title' => $examTitle,
                 'subject' => $request->subject,
@@ -321,10 +386,10 @@ class CsvImportController extends Controller
                 'examType' => $request->exam_type,
                 'topic' => $request->topic ?: 'General',
                 'subTopic' => $request->subTopic ?: '',
-                'duration' => $request->duration ? (int)$request->duration : max(10, min(120, intdiv(count($imported), 2))),
-                'defaultMarks' => $request->defaultMarks ? (int)$request->defaultMarks : 1,
-                'totalMarks' => count($imported) * ($request->defaultMarks ? (int)$request->defaultMarks : 1),
-                'instructions' => 'Answer all questions. Each question carries ' . ($request->defaultMarks ? (int)$request->defaultMarks : 1) . ' mark(s).',
+                'duration' => $duration,
+                'defaultMarks' => $defaultMarks,
+                'totalMarks' => $count * $defaultMarks,
+                'instructions' => "Answer all questions. Each question carries {$defaultMarks} mark(s).",
                 'questions' => $imported,
                 'creatorId' => $user['id'] ?? 'unknown',
                 'creatorName' => $user['name'] ?? 'Unknown',
@@ -332,7 +397,6 @@ class CsvImportController extends Controller
                 'source' => 'csv_import',
                 'createdAt' => now()->toIso8601String(),
             ];
-            $db['exams'][] = $exam;
         }
 
         if (!isset($db['importLogs'])) {
@@ -353,7 +417,9 @@ class CsvImportController extends Controller
             'date' => now()->toIso8601String(),
         ];
 
-        JsonDb::save($db);
+        // Use fast save — skips SQLite sync (expensive Eloquent operations per row).
+        // The next regular save() will sync.
+        JsonDb::saveWithoutSync($db);
 
         return response()->json([
             'success' => true,
@@ -368,50 +434,82 @@ class CsvImportController extends Controller
         ]);
     }
 
-    private function countDuplicates(Request $request, array $rows): int
+    public function convertJsonToExam(Request $request)
     {
+        $validated = $request->validate([
+            'questions' => 'required|array|min:1',
+            'questions.*.question' => 'required|string',
+            'questions.*.optionA' => 'required|string',
+            'questions.*.optionB' => 'required|string',
+            'questions.*.optionC' => 'required|string',
+            'questions.*.optionD' => 'required|string',
+            'questions.*.correctAnswer' => 'required|in:A,B,C,D',
+            'title' => 'nullable|string',
+            'subject' => 'required|string',
+            'level' => 'nullable|string',
+            'duration' => 'nullable|integer|min:1|max:180',
+            'defaultMarks' => 'nullable|integer|min:1|max:100',
+            'creatorId' => 'nullable|string',
+            'creatorName' => 'nullable|string',
+        ]);
+
+        $user = Session::get('user');
         JsonDb::init();
         $db = JsonDb::get();
-        $count = 0;
-        $existingQuestions = $this->getExistingQuestions($db, $request->subject);
-        foreach ($rows as $row) {
-            if (!$row['valid']) continue;
-            foreach ($existingQuestions as $eq) {
-                if (strcasecmp(trim($eq['question']), trim($row['question'])) === 0) {
-                    $count++;
-                    break;
-                }
-            }
-        }
-        return $count;
-    }
 
-    private function findDuplicateInDb(array &$db, string $question, string $subject): ?array
-    {
-        foreach ($db['exams'] as $exam) {
-            if ($exam['subject'] !== $subject) continue;
-            foreach ($exam['questions'] as $qIdx => $eq) {
-                if (strcasecmp(trim($eq['question'] ?? ''), trim($question)) === 0) {
-                    return [
-                        'examId' => $exam['id'],
-                        'questionIndex' => $qIdx,
-                        'question' => $eq,
-                    ];
-                }
-            }
-        }
-        return null;
-    }
+        $defaultMarks = $validated['defaultMarks'] ?? 1;
 
-    private function getExistingQuestions(array &$db, string $subject): array
-    {
+        // Batch-build questions array in a single pass
         $questions = [];
-        foreach ($db['exams'] as $exam) {
-            if ($exam['subject'] !== $subject) continue;
-            foreach ($exam['questions'] as $q) {
-                $questions[] = $q;
-            }
+        foreach ($validated['questions'] as $i => $q) {
+            $questions[] = [
+                'id' => $i + 1,
+                'question' => $q['question'],
+                'optionA' => $q['optionA'],
+                'optionB' => $q['optionB'],
+                'optionC' => $q['optionC'],
+                'optionD' => $q['optionD'],
+                'correctAnswer' => strtoupper($q['correctAnswer']),
+                'marks' => $defaultMarks,
+            ];
         }
-        return $questions;
+
+        $count = count($questions);
+        $examId = 'exam_' . uniqid();
+        $duration = $validated['duration'] ?? max(10, min(120, intdiv($count, 2)));
+
+        $db['exams'][] = [
+            'id' => $examId,
+            'title' => $validated['title'] ?? ($validated['subject'] . ' CBT Exam'),
+            'subject' => $validated['subject'],
+            'level' => $validated['level'] ?? 'Mixed',
+            'duration' => $duration,
+            'defaultMarks' => $defaultMarks,
+            'totalMarks' => $count * $defaultMarks,
+            'instructions' => "Answer all questions. Each question carries {$defaultMarks} mark(s).",
+            'questions' => $questions,
+            'creatorId' => $validated['creatorId'] ?? $user['id'] ?? 'unknown',
+            'creatorName' => $validated['creatorName'] ?? $user['name'] ?? 'CSV Import',
+            'isPublished' => false,
+            'source' => 'csv_import',
+            'createdAt' => now()->toIso8601String(),
+        ];
+
+        // Fast save — skip the expensive SQLite sync
+        JsonDb::saveWithoutSync($db);
+
+        Log::info('CSV questions converted to CBT exam', [
+            'examId' => $examId,
+            'questionCount' => $count,
+            'subject' => $validated['subject'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'examId' => $examId,
+            'message' => "{$count} questions imported and CBT exam created successfully.",
+        ]);
     }
+
+
 }

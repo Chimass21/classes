@@ -279,15 +279,24 @@ class AIController extends Controller
                 'topic' => 'required|string',
                 'subTopic' => 'nullable|string',
                 'class' => 'nullable|string',
+                'classLevel' => 'nullable|string',
                 'term' => 'nullable|string',
                 'week' => 'nullable|integer',
                 'count' => 'required|integer|min:1|max:200',
                 'includeTheory' => 'nullable|boolean',
                 'lessonNoteId' => 'nullable|string',
+                'noteContent' => 'nullable|string',
             ]);
 
+            // Normalise frontend fields
+            if (empty($data['class']) && !empty($data['classLevel'])) {
+                $data['class'] = $data['classLevel'];
+            }
+
             $lessonNoteContent = '';
-            if (!empty($data['lessonNoteId'])) {
+            if (!empty($data['noteContent'])) {
+                $lessonNoteContent = $data['noteContent'];
+            } elseif (!empty($data['lessonNoteId'])) {
                 JsonDb::init();
                 $db = JsonDb::get();
                 foreach ($db['lessonNotes'] as $n) {
@@ -297,6 +306,9 @@ class AIController extends Controller
                     }
                 }
             }
+
+            // Ensure every generation starts with a completely fresh context
+            ContentGenerator::reset();
 
             $prompt = $this->buildQuestionsPrompt(
                 $data['subject'], $data['topic'], $data['count'],
@@ -844,20 +856,41 @@ The topic is "{$topic}" in {$subject}. You MUST obey ALL of these:
 - If you don't know enough about "{$topic}" to write {$count} quality questions, write what you do know — do NOT invent questions about other topics
 - ZERO questions about unrelated topics — this means NO questions about atoms, molecules, chemical bonding, etc. when the topic is "Flame"
 
-STEP 3 — WRITE THE QUESTIONS
+STEP 3 — QUESTION STYLE DIVERSITY (CRITICAL)
+You MUST vary every single question's opening and structure. Do NOT start most questions with What, Why, When, Where, Who, Which, or How. At most 2 out of every 10 questions may begin with a WH word. Use a balanced mix of the following styles:
+
+1. COMMAND / DIRECTIVE — "State the function of {$topic} in the human body." / "List three characteristics of {$topic}." / "Define {$topic}." / "Identify the type of {$topic} shown in the diagram."
+2. COMPLETION / FILL-THE-BLANK — "The process of {$topic} in plants is called ___." (presented as a stem with 4 options to complete it)
+3. SCENARIO / APPLICATION — "A farmer notices that his crops are wilting despite adequate watering. This is most likely due to a problem with {$topic}. What should he check first?" / "If a student mixes solution X and solution Y and observes a colour change to blue, which of the following {$topic} reactions has occurred?"
+4. TRUE / FALSE (presented as MCQ) — "Which of the following statements about {$topic} is correct?" or "Which of the following statements is true regarding {$topic}?"
+5. COMPARISON / CONTRAST — "Which of the following distinguishes {$topic} from a related concept?" / "The main difference between type A and type B of {$topic} is that type A ___."
+6. CLASSIFICATION — "Which of the following is an example of {$topic}?" / "Which of the following belongs to the category of {$topic}?"
+7. CAUSE-EFFECT — "The main reason {$topic} occurs during the rainy season in Nigeria is ___." / "What is the primary effect of {$topic} on the ecosystem?"
+8. FORMULA / CALCULATION — "Using the formula for {$topic}, calculate the value of ___." (stem contains the problem, options are numeric answers)
+9. NEGATIVE / EXCEPTION — "All of the following are examples of {$topic} EXCEPT:" / "Which of the following is NOT a characteristic of {$topic}?"
+10. SEQUENCE / ORDER — "Arrange the following steps of {$topic} in the correct order." / "Which of the following is the correct sequence for {$topic}?"
+
+For every set of 10 questions, aim to cover at least 6 different styles from the list above.
+If the subject is Mathematics or a calculation-based science, include at least 2-3 problem-solving/calculation questions.
+If the subject is a language or arts, include more application/scenario and classification questions.
+
+STEP 4 — WRITE THE QUESTIONS
 For each question:
 1. Pick one specific aspect of "{$topic}" to test
-2. Write a clear question stem that contains the topic name
-3. Write 4 distinct options (A, B, C, D) — one correct, three wrong but plausible
-4. Randomize which letter has the correct answer (aim for ~25% A, 25% B, 25% C, 25% D across all questions)
-5. NEVER repeat the same question or answer concept
+2. Choose a question style from the list above that best suits that aspect
+3. Write a clear question stem using that style — NEVER default to a WH question
+4. Write 4 distinct options (A, B, C, D) — one correct, three wrong but plausible
+5. Randomize which letter has the correct answer (aim for ~25% A, 25% B, 25% C, 25% D across all questions)
+6. NEVER repeat the same question or answer concept
 
-STEP 4 — SELF-VERIFICATION
+STEP 5 — SELF-VERIFICATION
 After writing all {$count} questions, check EVERY SINGLE ONE:
 - Does the question stem contain "{$topic}" keyword? If NO, rewrite it.
 - Is this question about "{$topic}" and NOT about some other topic? If NO, delete and replace it.
+- Does this question start with What, Why, When, Where, Who, Which, or How? If YES, count it. At most 2 per 10 questions may be WH questions. Rewrite any excess WH questions into a different style.
 - Are all 4 options unique? If NO, fix them.
 - Is exactly one option correct and the other three wrong? If NO, fix.
+- Did I use at least 6 different styles across every 10 questions? If NO, rewrite some to add variety.
 
 {$noteContext}
 
@@ -866,7 +899,7 @@ Return ONLY valid JSON in this exact format (no text before or after):
   "objectives": [
     {
       "id": 1,
-      "question": "Unique question text about {$topic}?",
+      "question": "Complete the following statement about {$topic}:",
       "A": "First unique option",
       "B": "Second unique option",
       "C": "Third unique option",
@@ -987,8 +1020,18 @@ PROMPT;
 
             $simplePrompt = "You are a Nigerian exam expert. Generate {$count} multiple-choice questions STRICTLY about \"{$topic}\" in {$subject} for {$class} level.\n\n"
                 . "CRITICAL: EVERY question stem MUST contain the word \"{$topic}\". Questions about any other topic are FORBIDDEN.\n\n"
+                . "QUESTION STYLE: Do NOT start questions with What, Why, When, Where, Who, Which, or How. Instead, vary every question's opening. Use these styles:\n"
+                . "  - Completion: \"The process of {$topic} is called ___\" (stem + options to complete)\n"
+                . "  - Directive: \"State the main function of {$topic}.\" / \"Define {$topic}.\"\n"
+                . "  - Scenario: \"If a student observes X, which aspect of {$topic} does this demonstrate?\"\n"
+                . "  - Comparison: \"Which of the following distinguishes type A of {$topic} from type B?\"\n"
+                . "  - Classification: \"Which of the following is an example of {$topic}?\"\n"
+                . "  - Negative: \"All of the following are true about {$topic} EXCEPT:\"\n"
+                . "  - Calculation: (for math/science) present a problem with numeric answer options\n"
+                . "  - True/False: \"Which of the following statements about {$topic} is correct?\"\n"
+                . "Use a different style for every question. At most 2 out of every 10 questions may start with a WH word.\n\n"
                 . "Return ONLY a JSON array with NO other text. Each question must have: 'id' (number), 'question' (text containing '{$topic}'), 'A','B','C','D' (options with one correct), and 'answer' (A/B/C/D).\n\n"
-                . "Example: [{\"id\":1,\"question\":\"What is the definition of {$topic}?\",\"A\":\"opt1\",\"B\":\"opt2\",\"C\":\"opt3\",\"D\":\"opt4\",\"answer\":\"A\"}]";
+                . "Example: [{\"id\":1,\"question\":\"The correct definition of {$topic} is:\",\"A\":\"opt1\",\"B\":\"opt2\",\"C\":\"opt3\",\"D\":\"opt4\",\"answer\":\"A\"}]";
 
             $retryResponse = $this->ai->generate($simplePrompt, false, 8192, 0.5);
 
@@ -1420,6 +1463,7 @@ PROMPT;
              . "- If a question does not contain \"{$topic}\", it is WRONG and will be rejected.\n"
              . "- Cover different aspects of \"{$topic}\": definition, types, properties, causes, effects, examples, applications.\n"
              . "- Do NOT write about any other topic in {$subject}.\n"
+             . "- VARY question styles: use commands (\"State...\", \"Define...\"), completions, scenarios, comparisons, negatives (\"All EXCEPT\"), calculations, and true/false statements. Do NOT start questions with What, Why, How, When, Where, Who, or Which.\n"
              . "- Write questions that a {$class} student would face in a WAEC/NECO/JAMB exam.\n"
              . "- Return ONLY valid JSON.\n";
     }

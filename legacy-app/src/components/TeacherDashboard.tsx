@@ -201,6 +201,10 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
   const [csvSuccess, setCsvSuccess] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [uploadedFileName, setUploadedFileName] = useState("");
+  const [csvParsedQuestions, setCsvParsedQuestions] = useState<Question[]>([]);
+  const [csvConverting, setCsvConverting] = useState(false);
+  const [csvConvertResult, setCsvConvertResult] = useState<{ success: boolean; examId?: string; message: string } | null>(null);
+  const [csvProgressStep, setCsvProgressStep] = useState<string>("");
 
   // 2. AI LESSON PLAN FORM STATE
   const [spinSchool, setSpinSchool] = useState("Swiftstudy International Academy");
@@ -772,7 +776,8 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
         setCsvSuccess(`Successfully loaded ${parsedRows.length} questions from the CSV file!`);
       }
 
-      setExamQuestions((prev) => [...prev, ...parsedRowsFinal]);
+      setCsvParsedQuestions(parsedRowsFinal);
+      setCsvConvertResult(null);
     } catch (err: any) {
       setCsvError(err.message || "CSV parse malfunction. Verify standard headers.");
     }
@@ -1006,6 +1011,59 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
     }
   };
 
+  const handleConvertCSVToCBT = async () => {
+    if (csvParsedQuestions.length === 0) {
+      alert("No questions to upload. Upload a valid CSV file first.");
+      return;
+    }
+
+    setCsvConverting(true);
+    setCsvConvertResult(null);
+    setCsvProgressStep("Validating questions...");
+
+    // Small delay so the progress UI renders before the blocking fetch
+    await new Promise((r) => setTimeout(r, 50));
+
+    try {
+      setCsvProgressStep("Importing into database...");
+      await new Promise((r) => setTimeout(r, 30));
+
+      const resp = await fetch("/api/csv-import/convert-json", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          questions: csvParsedQuestions,
+          title: examTitle || `${examSubject} CSV Import`,
+          subject: examSubject,
+          level: examLevel,
+          duration: examDuration,
+          defaultMarks: 1,
+          creatorId: user.id,
+          creatorName: user.name,
+        }),
+      });
+
+      const data = await resp.json();
+      if (resp.ok && data.success) {
+        setCsvProgressStep("");
+        setCsvConvertResult({ success: true, examId: data.examId, message: data.message });
+        setCsvParsedQuestions([]);
+        setUploadedFileName("");
+        setCsvSuccess("");
+        fetchTeacherData();
+      } else {
+        setCsvProgressStep("");
+        setCsvConvertResult({ success: false, message: data.error || "Failed to convert CSV to CBT exam." });
+      }
+    } catch (err: any) {
+      console.error(err);
+      setCsvProgressStep("");
+      setCsvConvertResult({ success: false, message: "Connection error while converting CSV to CBT exam." });
+    } finally {
+      setCsvConverting(false);
+    }
+  };
+
   // --- DYNAMIC AI GENERATION TRIGGERS ---
   const triggerGenerateLessonPlan = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1117,6 +1175,9 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
     setGeneratingAiBank(true);
     setAiBankQuestions([]);
 
+    const noteContext = aiFromNoteContent;
+    setAiFromNoteContent("");
+
     try {
       const res = await fetch("/api/ai/generate-questions", {
         method: "POST",
@@ -1125,9 +1186,10 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
           subject: aiSubject,
           topic: aiTopic,
           classLevel: aiClass,
+          class: aiClass,
           count: aiCount,
           difficulty: aiDifficulty,
-          noteContent: aiFromNoteContent || undefined,
+          noteContent: noteContext || undefined,
         }),
       });
 
@@ -1699,6 +1761,105 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                           <div className="p-2.5 bg-emerald-50 border border-emerald-100 text-emerald-800 rounded-lg text-xs font-bold flex items-center gap-1.5 animate-fadeIn">
                             <CheckCircle className="w-4 h-4 shrink-0 text-emerald-600" />
                             <span>{csvSuccess}</span>
+                          </div>
+                        )}
+
+                        {csvParsedQuestions.length > 0 && (
+                          <div className="space-y-3 animate-fadeIn">
+                            <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between">
+                              <div>
+                                <span className="text-xs font-black text-indigo-800">
+                                  Preview: {csvParsedQuestions.length} question{csvParsedQuestions.length !== 1 ? "s" : ""} parsed
+                                </span>
+                                <p className="text-[10px] text-indigo-600 font-medium mt-0.5">
+                                  {uploadedFileName} — Review and convert to a full CBT exam.
+                                </p>
+                              </div>
+                              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                            </div>
+
+                            <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl bg-white divide-y divide-slate-100 text-xs">
+                              {csvParsedQuestions.slice(0, 10).map((q, idx) => (
+                                <div key={idx} className="p-2.5 flex items-start gap-2">
+                                  <span className="font-black text-slate-400 shrink-0 w-5">{idx + 1}.</span>
+                                  <div className="min-w-0">
+                                    <p className="font-semibold text-slate-800 truncate">{q.question}</p>
+                                    <p className="text-[10px] text-slate-500 mt-0.5">
+                                      A: {q.optionA} &middot; B: {q.optionB} &middot; C: {q.optionC} &middot; D: {q.optionD}
+                                      &nbsp;&middot; <strong className="text-emerald-700">Ans: {q.correctAnswer}</strong>
+                                    </p>
+                                  </div>
+                                </div>
+                              ))}
+                              {csvParsedQuestions.length > 10 && (
+                                <p className="p-2.5 text-center text-[10px] text-slate-400 font-semibold">
+                                  ...and {csvParsedQuestions.length - 10} more question{csvParsedQuestions.length - 10 !== 1 ? "s" : ""}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-3">
+                              <button
+                                type="button"
+                                disabled={csvConverting}
+                                onClick={handleConvertCSVToCBT}
+                                className="flex-1 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed text-white font-black text-xs uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
+                              >
+                                {csvConverting ? (
+                                  <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-4 w-4 shrink-0" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-white/70 animate-pulse" />
+                                      {csvProgressStep || "Processing..."}
+                                    </span>
+                                  </span>
+                                ) : (
+                                  <>
+                                    <Layers className="w-4 h-4" />
+                                    Convert to CBT
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCsvParsedQuestions([]);
+                                  setCsvSuccess("");
+                                  setUploadedFileName("");
+                                  setCsvConvertResult(null);
+                                }}
+                                className="py-2.5 px-5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs rounded-xl transition cursor-pointer"
+                              >
+                                Clear
+                              </button>
+                            </div>
+
+                            {csvConvertResult && (
+                              <div
+                                className={`p-3 rounded-xl text-xs font-bold flex items-start gap-2 ${
+                                  csvConvertResult.success
+                                    ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
+                                    : "bg-rose-50 border border-rose-200 text-rose-700"
+                                }`}
+                              >
+                                {csvConvertResult.success ? (
+                                  <CheckCircle className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
+                                ) : (
+                                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+                                )}
+                                <div>
+                                  <p>{csvConvertResult.message}</p>
+                                  {csvConvertResult.examId && (
+                                    <p className="text-[10px] font-medium mt-1 opacity-75">
+                                      Exam ID: {csvConvertResult.examId} &middot; You can now publish it from the exam list below.
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            )}
                           </div>
                         )}
                       </div>
