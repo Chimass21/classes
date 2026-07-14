@@ -205,6 +205,7 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
   const [csvConverting, setCsvConverting] = useState(false);
   const [csvConvertResult, setCsvConvertResult] = useState<{ success: boolean; examId?: string; message: string } | null>(null);
   const [csvProgressStep, setCsvProgressStep] = useState<string>("");
+  const [csvProgressWidth, setCsvProgressWidth] = useState("0%");
 
   // 2. AI LESSON PLAN FORM STATE
   const [spinSchool, setSpinSchool] = useState("Swiftstudy International Academy");
@@ -1017,16 +1018,22 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
       return;
     }
 
+    const qCount = csvParsedQuestions.length;
     setCsvConverting(true);
     setCsvConvertResult(null);
     setCsvProgressStep("Validating questions...");
+    setCsvProgressWidth("15%");
 
-    // Small delay so the progress UI renders before the blocking fetch
-    await new Promise((r) => setTimeout(r, 50));
+    // Yield to let the UI paint the loading state
+    await new Promise((r) => setTimeout(r, 30));
 
     try {
-      setCsvProgressStep("Importing into database...");
-      await new Promise((r) => setTimeout(r, 30));
+      setCsvProgressStep("Building exam structure...");
+      setCsvProgressWidth("35%");
+      await new Promise((r) => setTimeout(r, 20));
+
+      setCsvProgressStep("Saving to database...");
+      setCsvProgressWidth("60%");
 
       const resp = await fetch("/api/csv-import/convert-json", {
         method: "POST",
@@ -1043,22 +1050,31 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
         }),
       });
 
+      setCsvProgressWidth("85%");
+
       const data = await resp.json();
       if (resp.ok && data.success) {
+        setCsvProgressStep("Finalizing...");
+        setCsvProgressWidth("100%");
+        // Brief pause so user sees 100% before it disappears
+        await new Promise((r) => setTimeout(r, 200));
         setCsvProgressStep("");
-        setCsvConvertResult({ success: true, examId: data.examId, message: data.message });
+        setCsvProgressWidth("0%");
+        setCsvConvertResult({ success: true, examId: data.examId, message: `${qCount} questions imported successfully.` });
         setCsvParsedQuestions([]);
         setUploadedFileName("");
         setCsvSuccess("");
         fetchTeacherData();
       } else {
         setCsvProgressStep("");
-        setCsvConvertResult({ success: false, message: data.error || "Failed to convert CSV to CBT exam." });
+        setCsvProgressWidth("0%");
+        setCsvConvertResult({ success: false, message: data.error || "Failed to import questions." });
       }
     } catch (err: any) {
       console.error(err);
       setCsvProgressStep("");
-      setCsvConvertResult({ success: false, message: "Connection error while converting CSV to CBT exam." });
+      setCsvProgressWidth("0%");
+      setCsvConvertResult({ success: false, message: "Connection error while importing questions." });
     } finally {
       setCsvConverting(false);
     }
@@ -1717,15 +1733,12 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                           Upload a `.csv` file directly. Required column order: <em>Question, Option A, Option B, Option C, Option D, Correct Answer (A/B/C/D), Subject, Topic, Marks</em>.
                         </p>
 
-                        <div
+                        <label
+                          htmlFor="csv-file-input"
                           onDragOver={handleDragOver}
                           onDragLeave={handleDragLeave}
                           onDrop={handleDrop}
-                          onClick={() => {
-                            const fileInput = document.getElementById("csv-file-input");
-                            if (fileInput) fileInput.click();
-                          }}
-                          className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition duration-200 flex flex-col items-center justify-center space-y-2 ${
+                          className={`block border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition duration-200 flex flex-col items-center justify-center space-y-2 ${
                             isDragging
                               ? "border-pink-500 bg-pink-50/30"
                               : "border-slate-200 bg-white hover:border-pink-300 hover:bg-slate-50/40"
@@ -1749,7 +1762,7 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                               or click to browse from device folder
                             </p>
                           </div>
-                        </div>
+                        </label>
 
                         {csvError && (
                           <div className="p-2.5 bg-rose-50 border border-rose-100 text-rose-700 rounded-lg text-xs font-bold flex items-center gap-1.5 animate-fadeIn">
@@ -1765,25 +1778,70 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                         )}
 
                         {csvParsedQuestions.length > 0 && (
-                          <div className="space-y-3 animate-fadeIn">
+                          <div className="space-y-2 sm:space-y-3">
                             <div className="p-3 bg-indigo-50 border border-indigo-100 rounded-xl flex items-center justify-between">
                               <div>
                                 <span className="text-xs font-black text-indigo-800">
                                   Preview: {csvParsedQuestions.length} question{csvParsedQuestions.length !== 1 ? "s" : ""} parsed
                                 </span>
                                 <p className="text-[10px] text-indigo-600 font-medium mt-0.5">
-                                  {uploadedFileName} — Review and convert to a full CBT exam.
+                                  {uploadedFileName}
                                 </p>
                               </div>
-                              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                              <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse shrink-0" />
                             </div>
 
-                            <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl bg-white divide-y divide-slate-100 text-xs">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                              <button
+                                type="button"
+                                disabled={csvConverting}
+                                onClick={handleConvertCSVToCBT}
+                                className="w-full sm:flex-1 py-3 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed text-white font-black text-sm uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2 cursor-pointer min-h-[48px] shadow-sm hover:shadow-md active:scale-[0.98]"
+                              >
+                                {csvConverting ? (
+                                  <span className="flex items-center gap-2">
+                                    <svg className="animate-spin h-5 w-5 shrink-0" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                                    </svg>
+                                    <span className="flex items-center gap-1.5">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-white/70 animate-pulse" />
+                                      {csvProgressStep || "Importing..."}
+                                    </span>
+                                  </span>
+                                ) : (
+                                  <>
+                                    <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                                    Import Questions
+                                  </>
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCsvParsedQuestions([]);
+                                  setCsvSuccess("");
+                                  setUploadedFileName("");
+                                  setCsvConvertResult(null);
+                                }}
+                                className="py-3 px-5 bg-white border-2 border-slate-200 hover:bg-slate-50 hover:border-slate-300 text-slate-700 font-bold text-sm rounded-xl transition cursor-pointer w-full sm:w-auto min-h-[48px]"
+                              >
+                                Clear
+                              </button>
+                            </div>
+
+                            {csvConverting && (
+                              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full transition-all duration-500 ease-out" style={{ width: csvProgressWidth }} />
+                              </div>
+                            )}
+
+                            <div className="max-h-32 sm:max-h-48 overflow-y-auto border border-slate-200 rounded-xl bg-white divide-y divide-slate-100 text-xs">
                               {csvParsedQuestions.slice(0, 10).map((q, idx) => (
                                 <div key={idx} className="p-2.5 flex items-start gap-2">
                                   <span className="font-black text-slate-400 shrink-0 w-5">{idx + 1}.</span>
                                   <div className="min-w-0">
-                                    <p className="font-semibold text-slate-800 break-words">{q.question}</p>
+                                    <p className="font-semibold text-slate-800 break-words leading-snug">{q.question}</p>
                                     <p className="text-[10px] text-slate-500 mt-0.5">
                                       A: {q.optionA} &middot; B: {q.optionB} &middot; C: {q.optionC} &middot; D: {q.optionD}
                                       &nbsp;&middot; <strong className="text-emerald-700">Ans: {q.correctAnswer}</strong>
@@ -1798,63 +1856,24 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                               )}
                             </div>
 
-                            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-                              <button
-                                type="button"
-                                disabled={csvConverting}
-                                onClick={handleConvertCSVToCBT}
-                                className="w-full sm:flex-1 py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 disabled:from-slate-300 disabled:to-slate-300 disabled:cursor-not-allowed text-white font-black text-xs uppercase tracking-wider rounded-xl transition flex items-center justify-center gap-2 cursor-pointer"
-                              >
-                                {csvConverting ? (
-                                  <span className="flex items-center gap-2">
-                                    <svg className="animate-spin h-4 w-4 shrink-0" viewBox="0 0 24 24">
-                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                                    </svg>
-                                    <span className="flex items-center gap-1.5">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-white/70 animate-pulse" />
-                                      {csvProgressStep || "Processing..."}
-                                    </span>
-                                  </span>
-                                ) : (
-                                  <>
-                                    <Layers className="w-4 h-4" />
-                                    Convert to CBT
-                                  </>
-                                )}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setCsvParsedQuestions([]);
-                                  setCsvSuccess("");
-                                  setUploadedFileName("");
-                                  setCsvConvertResult(null);
-                                }}
-                                className="py-2.5 px-5 bg-white border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs rounded-xl transition cursor-pointer w-full sm:w-auto"
-                              >
-                                Clear
-                              </button>
-                            </div>
-
                             {csvConvertResult && (
                               <div
-                                className={`p-3 rounded-xl text-xs font-bold flex items-start gap-2 ${
+                                className={`p-4 rounded-xl text-sm font-bold flex items-start gap-3 ${
                                   csvConvertResult.success
                                     ? "bg-emerald-50 border border-emerald-200 text-emerald-800"
                                     : "bg-rose-50 border border-rose-200 text-rose-700"
                                 }`}
                               >
                                 {csvConvertResult.success ? (
-                                  <CheckCircle className="w-4 h-4 shrink-0 mt-0.5 text-emerald-600" />
+                                  <CheckCircle className="w-6 h-6 shrink-0 mt-0.5 text-emerald-600" />
                                 ) : (
-                                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-rose-600" />
+                                  <AlertCircle className="w-6 h-6 shrink-0 mt-0.5 text-rose-600" />
                                 )}
-                                <div>
-                                  <p>{csvConvertResult.message}</p>
+                                <div className="space-y-1">
+                                  <p className="font-black text-base">{csvConvertResult.message}</p>
                                   {csvConvertResult.examId && (
-                                    <p className="text-[10px] font-medium mt-1 opacity-75">
-                                      Exam ID: {csvConvertResult.examId} &middot; You can now publish it from the exam list below.
+                                    <p className="text-xs font-medium opacity-80">
+                                      Exam saved. Find it in the exam list below to publish and share.
                                     </p>
                                   )}
                                 </div>

@@ -454,8 +454,18 @@ class CsvImportController extends Controller
         ]);
 
         $user = Session::get('user');
-        JsonDb::init();
-        $db = JsonDb::get();
+
+        // Direct file read/write avoids full JsonDb::init() which loads SQLite data
+        $dbPath = base_path('brain_db.json');
+        $db = [];
+        if (file_exists($dbPath)) {
+            $raw = @file_get_contents($dbPath);
+            if ($raw !== false) {
+                $decoded = json_decode($raw, true);
+                if (is_array($decoded)) $db = $decoded;
+            }
+        }
+        if (!isset($db['exams'])) $db['exams'] = [];
 
         $defaultMarks = $validated['defaultMarks'] ?? 1;
 
@@ -495,8 +505,15 @@ class CsvImportController extends Controller
             'createdAt' => now()->toIso8601String(),
         ];
 
-        // Fast save — skip the expensive SQLite sync
-        JsonDb::saveWithoutSync($db);
+        // Direct file write — skips full JsonDb init/sync cycle
+        $written = @file_put_contents($dbPath, json_encode($db, JSON_UNESCAPED_UNICODE));
+        if ($written === false) {
+            Log::error('Failed to write brain_db.json during CSV import', ['examId' => $examId]);
+            return response()->json([
+                'success' => false,
+                'error' => 'Failed to save exam data. Please check file permissions.',
+            ], 500);
+        }
 
         Log::info('CSV questions converted to CBT exam', [
             'examId' => $examId,
