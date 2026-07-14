@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Helpers\ContentGenerator;
 use App\Helpers\CurriculumData;
 use App\Helpers\JsonDb;
 use App\Services\OpenAIService;
@@ -336,25 +337,43 @@ class AIController extends Controller
             }
 
             if (!is_array($questions) || empty($questions)) {
-                Log::warning('AI returned non-JSON for questions', [
+                Log::warning('AI returned non-JSON for questions, falling back to ContentGenerator', [
                     'response_length' => strlen($response),
-                    'response_preview' => substr($response, 0, 2000),
+                    'response_preview' => substr($response, 0, 3000),
                 ]);
+
+                $fallback = ContentGenerator::generateQuestions(
+                    $data['subject'], $data['topic'], $data['count'],
+                    $data['includeTheory'] ?? false
+                );
                 return response()->json([
-                    'success' => false,
-                    'error' => 'Failed to generate valid questions. The AI response was not in the expected format. Please try again.',
-                ], 422);
+                    'success' => true,
+                    'questions' => $fallback,
+                    'count' => $data['count'],
+                    'message' => 'Questions generated using fallback.',
+                    'fallback' => true,
+                ]);
             }
 
             $questionsArray = $questions['objectives'] ?? $questions;
             $hasValidFormat = is_array($questionsArray) && !empty($questionsArray) && isset($questionsArray[0]);
 
             if (!$hasValidFormat) {
-                Log::warning('Questions rejected - invalid format');
+                Log::warning('Questions rejected - invalid format, falling back to ContentGenerator', [
+                    'decoded_structure' => is_array($questions) ? array_keys($questions) : 'not_array',
+                ]);
+
+                $fallback = ContentGenerator::generateQuestions(
+                    $data['subject'], $data['topic'], $data['count'],
+                    $data['includeTheory'] ?? false
+                );
                 return response()->json([
-                    'success' => false,
-                    'error' => 'Failed to generate questions. The response format was invalid. Please try again.',
-                ], 422);
+                    'success' => true,
+                    'questions' => $fallback,
+                    'count' => $data['count'],
+                    'message' => 'Questions generated using fallback.',
+                    'fallback' => true,
+                ]);
             }
 
             $questionItems = $questions['objectives'] ?? $questions;
@@ -404,10 +423,21 @@ class AIController extends Controller
                 }
 
                 if (!$hasValidFormat) {
+                    Log::warning('Questions rejected - no options after retry, falling back to ContentGenerator', [
+                        'retry_response_length' => strlen($retryResponse ?? ''),
+                    ]);
+
+                    $fallback = ContentGenerator::generateQuestions(
+                        $data['subject'], $data['topic'], $data['count'],
+                        $data['includeTheory'] ?? false
+                    );
                     return response()->json([
-                        'success' => false,
-                        'error' => 'Failed to generate questions with proper options. Please try again.',
-                    ], 422);
+                        'success' => true,
+                        'questions' => $fallback,
+                        'count' => $data['count'],
+                        'message' => 'Questions generated using fallback.',
+                        'fallback' => true,
+                    ]);
                 }
             }
 
