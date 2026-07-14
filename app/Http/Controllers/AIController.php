@@ -934,6 +934,20 @@ PROMPT;
                        ($content['summary'] ?? '') . ' ' .
                        ($content['detailedNote'] ?? '') . ' ' .
                        implode(' ', is_array($content['subtopics'] ?? []) ? $content['subtopics'] : []);
+        } elseif ($type === 'questions') {
+            $items = $content['objectives'] ?? $content;
+            if (is_array($items)) {
+                $parts = [];
+                foreach ($items as $q) {
+                    $parts[] = $q['question'] ?? '';
+                    foreach (['A', 'B', 'C', 'D', 'options', 'optionA', 'optionB', 'optionC', 'optionD'] as $opt) {
+                        if (isset($q[$opt])) {
+                            $parts[] = is_string($q[$opt]) ? $q[$opt] : '';
+                        }
+                    }
+                }
+                $allText = implode(' ', $parts);
+            }
         }
 
         $allText = strtolower($allText);
@@ -965,7 +979,7 @@ PROMPT;
             $pass = false;
             $reasons[] = "topicScore={$topicScore}";
         }
-        if (!$subjectFound && $type !== 'questions' && $topicScore < 0.6) {
+        if (!$subjectFound && $topicScore < 0.6) {
             $pass = false;
             $reasons[] = 'subjectMissing';
         }

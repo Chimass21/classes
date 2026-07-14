@@ -845,67 +845,30 @@ class ContentGenerator
 
     private static function generateSingleQuestion(string $subject, string $topic, int $num): array
     {
-        $isMath = str_contains(strtolower($subject), 'mathemat');
-        $isEnglish = str_contains(strtolower($subject), 'english');
-        $isScience = str_contains(strtolower($subject), 'physic') || str_contains(strtolower($subject), 'chemist') || str_contains(strtolower($subject), 'biology');
-
-        if ($isMath) {
-            $questions = [
-                "What is the value of 25 + 17?",
-                "Which of the following is a prime number?",
-                "The square root of 144 is:",
-                "Convert 0.25 to a fraction in its simplest form:",
-                "What is the LCM of 12 and 18?",
-                "A triangle with all sides equal is called:",
-                "What is 20% of 250?",
-                "The perimeter of a square with side 8 cm is:",
-                "Solve for x: 2x + 5 = 15",
-                "What is the product of 15 and 8?",
-            ];
-            $answers = ["37", "17", "12", "1/4", "36", "Equilateral triangle", "50", "32 cm", "5", "120"];
-        } elseif ($isEnglish) {
-            $questions = [
-                "Which of the following is a noun?",
-                "The opposite of 'generous' is:",
-                "Choose the correct spelling:",
-                "'The boy ran quickly.' The word 'quickly' is a/an:",
-                "Which sentence is in the past tense?",
-                "A synonym for 'happy' is:",
-                "Which of the following is a complete sentence?",
-                "The plural of 'child' is:",
-                "Which word is an adjective?",
-                "Identify the pronoun in this sentence: 'She went to school.'",
-            ];
-            $answers = ["Happiness", "Stingy", "Beautiful", "Adverb", "He walked home.", "Joyful", "The sun is bright.", "Children", "Beautiful", "She"];
-        } elseif ($isScience) {
-            $questions = [
-                "The basic unit of life is the:",
-                "What is the chemical symbol for water?",
-                "The process by which plants make food is called:",
-                "What is the SI unit of force?",
-                "Which organ pumps blood around the body?",
-                "The three states of matter are:",
-                "What gas do plants absorb from the atmosphere?",
-                "The speed of light in a vacuum is approximately:",
-                "Which planet is known as the Red Planet?",
-                "What is the pH of a neutral solution?",
-            ];
-            $answers = ["Cell", "H2O", "Photosynthesis", "Newton", "Heart", "Solid, liquid, gas", "Carbon dioxide", "3.0 × 10⁸ m/s", "Mars", "7"];
-        } else {
-            $questions = [
-                "What is {$topic} in {$subject}?",
-                "Which of the following best describes {$topic}?",
-                "The concept of {$topic} refers to:",
-                "One of the main features of {$topic} is:",
-                "The importance of {$topic} in {$subject} is:",
-                "Which of the following is NOT a characteristic of {$topic}?",
-                "{$topic} can be classified into:",
-                "A practical example of {$topic} is:",
-                "The term '{$topic}' in {$subject} means:",
-                "All of the following are types of {$topic} EXCEPT:",
-            ];
-            $answers = ["The correct definition", "The correct description", "A key concept in {$subject}", "A defining feature", "Its relevance to {$subject}", "An unrelated characteristic", "Various categories", "A real-world application", "Its meaning in context", "A non-related type"];
-        }
+        $questions = [
+            "What is {$topic} in {$subject}?",
+            "Which of the following best describes {$topic}?",
+            "The concept of {$topic} refers to:",
+            "One of the main features of {$topic} is:",
+            "The importance of {$topic} in {$subject} is:",
+            "Which of the following is NOT a characteristic of {$topic}?",
+            "{$topic} can be classified into:",
+            "A practical example of {$topic} is:",
+            "The term '{$topic}' in {$subject} means:",
+            "All of the following are types of {$topic} EXCEPT:",
+        ];
+        $answers = [
+            "The correct definition of {$topic}",
+            "The correct description of {$topic}",
+            "A key concept in {$subject} related to {$topic}",
+            "A defining feature of {$topic}",
+            "Its relevance to {$subject} in the context of {$topic}",
+            "An unrelated characteristic not associated with {$topic}",
+            "The various categories of {$topic}",
+            "A real-world application of {$topic}",
+            "Its meaning in the context of {$subject}",
+            "A type that is not related to {$topic}",
+        ];
 
         $qIndex = abs($num) % count($questions);
         $q = $questions[$qIndex];
@@ -915,9 +878,7 @@ class ContentGenerator
         for ($j = 0; $j < 4; $j++) {
             $options[$letters[$j]] = $j === $correctIdx
                 ? ($answers[$qIndex] ?? "The correct answer related to {$topic}.")
-                : ($isMath
-                    ? ["15", "23", "19", "45", "3/8", "24", "Scalene triangle", "25%", "50", "112"][($j + $qIndex * 3) % 10]
-                    : "An incorrect option related to {$topic}.");
+                : "An incorrect option related to {$topic}.";
         }
 
         return [
