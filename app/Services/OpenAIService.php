@@ -33,10 +33,10 @@ class OpenAIService
         }
 
         $lastError = null;
-        $triedJsonModes = [false, true];  // Try without json_mode first, then with
+        // Match the caller's jsonMode preference on attempt 1, alternate on retries
+        $triedJsonModes = [$jsonMode, !$jsonMode];
 
         for ($attempt = 1; $attempt <= $this->maxRetries; $attempt++) {
-            // Cycle through json modes: first try no json_mode, then try with
             $useJsonMode = $triedJsonModes[($attempt - 1) % count($triedJsonModes)];
 
             try {
@@ -242,8 +242,8 @@ class OpenAIService
             return '';
         }
 
-        // Remove BOM characters
-        $text = preg_replace('/^\xEF\xBB\xBF|\xFE\xFF|\xFF\xFE/', '', $text);
+        // Remove BOM characters (all variants at start of text)
+        $text = preg_replace('/^[\xEF\xBB\xBF\xFE\xFF]+/', '', $text);
 
         // Remove all markdown code fences (```json, ```, etc.)
         $text = preg_replace('/```(?:json)?\s*/i', '', $text);

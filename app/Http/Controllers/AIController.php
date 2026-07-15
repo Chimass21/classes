@@ -208,12 +208,22 @@ class AIController extends Controller
             }
 
             if (!is_array($note) || empty($note)) {
+                $responsePreview = substr($response, 0, 2000);
                 Log::warning('AI returned non-JSON response for lesson note', [
-                    'response' => substr($response, 0, 1000),
+                    'response_length' => strlen($response),
+                    'response_start' => $responsePreview,
                 ]);
+                $errorMsg = 'Failed to generate a valid lesson note. ';
+                if (empty(trim($response))) {
+                    $errorMsg .= 'The AI service returned an empty response. Please check your API configuration and try again.';
+                } elseif (strlen($response) > 15000) {
+                    $errorMsg .= 'The AI response was too large. Try a more specific topic.';
+                } else {
+                    $errorMsg .= 'The AI response was not in the expected format. Please try again.';
+                }
                 return response()->json([
                     'success' => false,
-                    'error' => 'Failed to generate a valid lesson note. The AI response was not in the expected format. Please try again.',
+                    'error' => $errorMsg,
                 ], 422);
             }
 
@@ -224,7 +234,8 @@ class AIController extends Controller
                 ]);
 
                 if (self::MAX_RETRIES > 0) {
-                    $retryResponse = $this->ai->generate($this->buildStrictRetryPrompt($prompt, $data['subject'], $data['topic'], $data['class']), true);
+                    $retryPrompt = $this->buildStrictRetryPrompt($prompt, $data['subject'], $data['topic'], $data['class'], 'lesson_note');
+                    $retryResponse = $this->ai->generate($retryPrompt, true);
 
                     Log::info('AI Lesson Note Retry Response', [
                         'response_length' => strlen($retryResponse),
@@ -332,14 +343,19 @@ class AIController extends Controller
                 'response_preview' => substr($response, 0, 500),
             ]);
 
-            // If AI returned empty after all retries, fall back immediately
             if (empty(trim($response))) {
-                Log::warning('AI returned empty response for questions, retrying with simpler prompt');
+                Log::warning('AI returned empty response for questions');
+                if (!empty($lessonNoteContent)) {
+                    return response()->json(['success' => false, 'error' => 'The AI could not generate questions from this lesson note. Please try again or adjust the lesson note content.'], 422);
+                }
                 return $this->fallbackToContentGenerator($data);
             }
 
             if ($this->isRefusal($response)) {
-                Log::warning('AI refused questions request, retrying with simpler prompt', ['topic' => $data['topic']]);
+                Log::warning('AI refused questions request', ['topic' => $data['topic']]);
+                if (!empty($lessonNoteContent)) {
+                    return response()->json(['success' => false, 'error' => 'The AI could not generate questions from this lesson note. Please try again.'], 422);
+                }
                 return $this->fallbackToContentGenerator($data);
             }
 
@@ -353,10 +369,13 @@ class AIController extends Controller
             }
 
             if (!is_array($questions) || empty($questions)) {
-                Log::warning('AI returned non-JSON for questions, retrying with simpler prompt', [
+                Log::warning('AI returned non-JSON for questions', [
                     'response_length' => strlen($response),
                     'response_preview' => substr($response, 0, 3000),
                 ]);
+                if (!empty($lessonNoteContent)) {
+                    return response()->json(['success' => false, 'error' => 'The AI returned an invalid response. Please try again.'], 422);
+                }
                 return $this->fallbackToContentGenerator($data);
             }
 
@@ -367,6 +386,9 @@ class AIController extends Controller
                 Log::warning('Questions rejected - invalid format', [
                     'decoded_structure' => is_array($questions) ? array_keys($questions) : 'not_array',
                 ]);
+                if (!empty($lessonNoteContent)) {
+                    return response()->json(['success' => false, 'error' => 'The AI returned questions in an unexpected format. Please try again.'], 422);
+                }
                 return $this->fallbackToContentGenerator($data);
             }
 
@@ -375,6 +397,9 @@ class AIController extends Controller
             // Validate quality and retry if needed
             $validated = $this->validateAndRetryQuestions($questionItems, $prompt, $data);
             if ($validated === null) {
+                if (!empty($lessonNoteContent)) {
+                    return response()->json(['success' => false, 'error' => 'Generated questions did not pass quality validation. Please try again.'], 422);
+                }
                 return $this->fallbackToContentGenerator($data);
             }
             $questionItems = $validated;
@@ -382,32 +407,34 @@ class AIController extends Controller
             // Normalize field names from various AI output formats
             $questionItems = $this->normalizeQuestionFields($questionItems);
 
-            // Final topic relevance check — warn if any question is off-topic
-            $topicKeywords = array_filter(explode(' ', strtolower(trim($data['topic']))), fn($w) => strlen($w) > 2);
-            if (empty($topicKeywords)) { $topicKeywords = [strtolower(trim($data['topic']))]; }
-            $offTopicCount = 0;
-            foreach ($questionItems as $q) {
-                $qText = strtolower($q['question'] ?? '');
-                $matches = 0;
-                foreach ($topicKeywords as $kw) {
-                    if (str_contains($qText, $kw)) { $matches++; }
-                }
-                if ($matches === 0) { $offTopicCount++; }
-            }
-            if ($offTopicCount > 0) {
-                Log::warning("{$offTopicCount} off-topic questions detected — prepending topic to stems", [
-                    'topic' => $data['topic'],
-                    'total' => count($questionItems),
-                ]);
-                // Inject topic keyword into off-topic question stems
-                foreach ($questionItems as $i => $q) {
+            // Skip topic relevance check when generating from a lesson note
+            // (questions are based on note content, not topic keyword matching)
+            if (empty($lessonNoteContent)) {
+                $topicKeywords = array_filter(explode(' ', strtolower(trim($data['topic']))), fn($w) => strlen($w) > 2);
+                if (empty($topicKeywords)) { $topicKeywords = [strtolower(trim($data['topic']))]; }
+                $offTopicCount = 0;
+                foreach ($questionItems as $q) {
                     $qText = strtolower($q['question'] ?? '');
                     $matches = 0;
                     foreach ($topicKeywords as $kw) {
                         if (str_contains($qText, $kw)) { $matches++; }
                     }
-                    if ($matches === 0) {
-                        $questionItems[$i]['question'] = 'In the context of ' . $data['topic'] . ', ' . lcfirst(ltrim($q['question'] ?? '', '?.,;:!'));
+                    if ($matches === 0) { $offTopicCount++; }
+                }
+                if ($offTopicCount > 0) {
+                    Log::warning("{$offTopicCount} off-topic questions detected — prepending topic to stems", [
+                        'topic' => $data['topic'],
+                        'total' => count($questionItems),
+                    ]);
+                    foreach ($questionItems as $i => $q) {
+                        $qText = strtolower($q['question'] ?? '');
+                        $matches = 0;
+                        foreach ($topicKeywords as $kw) {
+                            if (str_contains($qText, $kw)) { $matches++; }
+                        }
+                        if ($matches === 0) {
+                            $questionItems[$i]['question'] = 'In the context of ' . $data['topic'] . ', ' . lcfirst(ltrim($q['question'] ?? '', '?.,;:!'));
+                        }
                     }
                 }
             }
@@ -817,6 +844,10 @@ PROMPT;
 
     protected function buildQuestionsPrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent): string
     {
+        if ($lessonNoteContent) {
+            return $this->buildQuestionsFromNotePrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent);
+        }
+
         $theoryPart = $includeTheory ? '
   "theoryQuestions": [
     {"question": "Theory question 1", "answer": "Model answer"}
@@ -827,8 +858,6 @@ PROMPT;
   "structuredQuestions": [
     {"question": "Question with parts a, b, c", "parts": {"a": "Part a", "b": "Part b", "c": "Part c"}}
   ]' : '';
-
-        $noteContext = $lessonNoteContent ? "\n\nLESSON NOTE CONTEXT (use for specific content about \"{$topic}\"):\n" . $lessonNoteContent . "\n\nREMEMBER: Generate questions ONLY about \"{$topic}\" — use the lesson note above for specific content ideas but stay within \"{$topic}\"." : '';
 
         return <<<PROMPT
 You are a Nigerian examination expert generating questions for the Nigerian {$subject} curriculum (NERDC/UBEC/WASSCE/NECO/JAMB).
@@ -892,8 +921,6 @@ After writing all {$count} questions, check EVERY SINGLE ONE:
 - Is exactly one option correct and the other three wrong? If NO, fix.
 - Did I use at least 6 different styles across every 10 questions? If NO, rewrite some to add variety.
 
-{$noteContext}
-
 Return ONLY valid JSON in this exact format (no text before or after):
 {
   "objectives": [
@@ -909,6 +936,156 @@ Return ONLY valid JSON in this exact format (no text before or after):
   ]{$theoryPart}
 }
 PROMPT;
+    }
+
+    protected function buildQuestionsFromNotePrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent): string
+    {
+        $theoryPart = $includeTheory ? '
+  "theoryQuestions": [
+    {"question": "Theory question 1", "answer": "Model answer"}
+  ],
+  "essayQuestions": [
+    {"question": "Essay question 1", "guidance": "Key points to cover"}
+  ],
+  "structuredQuestions": [
+    {"question": "Question with parts a, b, c", "parts": {"a": "Part a", "b": "Part b", "c": "Part c"}}
+  ]' : '';
+
+        $extract = $this->extractNoteText($lessonNoteContent);
+
+        return <<<PROMPT
+You are a Nigerian examination expert. Your task is to generate {$count} objective (multiple-choice) questions based STRICTLY on the lesson note provided below for {$subject} ({$class}, {$term}, Week {$week}).
+
+CRITICAL INSTRUCTION — READ CAREFULLY:
+"Generate objective questions strictly from the lesson note provided below. Do not use outside knowledge or information that is not contained in the lesson note. Every question and answer must be supported directly by the lesson note."
+
+LESSON NOTE CONTENT:
+{$extract}
+
+GENERATION RULES:
+1. Read the complete lesson note above before generating any questions.
+2. Generate questions ONLY from the content contained in the lesson note.
+3. Never introduce facts, examples, or concepts that are not covered in the lesson note.
+4. Ensure every question can be answered using only the lesson note.
+5. Cover all major sections and subtopics in the lesson note.
+6. Avoid repeating the same concept unnecessarily.
+7. Produce balanced and comprehensive objective questions that fairly cover the full lesson.
+
+QUESTION STYLE GUIDELINES:
+- Vary question openings — do not start most questions with What, Why, When, Where, Who, Which, or How
+- Use a mix of styles: command/directive, fill-the-blank, true/false, classification, cause-effect, scenario/application, negative/exception
+- Each question must have 4 distinct options (A, B, C, D) — one correct, three wrong but plausible
+- Randomize which letter has the correct answer across all questions
+- Ensure wrong options are also derived from the lesson note content (not made up from outside knowledge)
+
+SELF-VERIFICATION:
+After writing all {$count} questions, verify EVERY SINGLE ONE:
+- Can this question be answered using ONLY the lesson note above? If NO, rewrite or delete it.
+- Does this question test a concept actually present in the lesson note? If NO, rewrite or delete it.
+- Are all 4 options based on the lesson note content? If NO, fix them.
+- Is exactly one option correct? If NO, fix.
+
+Return ONLY valid JSON in this exact format (no text before or after):
+{
+  "objectives": [
+    {
+      "id": 1,
+      "question": "Question text based strictly on the lesson note",
+      "A": "Option A",
+      "B": "Option B",
+      "C": "Option C",
+      "D": "Option D",
+      "answer": "C"
+    }
+  ]{$theoryPart}
+}
+PROMPT;
+    }
+
+    protected function extractNoteText($lessonNoteContent): string
+    {
+        $data = json_decode($lessonNoteContent, true);
+        if (!is_array($data)) {
+            return $lessonNoteContent;
+        }
+
+        $parts = [];
+
+        if (!empty($data['topic'])) $parts[] = "Topic: " . $data['topic'];
+        if (!empty($data['subTopic'])) $parts[] = "Sub-topic: " . $data['subTopic'];
+        if (!empty($data['subject'])) $parts[] = "Subject: " . $data['subject'];
+        if (!empty($data['class'])) $parts[] = "Class: " . $data['class'];
+        if (!empty($data['term'])) $parts[] = "Term: " . $data['term'];
+
+        if (!empty($data['learningObjectives'])) {
+            $objectives = is_array($data['learningObjectives']) ? implode("\n", $data['learningObjectives']) : $data['learningObjectives'];
+            $parts[] = "LEARNING OBJECTIVES:\n" . $objectives;
+        }
+
+        if (!empty($data['introduction'])) $parts[] = "INTRODUCTION:\n" . $data['introduction'];
+
+        if (!empty($data['content'])) $parts[] = "CONTENT:\n" . strip_tags($data['content']);
+
+        if (!empty($data['subtopics'])) {
+            $subtopics = is_array($data['subtopics']) ? implode("\n- ", $data['subtopics']) : $data['subtopics'];
+            $parts[] = "SUBTOPICS:\n- " . $subtopics;
+        }
+
+        if (!empty($data['definitions'])) {
+            $defs = '';
+            foreach ($data['definitions'] as $d) {
+                $term = $d['term'] ?? '';
+                $def = $d['definition'] ?? '';
+                if ($term || $def) $defs .= "- {$term}: {$def}\n";
+            }
+            if ($defs) $parts[] = "DEFINITIONS:\n" . $defs;
+        }
+
+        if (!empty($data['examples'])) {
+            $exs = '';
+            foreach ($data['examples'] as $ex) {
+                $title = $ex['title'] ?? '';
+                $desc = $ex['description'] ?? '';
+                if ($title || $desc) $exs .= "- {$title}: {$desc}\n";
+            }
+            if ($exs) $parts[] = "EXAMPLES:\n" . $exs;
+        }
+
+        if (!empty($data['practicalApplications'])) {
+            $apps = is_array($data['practicalApplications']) ? implode("\n", $data['practicalApplications']) : $data['practicalApplications'];
+            $parts[] = "PRACTICAL APPLICATIONS:\n" . $apps;
+        }
+
+        if (!empty($data['classroomActivities'])) {
+            $acts = '';
+            foreach ($data['classroomActivities'] as $a) {
+                $title = $a['title'] ?? '';
+                $desc = $a['description'] ?? '';
+                if ($title || $desc) $acts .= "- {$title}: {$desc}\n";
+            }
+            if ($acts) $parts[] = "CLASSROOM ACTIVITIES:\n" . $acts;
+        }
+
+        if (!empty($data['evaluationQuestions'])) {
+            $evals = is_array($data['evaluationQuestions']) ? implode("\n", $data['evaluationQuestions']) : $data['evaluationQuestions'];
+            $parts[] = "EVALUATION QUESTIONS:\n" . $evals;
+        }
+
+        if (!empty($data['summary'])) $parts[] = "SUMMARY:\n" . $data['summary'];
+
+        if (!empty($data['keyPoints'])) {
+            $points = is_array($data['keyPoints']) ? implode("\n", $data['keyPoints']) : $data['keyPoints'];
+            $parts[] = "KEY POINTS:\n" . $points;
+        }
+
+        if (!empty($data['detailedNote'])) $parts[] = "DETAILED NOTE:\n" . strip_tags($data['detailedNote']);
+
+        $text = implode("\n\n", $parts);
+
+        $text = preg_replace('/\n{3,}/', "\n\n", $text);
+        $text = trim($text);
+
+        return $text ?: strip_tags($lessonNoteContent);
     }
 
     // --- STORE HELPERS ---
@@ -1453,8 +1630,20 @@ PROMPT;
         return false;
     }
 
-    protected function buildStrictRetryPrompt(string $originalPrompt, string $subject, string $topic, string $class): string
+    protected function buildStrictRetryPrompt(string $originalPrompt, string $subject, string $topic, string $class, string $type = 'questions'): string
     {
+        if ($type === 'lesson_note') {
+            return "You are a Nigerian curriculum expert. Your ONLY task: Write a DETAILED LESSON NOTE about \"{$topic}\" in {$subject} for {$class}.\n\n"
+                 . "PREVIOUS ATTEMPT REJECTED — REASON: The lesson note did not focus on the requested topic.\n\n"
+                 . "CRITICAL INSTRUCTIONS:\n"
+                 . "- The topic is \"{$topic}\". Write ONLY about \"{$topic}\".\n"
+                 . "- Follow the exact JSON structure requested in the original prompt.\n"
+                 . "- Every sentence must be about \"{$topic}\".\n"
+                 . "- Cover definitions, types, causes, effects, examples, and applications of \"{$topic}\".\n"
+                 . "- Use Nigeria-centric examples (₦aira, Nigerian cities, local culture).\n"
+                 . "- Return ONLY valid JSON with no text before or after.\n";
+        }
+
         return "You are a Nigerian examination expert. Your ONLY task: Generate questions about \"{$topic}\" in {$subject} for {$class}.\n\n"
              . "PREVIOUS ATTEMPT REJECTED — REASON: Questions were off-topic (not about \"{$topic}\").\n\n"
              . "CRITICAL INSTRUCTIONS:\n"
@@ -1476,7 +1665,7 @@ PROMPT;
         }
 
         // Remove BOM characters and all markdown fences
-        $text = preg_replace('/^\xEF\xBB\xBF|\xFE\xFF|\xFF\xFE/', '', $text);
+        $text = preg_replace('/^[\xEF\xBB\xBF\xFE\xFF]+/', '', $text);
         $text = preg_replace('/```(?:json)?\s*/i', '', $text);
         $text = str_replace('`', '', $text);
         $text = trim($text);
@@ -1500,6 +1689,52 @@ PROMPT;
             }
         }
 
+        // Last resort: brute-force search — try every substring between { and }
+        // that balances braces, to catch deeply nested or oddly formatted JSON
+        $decoded = $this->bruteForceFindJson($text);
+        if ($decoded !== null) {
+            return $decoded;
+        }
+
+        return null;
+    }
+
+    /**
+     * Brute-force search for any valid JSON object in the text.
+     * Tries every substring starting with { and ending with a balanced }.
+     */
+    private function bruteForceFindJson(string $text): ?array
+    {
+        $len = strlen($text);
+        for ($start = 0; $start < $len; $start++) {
+            if ($text[$start] !== '{') continue;
+
+            $depth = 0;
+            $inString = false;
+            $escaped = false;
+
+            for ($end = $start; $end < $len; $end++) {
+                $c = $text[$end];
+                if ($escaped) { $escaped = false; continue; }
+                if ($c === '\\') { $escaped = true; continue; }
+                if ($c === '"') { $inString = !$inString; continue; }
+                if ($inString) continue;
+
+                if ($c === '{') $depth++;
+                if ($c === '}') {
+                    $depth--;
+                    if ($depth === 0) {
+                        $candidate = substr($text, $start, $end - $start + 1);
+                        $candidate = preg_replace('/,\s*([}\]])/', '$1', $candidate);
+                        $decoded = json_decode($candidate, true);
+                        if (is_array($decoded) && !empty($decoded)) {
+                            return $decoded;
+                        }
+                        break;
+                    }
+                }
+            }
+        }
         return null;
     }
 

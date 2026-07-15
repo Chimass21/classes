@@ -668,7 +668,7 @@
 
 <script>
 let teacherData = { plans: [], notes: [], exams: [], results: [], questionSets: [] };
-let currentPlanId = null, currentNoteId = null, currentQsId = null;
+let currentPlanId = null, currentNoteId = null, currentQsId = null, currentNote = null, generatingFromNote = false;
 let currentQuestions = null;
 let plansFilter = '', notesFilter = '', qsFilter = '';
 
@@ -729,6 +729,7 @@ async function loadTeacherData() {
         if (teacherData.notes.length > 0) {
             const last = teacherData.notes[teacherData.notes.length - 1];
             currentNoteId = last.id;
+            currentNote = last;
             displayLessonNote(last);
         }
 
@@ -939,6 +940,7 @@ document.getElementById('lesson-note-form')?.addEventListener('submit', async fu
         const data = await res.json();
         if (data.success) {
             currentNoteId = data.noteId;
+            currentNote = data.note;
             displayLessonNote(data.note);
             loadTeacherData();
         } else { alert(data.error || 'Generation failed.'); }
@@ -1035,6 +1037,7 @@ async function deleteNote() {
 }
 async function generateQuestionsFromNote() {
     if (!currentNoteId) return;
+    generatingFromNote = true;
     document.getElementById('q-subject').value = document.getElementById('note-subject').value;
     document.getElementById('q-class').value = document.getElementById('note-class').value;
     document.getElementById('q-term').value = document.getElementById('note-term').value;
@@ -1043,7 +1046,6 @@ async function generateQuestionsFromNote() {
     document.getElementById('q-subtopic').value = document.getElementById('note-subtopic').value;
     document.getElementById('q-count').value = 20;
     switchTab('questions');
-    setTimeout(() => document.getElementById('questions-form').requestSubmit(), 300);
 }
 
 // ====== READ ALOUD ======
@@ -1070,20 +1072,26 @@ document.getElementById('questions-form')?.addEventListener('submit', async func
     const btn = document.getElementById('q-submit-btn');
     btn.disabled = true; btn.textContent = 'Generating...';
     const lessonNoteId = currentNoteId || null;
+    const payload = {
+        subject: document.getElementById('q-subject').value,
+        topic: document.getElementById('q-topic').value,
+        subTopic: document.getElementById('q-subtopic').value,
+        class: document.getElementById('q-class').value,
+        term: document.getElementById('q-term').value,
+        week: parseInt(document.getElementById('q-week').value) || 1,
+        count: parseInt(document.getElementById('q-count').value),
+        includeTheory: document.getElementById('q-theory').checked,
+        lessonNoteId: lessonNoteId,
+    };
+    if (generatingFromNote && currentNote) {
+        payload.noteContent = JSON.stringify(currentNote);
+        payload.difficulty = currentNote.difficulty || '';
+        generatingFromNote = false;
+    }
     try {
         const res = await fetch('/api/ai/questions', {
             method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-            body: JSON.stringify({
-                subject: document.getElementById('q-subject').value,
-                topic: document.getElementById('q-topic').value,
-                subTopic: document.getElementById('q-subtopic').value,
-                class: document.getElementById('q-class').value,
-                term: document.getElementById('q-term').value,
-                week: parseInt(document.getElementById('q-week').value) || 1,
-                count: parseInt(document.getElementById('q-count').value),
-                includeTheory: document.getElementById('q-theory').checked,
-                lessonNoteId: lessonNoteId,
-            })
+            body: JSON.stringify(payload)
         });
         const data = await res.json();
         if (data.success) {
@@ -1292,7 +1300,7 @@ function deleteNote(id) {
 
 function viewNote(id) {
     const note = teacherData.notes.find(n => n.id === id);
-    if (note) { currentNoteId = id; displayLessonNote(note); }
+    if (note) { currentNoteId = id; currentNote = note; displayLessonNote(note); }
 }
 
 function renderQuestionSets() {
