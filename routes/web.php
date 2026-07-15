@@ -114,6 +114,8 @@ Route::prefix('api')->group(function () {
     Route::get('/lesson-notes', [HomeController::class, 'apiAllLessonNotes']);
     Route::get('/teachers/{teacherId}/lesson-plans', [HomeController::class, 'apiTeacherLessonPlans']);
     Route::get('/teachers/{teacherId}/lesson-notes', [HomeController::class, 'apiTeacherLessonNotes']);
+    Route::get('/teacher/dashboard', [HomeController::class, 'apiTeacherDashboard']);
+    Route::get('/teacher/init', [HomeController::class, 'apiTeacherInit']);
     Route::post('/feedback', [HomeController::class, 'submitFeedback']);
     Route::post('/feedback/chat', [HomeController::class, 'chatFeedback']);
     Route::get('/download/lesson-note/{id}/{format}', [DownloadController::class, 'downloadLessonNote']);

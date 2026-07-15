@@ -57,6 +57,42 @@ class HomeController extends Controller
         return response()->json(['lessonNotes' => JsonDb::get()['lessonNotes'] ?? []]);
     }
 
+    public function apiTeacherDashboard()
+    {
+        JsonDb::init();
+        $db = JsonDb::get();
+        $user = \Illuminate\Support\Facades\Session::get('user');
+        $userId = $user['id'] ?? '';
+        return response()->json([
+            'plans' => array_values(array_filter($db['lessonPlans'] ?? [], fn($p) => ($p['teacherId'] ?? '') === $userId)),
+            'notes' => array_values(array_filter($db['lessonNotes'] ?? [], fn($n) => ($n['teacherId'] ?? '') === $userId)),
+            'exams' => array_values(array_filter($db['exams'] ?? [], fn($e) => ($e['creatorId'] ?? '') === $userId)),
+            'results' => $db['results'] ?? [],
+            'questionSets' => array_values(array_filter($db['questionSets'] ?? [], fn($q) => ($q['teacherId'] ?? '') === $userId)),
+            'schoolConfig' => $db['schoolConfig'] ?? [],
+        ]);
+    }
+
+    public function apiTeacherInit()
+    {
+        JsonDb::init();
+        $db = JsonDb::get();
+        $user = \Illuminate\Support\Facades\Session::get('user');
+        $userId = $user['id'] ?? '';
+        return response()->json([
+            'subjects' => $db['subjects'] ?? [],
+            'classes' => \App\Helpers\CurriculumData::getClasses(),
+            'terms' => \App\Helpers\CurriculumData::getTerms(),
+            'weeks' => \App\Helpers\CurriculumData::getWeeks(),
+            'plans' => array_values(array_filter($db['lessonPlans'] ?? [], fn($p) => ($p['teacherId'] ?? '') === $userId)),
+            'notes' => array_values(array_filter($db['lessonNotes'] ?? [], fn($n) => ($n['teacherId'] ?? '') === $userId)),
+            'exams' => array_values(array_filter($db['exams'] ?? [], fn($e) => ($e['creatorId'] ?? '') === $userId)),
+            'results' => $db['results'] ?? [],
+            'questionSets' => array_values(array_filter($db['questionSets'] ?? [], fn($q) => ($q['teacherId'] ?? '') === $userId)),
+            'schoolConfig' => $db['schoolConfig'] ?? [],
+        ]);
+    }
+
     public function apiUserNotifications($userId)
     {
         JsonDb::init();

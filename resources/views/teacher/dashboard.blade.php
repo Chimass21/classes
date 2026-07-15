@@ -129,7 +129,7 @@
                     </form>
                 @endif
                 <span class="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold">{{ Session::get('user.name') }}</span>
-                <button onclick="loadTeacherData()" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 transition cursor-pointer" title="Refresh">
+                <button onclick="initTeacherDashboard()" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 transition cursor-pointer" title="Refresh">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                 </button>
             </div>
@@ -697,51 +697,34 @@ let teacherData = { plans: [], notes: [], exams: [], results: [], questionSets: 
 let currentPlanId = null, currentNoteId = null, currentQsId = null, currentNote = null, generatingFromNote = false;
 let currentQuestions = null;
 let plansFilter = '', notesFilter = '', qsFilter = '';
-
-// ====== CURRICULUM DATA LOADING ======
-async function loadCurriculumSelects() {
-    try {
-        const [subRes, clsRes, termRes, weekRes] = await Promise.all([
-            fetch('/api/subjects').then(r => r.json()),
-            fetch('/api/curriculum/classes').then(r => r.json()),
-            fetch('/api/curriculum/terms').then(r => r.json()),
-            fetch('/api/curriculum/weeks').then(r => r.json()),
-        ]);
-        const subjects = subRes.subjects || [];
-        const classes = clsRes.classes || [];
-        const terms = termRes.terms || [];
-        const weeks = weekRes.weeks || [];
-
-        document.querySelectorAll('select[id$="-subject"], select[id$="-subject"], #q-subject, #plan-subject, #note-subject').forEach(sel => {
-            sel.innerHTML = '<option value="">Select subject...</option>' + subjects.map(s => `<option value="${s}">${s}</option>`).join('');
-        });
-        document.querySelectorAll('#plan-class, #note-class, #q-class').forEach(sel => {
-            sel.innerHTML = classes.map(c => `<option value="${c}">${c}</option>`).join('');
-        });
-        document.querySelectorAll('#plan-term, #note-term, #q-term').forEach(sel => {
-            sel.innerHTML = terms.map(t => `<option value="${t}">${t}</option>`).join('');
-        });
-        document.querySelectorAll('#plan-week, #note-week, #q-week').forEach(sel => {
-            sel.innerHTML = weeks.map(w => `<option value="${w}">Week ${w}</option>`).join('');
-        });
-    } catch(e) { console.error('Failed to load curriculum data:', e); }
-}
-
 // ====== DATA LOADING ======
-async function loadTeacherData() {
+async function initTeacherDashboard() {
     document.getElementById('loading').classList.remove('hidden');
     document.getElementById('content').classList.add('hidden');
     try {
-        const [statsRes] = await Promise.all([
-            fetch('/api/admin/stats').then(r => r.json()).catch(() => ({ users: [], exams: [], results: [], lessonNotes: [], lessonPlans: [], questionSets: [] })),
-        ]);
-        const user = await fetch('/api/auth/session').then(r => r.json()).then(d => d.user);
-        const userId = user?.id || '';
-        teacherData.plans = (statsRes.lessonPlans || []).filter(p => p.teacherId === userId);
-        teacherData.notes = (statsRes.lessonNotes || []).filter(n => n.teacherId === userId);
-        teacherData.exams = (statsRes.exams || []).filter(e => e.creatorId === userId);
-        teacherData.results = (statsRes.results || []).filter(r => r.studentId);
-        teacherData.questionSets = (statsRes.questionSets || []).filter(q => q.teacherId === userId);
+        const res = await fetch('/api/teacher/init').then(r => r.json());
+
+        // Populate selects
+        document.querySelectorAll('select[id$="-subject"], select[id$="-subject"], #q-subject, #plan-subject, #note-subject').forEach(sel => {
+            sel.innerHTML = '<option value="">Select subject...</option>' + (res.subjects || []).map(s => `<option value="${s}">${s}</option>`).join('');
+        });
+        document.querySelectorAll('#plan-class, #note-class, #q-class').forEach(sel => {
+            sel.innerHTML = (res.classes || []).map(c => `<option value="${c}">${c}</option>`).join('');
+        });
+        document.querySelectorAll('#plan-term, #note-term, #q-term').forEach(sel => {
+            sel.innerHTML = (res.terms || []).map(t => `<option value="${t}">${t}</option>`).join('');
+        });
+        document.querySelectorAll('#plan-week, #note-week, #q-week').forEach(sel => {
+            sel.innerHTML = (res.weeks || []).map(w => `<option value="${w}">Week ${w}</option>`).join('');
+        });
+
+        // Populate data
+        teacherData.plans = res.plans || [];
+        teacherData.notes = res.notes || [];
+        teacherData.exams = res.exams || [];
+        teacherData.results = res.results || [];
+        teacherData.questionSets = res.questionSets || [];
+
         renderPlans();
         renderNotes();
         renderExams();
@@ -762,7 +745,7 @@ async function loadTeacherData() {
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('content').classList.remove('hidden');
     } catch(e) {
-        document.getElementById('loading').innerHTML = '<p class="text-sm text-red-600 font-medium">Failed to load. <button onclick="loadTeacherData()" class="underline cursor-pointer">Retry</button></p>';
+        document.getElementById('loading').innerHTML = '<p class="text-sm text-red-600 font-medium">Failed to load. <button onclick="initTeacherDashboard()" class="underline cursor-pointer">Retry</button></p>';
     }
 }
 
@@ -790,7 +773,7 @@ document.getElementById('lesson-plan-form')?.addEventListener('submit', async fu
         if (data.success) {
             currentPlanId = data.planId;
             displayLessonPlan(data.plan);
-            loadTeacherData();
+            initTeacherDashboard();
         } else {
             alert(data.error || 'Generation failed.');
         }
@@ -926,7 +909,7 @@ function deletePlan() {
             if (data.success) {
                 currentPlanId = null;
                 document.getElementById('plan-preview').classList.add('hidden');
-                loadTeacherData();
+                initTeacherDashboard();
             } else { alert('Delete failed.'); }
         })
         .catch(() => alert('Network error.'));
@@ -968,7 +951,7 @@ document.getElementById('lesson-note-form')?.addEventListener('submit', async fu
             currentNoteId = data.noteId;
             currentNote = data.note;
             displayLessonNote(data.note);
-            loadTeacherData();
+            initTeacherDashboard();
         } else { alert(data.error || 'Generation failed.'); }
     } catch(e) { alert('Network error.'); }
     finally { btn.disabled = false; btn.textContent = 'Generate Lesson Note'; }
@@ -1057,7 +1040,7 @@ async function deleteNote() {
         if (data.success) {
             currentNoteId = null;
             document.getElementById('note-preview').classList.add('hidden');
-            loadTeacherData();
+            initTeacherDashboard();
         } else { alert('Delete failed.'); }
     } catch(e) { alert('Network error.'); }
 }
@@ -1199,7 +1182,7 @@ async function saveQuestions() {
         if (data.success) {
             currentQsId = data.questionSetId;
             document.getElementById('q-save-msg').textContent = 'Questions saved! You can now convert to CBT.';
-            loadTeacherData();
+            initTeacherDashboard();
         } else { alert(data.error || 'Save failed.'); }
     } catch(e) { alert('Network error.'); }
 }
@@ -1229,7 +1212,7 @@ async function convertToCBT() {
         const data = await res.json();
         if (data.success) {
             alert('Exam created! ' + data.message);
-            loadTeacherData();
+            initTeacherDashboard();
             switchTab('cbt-engine');
         } else { alert(data.error || 'Conversion failed.'); }
     } catch(e) { alert('Network error.'); }
@@ -1396,7 +1379,7 @@ async function publishExam(id) {
     try {
         const res = await fetch('/api/exams/' + id + '/publish', { method: 'POST', headers: { 'Accept': 'application/json' } });
         const data = await res.json();
-        if (data.success) loadTeacherData();
+        if (data.success) initTeacherDashboard();
     } catch(e) {}
 }
 
@@ -1409,7 +1392,7 @@ async function deleteExam(id) {
     try {
         const res = await fetch('/api/exams/' + id, { method: 'DELETE', headers: { 'Accept': 'application/json' } });
         const data = await res.json();
-        if (data.success) loadTeacherData();
+        if (data.success) initTeacherDashboard();
     } catch(e) {}
 }
 
@@ -1435,7 +1418,6 @@ function renderResults() {
 
 // ====== CSV IMPORT ======
 let csvFile = null, csvPreviewData = null, csvPage = 1, csvPageSize = 25;
-let csvPreviewData = null;
 
 function openCsvImport() {
     document.getElementById('csv-import-modal').classList.remove('hidden');
@@ -1756,7 +1738,7 @@ function showCsvResult(data) {
     }
 
     // Refresh exam list and switch to CBT tab so user sees imported questions
-    loadTeacherData().then(() => {
+    initTeacherDashboard().then(() => {
         if (data.imported > 0) {
             switchTab('exams');
         }
@@ -1835,7 +1817,7 @@ async function saveExamSettings() {
             document.getElementById('exam-settings-status').className = 'text-xs font-semibold text-emerald-600 bg-emerald-50 p-3 rounded-lg';
             document.getElementById('exam-settings-status').textContent = 'Settings saved successfully!';
             document.getElementById('exam-settings-status').classList.remove('hidden');
-            loadTeacherData();
+            initTeacherDashboard();
         } else {
             alert('Failed to save settings.');
         }
@@ -1858,7 +1840,7 @@ function switchTab(tab) {
 }
 
 // ====== INIT ======
-loadCurriculumSelects();
-loadTeacherData();
+
+initTeacherDashboard();
 </script>
 @endsection
