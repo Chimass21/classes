@@ -324,7 +324,8 @@ class AIController extends Controller
             $prompt = $this->buildQuestionsPrompt(
                 $data['subject'], $data['topic'], $data['count'],
                 $data['class'] ?? 'SS1', $data['term'] ?? 'First Term',
-                $data['week'] ?? 1, $data['includeTheory'] ?? false, $lessonNoteContent
+                $data['week'] ?? 1, $data['includeTheory'] ?? false, $lessonNoteContent,
+                $data['subTopic'] ?? ''
             );
 
             Log::info('AI Questions Request', [
@@ -851,10 +852,10 @@ STRICT RULES:
 PROMPT;
     }
 
-    protected function buildQuestionsPrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent): string
+    protected function buildQuestionsPrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic = ''): string
     {
         if ($lessonNoteContent) {
-            return $this->buildQuestionsFromNotePrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent);
+            return $this->buildQuestionsFromNotePrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic);
         }
 
         $theoryPart = $includeTheory ? '
@@ -868,86 +869,101 @@ PROMPT;
     {"question": "Question with parts a, b, c", "parts": {"a": "Part a", "b": "Part b", "c": "Part c"}}
   ]' : '';
 
+        $subtopicLine = $subTopic ? "\nSUB-TOPIC (must be strictly followed): \"{$subTopic}\". Every question MUST relate specifically to this sub-topic within \"{$topic}\". Do NOT write about other sub-topics or the general topic area." : '';
+
         return <<<PROMPT
 You are a Nigerian examination expert generating questions for the Nigerian {$subject} curriculum (NERDC/UBEC/WASSCE/NECO/JAMB).
 
-Your task: Generate {$count} UNIQUE objective (multiple-choice) questions{$theoryPart} about "{$topic}" in {$subject} for {$class} ({$term}, Week {$week}).
+Your task: Generate {$count} UNIQUE objective (multiple-choice) questions{$theoryPart} about "{$topic}" in {$subject} for {$class} level ({$term}).
 
-STEP 1 — THINK ABOUT THE TOPIC SCOPE
-Before writing any questions, think carefully about what "{$topic}" means in {$subject}. Consider its:
-- Definition and key concepts
-- Types, classifications, or categories
-- Properties, characteristics, or features
-- Causes, effects, or applications
-- Related formulas, laws, or principles
-- Real-world examples in Nigeria
+CRITICAL — CLASS LEVEL: This is a {$class} class. Match the difficulty, depth, and scope to what {$class} students are expected to know according to the Nigerian curriculum.
+{$subtopicLine}
 
-Use ALL of these aspects to create diverse questions that cover the full scope of "{$topic}".
+STEP 1 — THINK ABOUT THE SUBJECT & TOPIC SCOPE
+The subject is "{$subject}". The topic is "{$topic}". Before writing any questions, think carefully about what "{$topic}" specifically means WITHIN the subject of {$subject}. 
 
-STEP 2 — STRICT TOPIC ENFORCEMENT
+- WRONG: Writing a question about atoms when the subject is Biology and the topic is "Cells". Atoms belong to Chemistry, not Biology.
+- WRONG: Writing about "Parts of Speech" when the subject is Literature and the topic is "Plot". 
+- WRONG: Writing about general Chemistry concepts when the topic is specifically "Flame" in Chemistry.
+- CORRECT: Every question MUST test a concept that belongs to "{$topic}" WITHIN "{$subject}".
+
+Consider its:
+- Definition and key concepts specific to {$subject}
+- Types, classifications, or categories within {$subject}
+- Properties, characteristics, or features in {$subject} context
+- Causes, effects, or applications in {$subject}
+- Related formulas, laws, or principles in {$subject}
+- Real-world examples relevant to Nigeria
+
+Use ALL of these aspects to create diverse questions that cover the full scope of "{$topic}" in {$subject}.
+
+STEP 2 — STRICT SUBJECT & TOPIC ENFORCEMENT
 This is the MOST IMPORTANT rule. FAILURE means your response is rejected.
 
-The topic is "{$topic}" in {$subject}. You MUST obey ALL of these:
-- EVERY question's text (the stem) MUST contain the word "{$topic}" or a direct synonym/keyword from it
-- EVERY question MUST test knowledge about "{$topic}" — not about a different topic
-- If "{$topic}" is a subtopic (e.g., "Flame" in Chemistry), DO NOT write questions about the parent subject area ("Chemistry")
-- If you don't know enough about "{$topic}" to write {$count} quality questions, write what you do know — do NOT invent questions about other topics
-- ZERO questions about unrelated topics — this means NO questions about atoms, molecules, chemical bonding, etc. when the topic is "Flame"
+You MUST obey ALL of these:
+- The subject is "{$subject}". EVERY question MUST be about {$subject} content, NOT about another subject.
+- The topic is "{$topic}". EVERY question's text (the stem) MUST contain the word "{$topic}" or a direct keyword from it
+- EVERY question MUST test knowledge ABOUT "{$topic}" in {$subject} — not about a different topic within {$subject}
+- If a sub-topic is given, write ONLY about that sub-topic
+- If you don't know enough about "{$topic}" to write {$count} quality questions, write what you do know — do NOT invent questions about other topics or subjects
+- ZERO questions about unrelated topics
 
 STEP 3 — QUESTION STYLE DIVERSITY (CRITICAL)
 You MUST vary every single question's opening and structure. Do NOT start most questions with What, Why, When, Where, Who, Which, or How. At most 2 out of every 10 questions may begin with a WH word. Use a balanced mix of the following styles:
 
-1. COMMAND / DIRECTIVE — "State the function of {$topic} in the human body." / "List three characteristics of {$topic}." / "Define {$topic}." / "Identify the type of {$topic} shown in the diagram."
-2. COMPLETION / FILL-THE-BLANK — "The process of {$topic} in plants is called ___." (presented as a stem with 4 options to complete it)
-3. SCENARIO / APPLICATION — "A farmer notices that his crops are wilting despite adequate watering. This is most likely due to a problem with {$topic}. What should he check first?" / "If a student mixes solution X and solution Y and observes a colour change to blue, which of the following {$topic} reactions has occurred?"
-4. TRUE / FALSE (presented as MCQ) — "Which of the following statements about {$topic} is correct?" or "Which of the following statements is true regarding {$topic}?"
-5. COMPARISON / CONTRAST — "Which of the following distinguishes {$topic} from a related concept?" / "The main difference between type A and type B of {$topic} is that type A ___."
-6. CLASSIFICATION — "Which of the following is an example of {$topic}?" / "Which of the following belongs to the category of {$topic}?"
-7. CAUSE-EFFECT — "The main reason {$topic} occurs during the rainy season in Nigeria is ___." / "What is the primary effect of {$topic} on the ecosystem?"
-8. FORMULA / CALCULATION — "Using the formula for {$topic}, calculate the value of ___." (stem contains the problem, options are numeric answers)
-9. NEGATIVE / EXCEPTION — "All of the following are examples of {$topic} EXCEPT:" / "Which of the following is NOT a characteristic of {$topic}?"
-10. SEQUENCE / ORDER — "Arrange the following steps of {$topic} in the correct order." / "Which of the following is the correct sequence for {$topic}?"
+1. COMMAND / DIRECTIVE — "State the function of {$topic} in {$subject}." / "Define {$topic}." / "List the main types of {$topic}."
+2. COMPLETION / FILL-THE-BLANK — "The process of {$topic} is called ___."
+3. SCENARIO / APPLICATION — Present a real-world {$subject} scenario related to {$topic}.
+4. TRUE / FALSE — "Which of the following statements about {$topic} is correct?"
+5. COMPARISON / CONTRAST — "Which of the following distinguishes {$topic} from a related concept?"
+6. CLASSIFICATION — "Which of the following is an example of {$topic}?"
+7. CAUSE-EFFECT — "What is the primary effect of {$topic}?"
+8. FORMULA / CALCULATION — For math/science {$topic}, include calculation problems.
+9. NEGATIVE / EXCEPTION — "All of the following are true about {$topic} EXCEPT:"
+10. SEQUENCE / ORDER — "Arrange the following steps of {$topic} in the correct order."
 
-For every set of 10 questions, aim to cover at least 6 different styles from the list above.
-If the subject is Mathematics or a calculation-based science, include at least 2-3 problem-solving/calculation questions.
-If the subject is a language or arts, include more application/scenario and classification questions.
+For every set of 10 questions, aim to cover at least 6 different styles.
+If {$subject} is Mathematics or a calculation-based science, include at least 2-3 problem-solving questions.
+If {$subject} is a language or arts, include more application and classification questions.
 
 STEP 4 — WRITE THE QUESTIONS
 For each question:
-1. Pick one specific aspect of "{$topic}" to test
-2. Choose a question style from the list above that best suits that aspect
-3. Write a clear question stem using that style — NEVER default to a WH question
-4. Write 4 distinct options (A, B, C, D) — one correct, three wrong but plausible
-5. Randomize which letter has the correct answer (aim for ~25% A, 25% B, 25% C, 25% D across all questions)
-6. NEVER repeat the same question or answer concept
+1. Confirm it is 100% about "{$topic}" in "{$subject}" for {$class} level
+2. Pick one specific aspect of "{$topic}" to test
+3. Choose a question style from the list above that best suits that aspect
+4. Write a clear question stem using that style
+5. Write 4 distinct options (A, B, C, D) — one correct, three wrong but plausible
+6. Randomize which letter has the correct answer (aim for ~25% A, 25% B, 25% C, 25% D)
+7. NEVER repeat the same question or answer concept
 
 STEP 5 — SELF-VERIFICATION
 After writing all {$count} questions, check EVERY SINGLE ONE:
+- Is this question about "{$subject}"? If NO, delete it.
 - Does the question stem contain "{$topic}" keyword? If NO, rewrite it.
-- Is this question about "{$topic}" and NOT about some other topic? If NO, delete and replace it.
-- Does this question start with What, Why, When, Where, Who, Which, or How? If YES, count it. At most 2 per 10 questions may be WH questions. Rewrite any excess WH questions into a different style.
-- Are all 4 options unique? If NO, fix them.
-- Is exactly one option correct and the other three wrong? If NO, fix.
-- Did I use at least 6 different styles across every 10 questions? If NO, rewrite some to add variety.
+- Is this question about "{$topic}" and NOT about a different topic? If NO, delete and replace it.
+- Is this appropriate for {$class} level? If NO, adjust difficulty.
+- Does this question start with What, Why, When, Where, Who, Which, or How? If YES, count it. At most 2 per 10 may be WH questions.
+- Are all 4 options unique? If NO, fix.
+- Is exactly one option correct? If NO, fix.
 
 Return ONLY valid JSON in this exact format (no text before or after):
 {
   "objectives": [
     {
       "id": 1,
-      "question": "Complete the following statement about {$topic}:",
-      "A": "First unique option",
-      "B": "Second unique option",
-      "C": "Third unique option",
-      "D": "Fourth unique option",
-      "answer": "C"
+      "question": "Question stem about {$topic}:",
+      "A": "Option A",
+      "B": "Option B",
+      "C": "Option C",
+      "D": "Option D",
+      "answer": "A"
     }
   ]{$theoryPart}
 }
 PROMPT;
     }
 
-    protected function buildQuestionsFromNotePrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent): string
+    protected function buildQuestionsFromNotePrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic = ''): string
     {
         $theoryPart = $includeTheory ? '
   "theoryQuestions": [
@@ -985,8 +1001,19 @@ PROMPT;
         return <<<PROMPT
 You are a Nigerian examination expert. Your task is to generate {$count} objective (multiple-choice) questions based STRICTLY on the lesson note provided below for {$subject} ({$class}, {$term}, Week {$week}).
 
-CRITICAL INSTRUCTION — READ CAREFULLY:
-"Generate objective questions strictly from the lesson note provided below. Do not use outside knowledge or information that is not contained in the lesson note. Every question and answer must be supported directly by the lesson note."
+SUBJECT: {$subject}
+TOPIC: {$topic}
+CLASS: {$class}
+TERM: {$term}
+WEEK: {$week}
+
+CRITICAL: The subject is {$subject}. The topic is {$topic}. The class level is {$class}. Every question must be:
+- About {$subject} (not another subject)
+- About {$topic} specifically (not another topic in {$subject})
+- Appropriate for {$class} level difficulty
+- Based strictly on the lesson note content below
+
+Do NOT write questions about general knowledge, other subjects, other topics within {$subject}, or anything not covered in the lesson note.
 
 LESSON NOTE CONTENT:
 {$extract}
@@ -1223,8 +1250,10 @@ PROMPT;
             $count = $data['count'];
             $class = $data['class'] ?? 'SS1';
 
-            $simplePrompt = "You are a Nigerian exam expert. Generate {$count} multiple-choice questions STRICTLY about \"{$topic}\" in {$subject} for {$class} level.\n\n"
-                . "CRITICAL: EVERY question stem MUST contain the word \"{$topic}\". Questions about any other topic are FORBIDDEN.\n\n"
+            $subtopic = $data['subTopic'] ?? '';
+            $subtopicLine = $subTopic ? " Sub-topic to focus on: \"{$subTopic}\"." : '';
+            $simplePrompt = "You are a Nigerian exam expert for {$subject} ({$class} level). Generate {$count} multiple-choice questions STRICTLY about \"{$topic}\" in {$subject} for {$class} level.{$subtopicLine}\n\n"
+                . "CRITICAL: The subject is {$subject}. EVERY question MUST be about {$subject} content. The topic is \"{$topic}\". EVERY question stem MUST contain the word \"{$topic}\". Questions about any other subject or topic are FORBIDDEN.\n\n"
                 . "QUESTION STYLE: Do NOT start questions with What, Why, When, Where, Who, Which, or How. Instead, vary every question's opening. Use these styles:\n"
                 . "  - Completion: \"The process of {$topic} is called ___\" (stem + options to complete)\n"
                 . "  - Directive: \"State the main function of {$topic}.\" / \"Define {$topic}.\"\n"
