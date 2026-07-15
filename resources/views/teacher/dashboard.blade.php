@@ -554,6 +554,32 @@
                                     <div id="csv-error-list" class="text-xs text-red-700 space-y-1 max-h-32 overflow-y-auto"></div>
                                 </div>
 
+                                <div>
+                                    <label class="text-xs font-semibold text-slate-600 block mb-2">Duplicate Handling</label>
+                                    <div class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
+                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 transition text-xs sm:text-sm flex-1 min-w-0">
+                                            <input type="radio" name="duplicate_handling" value="import_all" checked class="accent-emerald-600 shrink-0">
+                                            <div class="min-w-0"><span class="font-medium text-slate-800">Import All</span><p class="text-xs text-slate-500 hidden sm:block">Import everything including duplicates</p></div>
+                                        </label>
+                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 transition text-xs sm:text-sm flex-1 min-w-0">
+                                            <input type="radio" name="duplicate_handling" value="skip" class="accent-amber-600 shrink-0">
+                                            <div class="min-w-0"><span class="font-medium text-slate-800">Skip Duplicates</span><p class="text-xs text-slate-500 hidden sm:block">Skip questions that already exist</p></div>
+                                        </label>
+                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-red-500 has-[:checked]:bg-red-50 transition text-xs sm:text-sm flex-1 min-w-0">
+                                            <input type="radio" name="duplicate_handling" value="replace" class="accent-red-600 shrink-0">
+                                            <div class="min-w-0"><span class="font-medium text-slate-800">Replace Existing</span><p class="text-xs text-slate-500 hidden sm:block">Update matching questions</p></div>
+                                        </label>
+                                    </div>
+                                </div>
+
+                                <div id="csv-step-2-actions" class="flex items-center justify-between gap-3 flex-wrap">
+                                    <button onclick="csvGoBack(1)" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Back</button>
+                                    <div class="flex items-center gap-3">
+                                        <span id="csv-import-progress" class="hidden px-4 py-2 text-sm text-emerald-700 font-semibold"><span class="animate-spin inline-block w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full mr-2 align-middle"></span>Importing...</span>
+                                        <button id="csv-import-btn" onclick="confirmCsvImport()" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition cursor-pointer">Import Questions</button>
+                                    </div>
+                                </div>
+
                                 <div class="border border-slate-200 rounded-lg overflow-hidden bg-white">
                                     <div class="overflow-x-auto">
                                         <table class="w-full text-xs">
@@ -589,33 +615,6 @@
                                         </div>
                                     </div>
                                     <div id="csv-preview-more" class="hidden p-3 text-center text-xs text-slate-400 border-t border-slate-200"></div>
-                                </div>
-
-                                <div>
-                                    <label class="text-xs font-semibold text-slate-600 block mb-2">Duplicate Handling</label>
-                                    <div class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
-                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 transition text-xs sm:text-sm flex-1 min-w-0">
-                                            <input type="radio" name="duplicate_handling" value="import_all" checked class="accent-emerald-600 shrink-0">
-                                            <div class="min-w-0"><span class="font-medium text-slate-800">Import All</span><p class="text-xs text-slate-500 hidden sm:block">Import everything including duplicates</p></div>
-                                        </label>
-                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 transition text-xs sm:text-sm flex-1 min-w-0">
-                                            <input type="radio" name="duplicate_handling" value="skip" class="accent-amber-600 shrink-0">
-                                            <div class="min-w-0"><span class="font-medium text-slate-800">Skip Duplicates</span><p class="text-xs text-slate-500 hidden sm:block">Skip questions that already exist</p></div>
-                                        </label>
-                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-red-500 has-[:checked]:bg-red-50 transition text-xs sm:text-sm flex-1 min-w-0">
-                                            <input type="radio" name="duplicate_handling" value="replace" class="accent-red-600 shrink-0">
-                                            <div class="min-w-0"><span class="font-medium text-slate-800">Replace Existing</span><p class="text-xs text-slate-500 hidden sm:block">Update matching questions</p></div>
-                                        </label>
-                                    </div>
-                                </div>
-
-                                {{-- Import buttons inside scrollable content --}}
-                                <div id="csv-step-2-actions" class="hidden bg-white border-t border-slate-200 px-0 pt-4 flex items-center justify-between">
-                                    <button onclick="csvGoBack(1)" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Back</button>
-                                    <div class="flex items-center gap-3">
-                                        <span id="csv-import-progress" class="hidden px-4 py-2 text-sm text-emerald-700 font-semibold"><span class="animate-spin inline-block w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full mr-2 align-middle"></span>Importing...</span>
-                                        <button id="csv-import-btn" onclick="confirmCsvImport()" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition cursor-pointer">Import Questions</button>
-                                    </div>
                                 </div>
                             </div>
 
