@@ -334,19 +334,10 @@ class AIController extends Controller
                 'includeTheory' => $data['includeTheory'] ?? false,
                 'hasLessonNote' => !empty($lessonNoteContent),
                 'prompt_length' => strlen($prompt),
+                'note_content_length' => strlen($lessonNoteContent),
             ]);
 
-            // Log request data (without full noteContent to avoid log bloat)
-            $logData = $data;
-            if (!empty($logData['noteContent'])) {
-                $logData['noteContent'] = 'present(length=' . strlen($logData['noteContent']) . ')';
-            }
-            Log::info('AI Questions Request data', $logData);
-
-            // Start without json_mode for lesson note prompts to avoid any
-            // response_format compatibility issues with DeepSeek
-            $initialJsonMode = empty($lessonNoteContent);
-            $response = $this->ai->generate($prompt, $initialJsonMode);
+            $response = $this->ai->generate($prompt, true);
 
             Log::info('AI Questions Response', [
                 'response_length' => strlen($response),

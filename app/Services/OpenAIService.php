@@ -231,6 +231,14 @@ class OpenAIService
             $payload['response_format'] = ['type' => 'json_object'];
         }
 
+        // Harden system prompt for json_object mode — some providers (OpenAI,
+        // DeepSeek, Cerebras) require the word "JSON" in the messages when
+        // response_format: json_object is set, otherwise the model may output
+        // endless whitespace or refuse.
+        if ($jsonMode && !str_contains(self::SYSTEM_PROMPT, 'JSON')) {
+            $payload['messages'][0]['content'] = self::SYSTEM_PROMPT . "\n\nYou MUST respond ONLY with valid JSON. No explanations, no markdown, no text outside the JSON.";
+        }
+
         return $payload;
     }
 
