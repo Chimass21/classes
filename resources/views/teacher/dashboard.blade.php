@@ -463,7 +463,7 @@
                 </div>
 
                 {{-- === CSV Import Modal === --}}
-                <div id="csv-import-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+                <div id="csv-import-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-start justify-center pt-4 pb-4 sm:pt-6 sm:pb-6 overflow-y-auto">
                     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col max-h-[90vh]">
                         {{-- Header --}}
                         <div class="shrink-0 rounded-t-2xl border-b border-slate-200 px-6 py-4 flex items-center justify-between">
@@ -608,6 +608,15 @@
                                         </label>
                                     </div>
                                 </div>
+
+                                {{-- Import buttons inside scrollable content --}}
+                                <div id="csv-step-2-actions" class="hidden bg-white border-t border-slate-200 px-0 pt-4 flex items-center justify-between">
+                                    <button onclick="csvGoBack(1)" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Back</button>
+                                    <div class="flex items-center gap-3">
+                                        <span id="csv-import-progress" class="hidden px-4 py-2 text-sm text-emerald-700 font-semibold"><span class="animate-spin inline-block w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full mr-2 align-middle"></span>Importing...</span>
+                                        <button id="csv-import-btn" onclick="confirmCsvImport()" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition cursor-pointer">Import Questions</button>
+                                    </div>
+                                </div>
                             </div>
 
                             {{-- Step 3: Result --}}
@@ -629,14 +638,7 @@
                             </div>
                         </div>
 
-                        {{-- Footer with Import button (always visible during step 2) --}}
-                        <div id="csv-step-2-footer" class="hidden shrink-0 border-t border-slate-200 bg-white px-6 py-4 flex items-center justify-between rounded-b-2xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] relative z-10">
-                            <button onclick="csvGoBack(1)" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Back</button>
-                            <div class="flex items-center gap-3">
-                                <span id="csv-import-progress" class="hidden px-4 py-2 text-sm text-emerald-700 font-semibold"><span class="animate-spin inline-block w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full mr-2 align-middle"></span>Importing...</span>
-                                <button id="csv-import-btn" onclick="confirmCsvImport()" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition cursor-pointer">Import Questions</button>
-                            </div>
-                        </div>
+
                     </div>
                 </div>
 
@@ -1425,7 +1427,7 @@ function openCsvImport() {
     document.getElementById('csv-step-1').classList.remove('hidden');
     document.getElementById('csv-step-2').classList.add('hidden');
     document.getElementById('csv-step-3').classList.add('hidden');
-    document.getElementById('csv-step-2-footer').classList.add('hidden');
+    document.getElementById('csv-step-2-actions').classList.add('hidden');
     csvFile = null;
     csvPreviewData = null;
     document.getElementById('csv-file-input').value = '';
@@ -1520,7 +1522,7 @@ async function previewCsvImport() {
 function showCsvPreview(data) {
     document.getElementById('csv-step-1').classList.add('hidden');
     document.getElementById('csv-step-2').classList.remove('hidden');
-    document.getElementById('csv-step-2-footer').classList.remove('hidden');
+    document.getElementById('csv-step-2-actions').classList.remove('hidden');
     document.getElementById('csv-import-step-label').textContent = 'Step 2 of 3: Review & Confirm';
 
     document.getElementById('csv-preview-stats').innerHTML = `
@@ -1641,7 +1643,7 @@ function csvGoBack(step) {
     document.getElementById('csv-step-1').classList.toggle('hidden', step !== 1);
     document.getElementById('csv-step-2').classList.toggle('hidden', step !== 2);
     document.getElementById('csv-step-3').classList.toggle('hidden', step !== 3);
-    document.getElementById('csv-step-2-footer').classList.toggle('hidden', step !== 2);
+    document.getElementById('csv-step-2-actions').classList.toggle('hidden', step !== 2);
 }
 
 async function confirmCsvImport() {
@@ -1701,7 +1703,7 @@ async function confirmCsvImport() {
 
 function showCsvResult(data) {
     document.getElementById('csv-step-2').classList.add('hidden');
-    document.getElementById('csv-step-2-footer').classList.add('hidden');
+    document.getElementById('csv-step-2-actions').classList.add('hidden');
     document.getElementById('csv-step-3').classList.remove('hidden');
     document.getElementById('csv-import-step-label').textContent = 'Step 3 of 3: Complete';
 
