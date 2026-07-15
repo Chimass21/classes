@@ -545,46 +545,66 @@
                             </div>
 
                             {{-- Step 2: Preview --}}
-                            <div id="csv-step-2" class="hidden p-6 space-y-4">
-                                <div id="csv-preview-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-3"></div>
-                                <div id="csv-preview-errors" class="hidden p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <div id="csv-step-2" class="hidden p-4 sm:p-6 space-y-3 sm:space-y-4">
+                                <div id="csv-preview-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3"></div>
+
+                                <div id="csv-preview-errors" class="hidden p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
+                                    <button onclick="this.parentElement.classList.add('hidden')" class="float-right text-red-400 hover:text-red-600 cursor-pointer p-1">&times;</button>
                                     <h4 class="text-sm font-bold text-red-800 mb-2" id="csv-error-title">Errors Found</h4>
-                                    <div id="csv-error-list" class="text-xs text-red-700 space-y-1 max-h-40 overflow-y-auto"></div>
+                                    <div id="csv-error-list" class="text-xs text-red-700 space-y-1 max-h-32 overflow-y-auto"></div>
                                 </div>
-                                <div class="border border-slate-200 rounded-lg overflow-hidden">
+
+                                <div class="border border-slate-200 rounded-lg overflow-hidden bg-white">
                                     <div class="overflow-x-auto">
                                         <table class="w-full text-xs">
-                                            <thead class="bg-slate-50">
+                                            <thead class="bg-slate-100 sticky top-0">
                                                 <tr>
-                                                    <th class="px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">#</th>
-                                                    <th class="px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">Question</th>
-                                                    <th class="px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">A</th>
-                                                    <th class="px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">B</th>
-                                                    <th class="px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">C</th>
-                                                    <th class="px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">D</th>
-                                                    <th class="px-3 py-2 text-center font-semibold text-slate-600 whitespace-nowrap">Answer</th>
-                                                    <th class="px-3 py-2 text-center font-semibold text-slate-600 whitespace-nowrap">Status</th>
+                                                    <th class="px-2 sm:px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">#</th>
+                                                    <th class="px-2 sm:px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">Question</th>
+                                                    <th class="px-2 sm:px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">A</th>
+                                                    <th class="px-2 sm:px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">B</th>
+                                                    <th class="px-2 sm:px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">C</th>
+                                                    <th class="px-2 sm:px-3 py-2 text-left font-semibold text-slate-600 whitespace-nowrap">D</th>
+                                                    <th class="px-2 sm:px-3 py-2 text-center font-semibold text-slate-600 whitespace-nowrap">Answer</th>
+                                                    <th class="px-2 sm:px-3 py-2 text-center font-semibold text-slate-600 whitespace-nowrap">Status</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="csv-preview-table"></tbody>
                                         </table>
                                     </div>
+                                    <div id="csv-pagination" class="hidden flex items-center justify-between px-3 sm:px-4 py-3 border-t border-slate-200 bg-slate-50 text-xs">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-slate-500" id="csv-page-info">Page 1 of 1</span>
+                                            <select id="csv-page-size" onchange="setCsvPageSize(+this.value)" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:border-emerald-500">
+                                                <option value="10">10 / page</option>
+                                                <option value="25" selected>25 / page</option>
+                                                <option value="50">50 / page</option>
+                                                <option value="100">100 / page</option>
+                                            </select>
+                                        </div>
+                                        <div class="flex items-center gap-1">
+                                            <button onclick="goCsvPage(-1)" id="csv-prev-page" class="px-2 py-1 border border-slate-300 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer" disabled>&larr; Prev</button>
+                                            <span class="px-2 text-slate-600 font-medium" id="csv-page-num">1</span>
+                                            <button onclick="goCsvPage(1)" id="csv-next-page" class="px-2 py-1 border border-slate-300 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">Next &rarr;</button>
+                                        </div>
+                                    </div>
                                     <div id="csv-preview-more" class="hidden p-3 text-center text-xs text-slate-400 border-t border-slate-200"></div>
                                 </div>
+
                                 <div>
                                     <label class="text-xs font-semibold text-slate-600 block mb-2">Duplicate Handling</label>
                                     <div class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
-                                        <label class="flex items-center gap-2 p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 transition">
+                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 transition text-xs sm:text-sm flex-1 min-w-0">
                                             <input type="radio" name="duplicate_handling" value="import_all" checked class="accent-emerald-600 shrink-0">
-                                            <div><span class="text-sm font-medium text-slate-800">Import All</span><p class="text-xs text-slate-500">Import everything including duplicates</p></div>
+                                            <div class="min-w-0"><span class="font-medium text-slate-800">Import All</span><p class="text-xs text-slate-500 hidden sm:block">Import everything including duplicates</p></div>
                                         </label>
-                                        <label class="flex items-center gap-2 p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 transition">
+                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 transition text-xs sm:text-sm flex-1 min-w-0">
                                             <input type="radio" name="duplicate_handling" value="skip" class="accent-amber-600 shrink-0">
-                                            <div><span class="text-sm font-medium text-slate-800">Skip Duplicates</span><p class="text-xs text-slate-500">Skip questions that already exist</p></div>
+                                            <div class="min-w-0"><span class="font-medium text-slate-800">Skip Duplicates</span><p class="text-xs text-slate-500 hidden sm:block">Skip questions that already exist</p></div>
                                         </label>
-                                        <label class="flex items-center gap-2 p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-red-500 has-[:checked]:bg-red-50 transition">
+                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-red-500 has-[:checked]:bg-red-50 transition text-xs sm:text-sm flex-1 min-w-0">
                                             <input type="radio" name="duplicate_handling" value="replace" class="accent-red-600 shrink-0">
-                                            <div><span class="text-sm font-medium text-slate-800">Replace Existing</span><p class="text-xs text-slate-500">Update matching questions</p></div>
+                                            <div class="min-w-0"><span class="font-medium text-slate-800">Replace Existing</span><p class="text-xs text-slate-500 hidden sm:block">Update matching questions</p></div>
                                         </label>
                                     </div>
                                 </div>
@@ -1414,7 +1434,7 @@ function renderResults() {
 }
 
 // ====== CSV IMPORT ======
-let csvFile = null;
+let csvFile = null, csvPreviewData = null, csvPage = 1, csvPageSize = 25;
 let csvPreviewData = null;
 
 function openCsvImport() {
@@ -1522,20 +1542,20 @@ function showCsvPreview(data) {
     document.getElementById('csv-import-step-label').textContent = 'Step 2 of 3: Review & Confirm';
 
     document.getElementById('csv-preview-stats').innerHTML = `
-        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
-            <div class="text-xl font-bold text-slate-900">${data.total_rows}</div>
+        <div class="p-2 sm:p-3 bg-slate-50 border border-slate-200 rounded-lg text-center">
+            <div class="text-lg sm:text-xl font-bold text-slate-900">${data.total_rows}</div>
             <div class="text-xs text-slate-500">Total Rows</div>
         </div>
-        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
-            <div class="text-xl font-bold text-emerald-700">${data.valid_rows}</div>
+        <div class="p-2 sm:p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
+            <div class="text-lg sm:text-xl font-bold text-emerald-700">${data.valid_rows}</div>
             <div class="text-xs text-emerald-600">Valid</div>
         </div>
-        <div class="p-3 ${data.error_rows > 0 ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'} border rounded-lg text-center">
-            <div class="text-xl font-bold ${data.error_rows > 0 ? 'text-red-700' : 'text-slate-500'}">${data.error_rows}</div>
+        <div class="p-2 sm:p-3 ${data.error_rows > 0 ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'} border rounded-lg text-center">
+            <div class="text-lg sm:text-xl font-bold ${data.error_rows > 0 ? 'text-red-700' : 'text-slate-500'}">${data.error_rows}</div>
             <div class="text-xs ${data.error_rows > 0 ? 'text-red-600' : 'text-slate-500'}">Errors</div>
         </div>
-        <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-center">
-            <div class="text-xl font-bold text-amber-700">${data.duplicate_count}</div>
+        <div class="p-2 sm:p-3 bg-amber-50 border border-amber-200 rounded-lg text-center">
+            <div class="text-lg sm:text-xl font-bold text-amber-700">${data.duplicate_count}</div>
             <div class="text-xs text-amber-600">Duplicates Found</div>
         </div>
     `;
@@ -1550,22 +1570,44 @@ function showCsvPreview(data) {
         document.getElementById('csv-preview-errors').classList.add('hidden');
     }
 
-    const tbody = document.getElementById('csv-preview-table');
+    // Pagination setup
+    csvPage = 1;
+    csvPreviewData = data;
+    renderCsvPreviewPage();
+
+    document.getElementById('csv-import-btn').disabled = data.valid_rows === 0;
+    document.getElementById('csv-import-btn').className = data.valid_rows === 0
+        ? 'px-6 py-2 bg-slate-300 text-white text-sm font-bold rounded-lg cursor-not-allowed'
+        : 'px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg cursor-pointer transition';
+}
+
+function renderCsvPreviewPage() {
+    const data = csvPreviewData;
+    if (!data) return;
     const rows = data.rows || [];
-    if (rows.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="8" class="px-3 py-4 text-center text-slate-400">No valid rows to display.</td></tr>';
+    const totalRows = rows.length;
+    const totalPages = Math.max(1, Math.ceil(totalRows / csvPageSize));
+    if (csvPage > totalPages) csvPage = totalPages;
+
+    const start = (csvPage - 1) * csvPageSize;
+    const end = Math.min(start + csvPageSize, totalRows);
+    const pageRows = rows.slice(start, end);
+
+    const tbody = document.getElementById('csv-preview-table');
+    if (pageRows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" class="px-3 py-4 text-center text-slate-400">No rows to display.</td></tr>';
     } else {
-        tbody.innerHTML = rows.map(r => {
-            const question = r.question.length > 50 ? r.question.substring(0, 50) + '...' : r.question;
+        tbody.innerHTML = pageRows.map(r => {
+            const question = r.question.length > 60 ? r.question.substring(0, 60) + '...' : r.question;
             return `<tr class="${r.valid ? '' : 'bg-red-50'} border-b border-slate-100">
-                <td class="px-3 py-2 text-slate-500">${r.row}</td>
-                <td class="px-3 py-2 font-medium text-slate-800 max-w-[200px] truncate" title="${r.question.replace(/"/g, '&quot;')}">${question || '-'}</td>
-                <td class="px-3 py-2 text-slate-600">${r.optionA || '-'}</td>
-                <td class="px-3 py-2 text-slate-600">${r.optionB || '-'}</td>
-                <td class="px-3 py-2 text-slate-600">${r.optionC || '-'}</td>
-                <td class="px-3 py-2 text-slate-600">${r.optionD || '-'}</td>
-                <td class="px-3 py-2 text-center font-bold ${r.valid ? 'text-emerald-700' : 'text-red-500'}">${r.correctAnswer || '-'}</td>
-                <td class="px-3 py-2 text-center">${r.valid
+                <td class="px-2 sm:px-3 py-2 text-slate-500">${r.row}</td>
+                <td class="px-2 sm:px-3 py-2 font-medium text-slate-800 max-w-[180px] sm:max-w-[280px] truncate" title="${r.question.replace(/"/g, '&quot;')}">${question || '-'}</td>
+                <td class="px-2 sm:px-3 py-2 text-slate-600">${r.optionA || '-'}</td>
+                <td class="px-2 sm:px-3 py-2 text-slate-600">${r.optionB || '-'}</td>
+                <td class="px-2 sm:px-3 py-2 text-slate-600">${r.optionC || '-'}</td>
+                <td class="px-2 sm:px-3 py-2 text-slate-600">${r.optionD || '-'}</td>
+                <td class="px-2 sm:px-3 py-2 text-center font-bold ${r.valid ? 'text-emerald-700' : 'text-red-500'}">${r.correctAnswer || '-'}</td>
+                <td class="px-2 sm:px-3 py-2 text-center">${r.valid
                     ? '<span class="text-emerald-600 text-xs font-semibold">OK</span>'
                     : '<span class="text-red-600 text-xs font-semibold" title="' + (r.errors || []).join('; ') + '">Error</span>'
                 }</td>
@@ -1573,18 +1615,43 @@ function showCsvPreview(data) {
         }).join('');
     }
 
+    // Update pagination controls
+    const pagDiv = document.getElementById('csv-pagination');
     const moreDiv = document.getElementById('csv-preview-more');
-    if (data.has_more) {
-        moreDiv.classList.remove('hidden');
-        moreDiv.textContent = 'Showing first 100 of ' + data.total_all_rows + ' rows.';
-    } else {
+
+    if (totalPages > 1 || data.has_more) {
+        pagDiv.classList.remove('hidden');
         moreDiv.classList.add('hidden');
+    } else {
+        pagDiv.classList.add('hidden');
+        if (data.has_more) {
+            moreDiv.classList.remove('hidden');
+            moreDiv.textContent = 'Showing first ' + totalRows + ' of ' + data.total_all_rows + ' rows.';
+        } else {
+            moreDiv.classList.add('hidden');
+        }
     }
 
-    document.getElementById('csv-import-btn').disabled = data.valid_rows === 0;
-    document.getElementById('csv-import-btn').className = data.valid_rows === 0
-        ? 'px-6 py-2 bg-slate-300 text-white text-sm font-bold rounded-lg cursor-not-allowed'
-        : 'px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg cursor-pointer transition';
+    document.getElementById('csv-page-info').textContent = `Page ${csvPage} of ${totalPages} (${totalRows} rows${data.has_more ? ' of ' + data.total_all_rows + ' total' : ''})`;
+    document.getElementById('csv-page-num').textContent = csvPage;
+    document.getElementById('csv-prev-page').disabled = csvPage <= 1;
+    document.getElementById('csv-next-page').disabled = csvPage >= totalPages;
+}
+
+function goCsvPage(delta) {
+    const data = csvPreviewData;
+    if (!data) return;
+    const totalPages = Math.max(1, Math.ceil((data.rows || []).length / csvPageSize));
+    const newPage = Math.max(1, Math.min(totalPages, csvPage + delta));
+    if (newPage === csvPage) return;
+    csvPage = newPage;
+    renderCsvPreviewPage();
+}
+
+function setCsvPageSize(size) {
+    csvPageSize = size;
+    csvPage = 1;
+    renderCsvPreviewPage();
 }
 
 function csvGoBack(step) {
