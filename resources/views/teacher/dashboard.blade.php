@@ -463,7 +463,7 @@
                 </div>
 
                 {{-- === CSV Import Modal === --}}
-                <div id="csv-import-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-start justify-center pt-4 pb-4 sm:pt-6 sm:pb-6 overflow-y-auto">
+                <div id="csv-import-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col max-h-[90vh]">
                         {{-- Header --}}
                         <div class="shrink-0 rounded-t-2xl border-b border-slate-200 px-6 py-4 flex items-center justify-between">
