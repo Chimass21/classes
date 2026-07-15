@@ -477,7 +477,7 @@
                         </div>
 
                         {{-- Scrollable body --}}
-                        <div class="overflow-y-auto flex-1">
+                        <div class="overflow-y-auto flex-1 min-h-0">
                             {{-- Step 1: Upload --}}
                             <div id="csv-step-1" class="p-6 space-y-4">
                                 <div class="grid grid-cols-2 gap-3">
@@ -610,7 +610,7 @@
                         </div>
 
                         {{-- Footer with Import button (always visible during step 2) --}}
-                        <div id="csv-step-2-footer" class="hidden shrink-0 border-t border-slate-200 bg-white px-6 py-4 flex items-center justify-between rounded-b-2xl">
+                        <div id="csv-step-2-footer" class="hidden shrink-0 border-t border-slate-200 bg-white px-6 py-4 flex items-center justify-between rounded-b-2xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] relative z-10">
                             <button onclick="csvGoBack(1)" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Back</button>
                             <div class="flex items-center gap-3">
                                 <span id="csv-import-progress" class="hidden px-4 py-2 text-sm text-emerald-700 font-semibold"><span class="animate-spin inline-block w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full mr-2 align-middle"></span>Importing...</span>
