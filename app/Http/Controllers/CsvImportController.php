@@ -244,194 +244,317 @@ class CsvImportController extends Controller
             'duplicate_handling' => 'required|in:skip,replace,import_all',
         ]);
 
-        $file = $request->file('file');
-        $handle = fopen($file->getRealPath(), 'r');
-
-        $bom = fread($handle, 3);
-        if ($bom !== "\xEF\xBB\xBF") {
-            rewind($handle);
-        }
-
-        $headerLine = fgetcsv($handle);
-        if (!$headerLine) {
-            fclose($handle);
-            return response()->json(['success' => false, 'error' => 'Invalid CSV file.'], 400);
-        }
-
-        $header = array_map('trim', $headerLine);
-        $headerMap = array_flip($header);
-
-        $user = Session::get('user');
-
-        JsonDb::init();
-        $db = JsonDb::get();
-
-        // Build an indexed set of existing question texts for this subject
-        // O(1) lookup per row instead of scanning all exams each time.
-        $subjectKey = strtolower(trim($request->subject));
-        $existingQuestionIndex = [];
-        $examWithQuestion = []; // question text -> [examId, questionIdx]
-        if ($request->duplicate_handling !== 'import_all') {
-            foreach ($db['exams'] as $exam) {
-                if (strtolower(trim($exam['subject'] ?? '')) !== $subjectKey) continue;
-                foreach ($exam['questions'] as $qIdx => $eq) {
-                    $key = strtolower(trim($eq['question'] ?? ''));
-                    if ($key !== '') {
-                        $existingQuestionIndex[$key] = true;
-                        $examWithQuestion[$key] = ['examId' => $exam['id'], 'questionIndex' => $qIdx];
-                    }
-                }
-            }
-        }
-
-        $imported = [];
-        $skipped = [];
-        $replaced = [];
-        $errors = [];
-        $rowIndex = 0;
-
-        $examTitle = $request->subject . ' ' . $request->class . ' ' . $request->term . ' (' . $request->session . ')';
-        if ($request->topic) {
-            $examTitle .= ' - ' . $request->topic;
-        }
-
-        $optAIdx = $headerMap['Option A'] ?? null;
-        $optBIdx = $headerMap['Option B'] ?? null;
-        $optCIdx = $headerMap['Option C'] ?? null;
-        $optDIdx = $headerMap['Option D'] ?? null;
-        $qIdx = $headerMap['Question'] ?? null;
-        $caIdx = $headerMap['Correct Answer'] ?? null;
-        $explIdx = $headerMap['Explanation'] ?? null;
-        $marksIdx = $headerMap['Marks'] ?? null;
-        $diffIdx = $headerMap['Difficulty'] ?? null;
-        $topicIdx = $headerMap['Topic'] ?? null;
-        $imgIdx = $headerMap['Image URL'] ?? null;
-
-        $handleReplace = $request->duplicate_handling === 'replace';
-
-        while (($line = fgetcsv($handle)) !== false) {
-            $rowIndex++;
-
-            $question = trim($line[$qIdx] ?? '');
-            if ($question === '') continue;
-
-            $correctAnswer = strtoupper(trim($line[$caIdx] ?? ''));
-            if (!in_array($correctAnswer, ['A', 'B', 'C', 'D'], true)) {
-                $errors[$rowIndex] = ['Correct Answer must be A, B, C, or D.'];
-                continue;
-            }
-
-            if ($request->duplicate_handling !== 'import_all') {
-                $qKey = strtolower($question);
-                if (isset($existingQuestionIndex[$qKey])) {
-                    if ($request->duplicate_handling === 'skip') {
-                        $skipped[] = $rowIndex;
-                        continue;
-                    }
-                    if ($handleReplace) {
-                        $replaced[] = $rowIndex;
-                        // Swap the existing question in place — no O(n) scan needed
-                        $loc = $examWithQuestion[$qKey];
-                        foreach ($db['exams'] as &$exam) {
-                            if ($exam['id'] === $loc['examId']) {
-                                $exam['questions'][$loc['questionIndex']]['question'] = $question;
-                                $exam['questions'][$loc['questionIndex']]['optionA'] = trim($line[$optAIdx] ?? '');
-                                $exam['questions'][$loc['questionIndex']]['optionB'] = trim($line[$optBIdx] ?? '');
-                                $exam['questions'][$loc['questionIndex']]['optionC'] = $optCIdx !== null ? trim($line[$optCIdx] ?? '') : '';
-                                $exam['questions'][$loc['questionIndex']]['optionD'] = $optDIdx !== null ? trim($line[$optDIdx] ?? '') : '';
-                                $exam['questions'][$loc['questionIndex']]['correctAnswer'] = $correctAnswer;
-                                break;
-                            }
-                        }
-                        unset($exam);
-                        continue;
-                    }
-                } else {
-                    $existingQuestionIndex[$qKey] = true;
-                }
-            }
-
-            $imported[] = [
-                'id' => $rowIndex,
-                'question' => $question,
-                'optionA' => trim($line[$optAIdx] ?? ''),
-                'optionB' => trim($line[$optBIdx] ?? ''),
-                'optionC' => $optCIdx !== null ? trim($line[$optCIdx] ?? '') : '',
-                'optionD' => $optDIdx !== null ? trim($line[$optDIdx] ?? '') : '',
-                'correctAnswer' => $correctAnswer,
-                'explanation' => $explIdx !== null ? trim($line[$explIdx] ?? '') : '',
-                'marks' => ($marksIdx !== null && is_numeric(trim($line[$marksIdx] ?? ''))) ? (int)trim($line[$marksIdx]) : 1,
-                'difficulty' => $diffIdx !== null ? ucfirst(strtolower(trim($line[$diffIdx] ?? ''))) : 'Medium',
-                'topic' => $topicIdx !== null ? (trim($line[$topicIdx] ?: $request->topic ?: 'General')) : ($request->topic ?: 'General'),
-                'imageUrl' => $imgIdx !== null ? trim($line[$imgIdx] ?? '') : '',
-            ];
-        }
-
-        fclose($handle);
-
-        if (!empty($imported)) {
-            $count = count($imported);
-            $examId = 'exam_' . uniqid();
-            $duration = $request->duration ? (int)$request->duration : max(10, min(120, intdiv($count, 2)));
-            $defaultMarks = $request->defaultMarks ? (int)$request->defaultMarks : 1;
-
-            $db['exams'][] = [
-                'id' => $examId,
-                'title' => $examTitle,
-                'subject' => $request->subject,
-                'level' => $request->class,
-                'class' => $request->class,
-                'term' => $request->term,
-                'session' => $request->session,
-                'examType' => $request->exam_type,
-                'topic' => $request->topic ?: 'General',
-                'subTopic' => $request->subTopic ?: '',
-                'duration' => $duration,
-                'defaultMarks' => $defaultMarks,
-                'totalMarks' => $count * $defaultMarks,
-                'instructions' => "Answer all questions. Each question carries {$defaultMarks} mark(s).",
-                'questions' => $imported,
-                'creatorId' => $user['id'] ?? 'unknown',
-                'creatorName' => $user['name'] ?? 'Unknown',
-                'isPublished' => false,
-                'source' => 'csv_import',
-                'createdAt' => now()->toIso8601String(),
-            ];
-        }
-
-        if (!isset($db['importLogs'])) {
-            $db['importLogs'] = [];
-        }
-        $db['importLogs'][] = [
-            'id' => 'imp_' . uniqid(),
-            'userId' => $user['id'] ?? 'unknown',
-            'userName' => $user['name'] ?? 'Unknown',
+        Log::info('CSV import started', [
             'subject' => $request->subject,
             'class' => $request->class,
             'term' => $request->term,
             'session' => $request->session,
-            'imported' => count($imported),
-            'skipped' => count($skipped),
-            'replaced' => count($replaced),
-            'totalRows' => $rowIndex,
-            'date' => now()->toIso8601String(),
-        ];
-
-        // Use fast save — skips SQLite sync (expensive Eloquent operations per row).
-        // The next regular save() will sync.
-        JsonDb::saveWithoutSync($db);
-
-        return response()->json([
-            'success' => true,
-            'imported' => count($imported),
-            'skipped' => count($skipped),
-            'replaced' => count($replaced),
-            'errors' => $errors,
-            'message' => 'Successfully imported ' . count($imported) . ' questions.' .
-                (count($skipped) > 0 ? ' Skipped ' . count($skipped) . ' duplicates.' : '') .
-                (count($replaced) > 0 ? ' Replaced ' . count($replaced) . ' duplicates.' : ''),
-            'examId' => $exam['id'] ?? null,
+            'duplicate_handling' => $request->duplicate_handling,
         ]);
+
+        try {
+            $file = $request->file('file');
+            $realPath = $file->getRealPath();
+            if (!$realPath || !file_exists($realPath)) {
+                Log::error('CSV import failed: uploaded file not found at path');
+                return response()->json(['success' => false, 'error' => 'Uploaded file could not be read.'], 400);
+            }
+
+            $handle = fopen($realPath, 'r');
+            if (!$handle) {
+                Log::error('CSV import failed: unable to open uploaded file');
+                return response()->json(['success' => false, 'error' => 'Unable to open uploaded file.'], 500);
+            }
+
+            $bom = fread($handle, 3);
+            if ($bom !== "\xEF\xBB\xBF") {
+                rewind($handle);
+            }
+
+            $headerLine = fgetcsv($handle);
+            if (!$headerLine) {
+                fclose($handle);
+                Log::error('CSV import failed: empty or invalid CSV file');
+                return response()->json(['success' => false, 'error' => 'Empty or invalid CSV file.'], 400);
+            }
+
+            $header = array_map('trim', $headerLine);
+            $expectedHeaders = ['Question', 'Option A', 'Option B', 'Option C', 'Option D', 'Correct Answer'];
+            $headerMap = array_flip($header);
+
+            $missingHeaders = [];
+            foreach ($expectedHeaders as $h) {
+                if (!isset($headerMap[$h])) {
+                    $missingHeaders[] = $h;
+                }
+            }
+            if (!empty($missingHeaders)) {
+                fclose($handle);
+                Log::error('CSV import failed: missing columns', ['missing' => $missingHeaders]);
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Missing required columns: ' . implode(', ', $missingHeaders) . '. Required: Question, Option A, Option B, Option C, Option D, Correct Answer.',
+                ], 400);
+            }
+
+            $user = Session::get('user');
+
+            JsonDb::init();
+            $db = JsonDb::get();
+
+            if (!isset($db['exams'])) {
+                $db['exams'] = [];
+            }
+
+            // Compute file hash to prevent duplicate import of the same file
+            $fileHash = md5_file($realPath);
+            if (isset($db['importLogs'])) {
+                foreach ($db['importLogs'] as $log) {
+                    if (($log['fileHash'] ?? '') === $fileHash) {
+                        fclose($handle);
+                        Log::warning('CSV import blocked: duplicate file detected', ['fileHash' => $fileHash]);
+                        return response()->json([
+                            'success' => false,
+                            'error' => 'This file has already been imported. Each file can only be imported once to prevent duplicates.',
+                        ], 409);
+                    }
+                }
+            }
+
+            $subjectKey = strtolower(trim($request->subject));
+            $existingQuestionIndex = [];
+            $examWithQuestion = [];
+            if ($request->duplicate_handling !== 'import_all') {
+                foreach ($db['exams'] as $exam) {
+                    if (strtolower(trim($exam['subject'] ?? '')) !== $subjectKey) continue;
+                    foreach ($exam['questions'] as $qIdx => $eq) {
+                        $key = strtolower(trim($eq['question'] ?? ''));
+                        if ($key !== '') {
+                            $existingQuestionIndex[$key] = true;
+                            $examWithQuestion[$key] = ['examId' => $exam['id'], 'questionIndex' => $qIdx];
+                        }
+                    }
+                }
+            }
+
+            $imported = [];
+            $skipped = [];
+            $replaced = [];
+            $errors = [];
+            $rowIndex = 0;
+
+            $examTitle = $request->subject . ' ' . $request->class . ' ' . $request->term . ' (' . $request->session . ')';
+            if ($request->topic) {
+                $examTitle .= ' - ' . $request->topic;
+            }
+
+            $optAIdx = $headerMap['Option A'] ?? null;
+            $optBIdx = $headerMap['Option B'] ?? null;
+            $optCIdx = $headerMap['Option C'] ?? null;
+            $optDIdx = $headerMap['Option D'] ?? null;
+            $qIdx = $headerMap['Question'] ?? null;
+            $caIdx = $headerMap['Correct Answer'] ?? null;
+            $explIdx = $headerMap['Explanation'] ?? null;
+            $marksIdx = $headerMap['Marks'] ?? null;
+            $diffIdx = $headerMap['Difficulty'] ?? null;
+            $topicIdx = $headerMap['Topic'] ?? null;
+            $imgIdx = $headerMap['Image URL'] ?? null;
+
+            $handleReplace = $request->duplicate_handling === 'replace';
+
+            while (($line = fgetcsv($handle)) !== false) {
+                $rowIndex++;
+
+                $question = trim($line[$qIdx] ?? '');
+                if ($question === '') continue;
+
+                $rowErrors = [];
+
+                $optionA = trim($line[$optAIdx] ?? '');
+                $optionB = trim($line[$optBIdx] ?? '');
+                $optionC = $optCIdx !== null ? trim($line[$optCIdx] ?? '') : '';
+                $optionD = $optDIdx !== null ? trim($line[$optDIdx] ?? '') : '';
+                $correctAnswer = strtoupper(trim($line[$caIdx] ?? ''));
+
+                if (empty($question)) {
+                    $rowErrors[] = 'Question text is required.';
+                }
+                if (empty($optionA) && empty($optionB) && empty($optionC) && empty($optionD)) {
+                    $rowErrors[] = 'At least one option is required.';
+                }
+                if (!in_array($correctAnswer, ['A', 'B', 'C', 'D'], true)) {
+                    $rowErrors[] = 'Correct Answer must be A, B, C, or D.';
+                }
+
+                if ($marksIdx !== null) {
+                    $marks = trim($line[$marksIdx] ?? '');
+                    if ($marks !== '' && (!is_numeric($marks) || (int)$marks < 0)) {
+                        $rowErrors[] = 'Marks must be a positive number.';
+                    }
+                }
+                if ($diffIdx !== null) {
+                    $difficulty = trim($line[$diffIdx] ?? '');
+                    if ($difficulty !== '' && !in_array(strtolower($difficulty), ['easy', 'medium', 'hard'])) {
+                        $rowErrors[] = 'Difficulty must be Easy, Medium, or Hard.';
+                    }
+                }
+
+                if (!empty($rowErrors)) {
+                    $errors[$rowIndex] = $rowErrors;
+                    Log::warning('CSV import row validation failed', ['row' => $rowIndex, 'errors' => $rowErrors]);
+                    continue;
+                }
+
+                if ($request->duplicate_handling !== 'import_all') {
+                    $qKey = strtolower($question);
+                    if (isset($existingQuestionIndex[$qKey])) {
+                        if ($request->duplicate_handling === 'skip') {
+                            $skipped[] = $rowIndex;
+                            Log::info('CSV import skipped duplicate', ['row' => $rowIndex, 'question' => mb_substr($question, 0, 100)]);
+                            continue;
+                        }
+                        if ($handleReplace) {
+                            $replaced[] = $rowIndex;
+                            $loc = $examWithQuestion[$qKey];
+                            foreach ($db['exams'] as &$exam) {
+                                if ($exam['id'] === $loc['examId']) {
+                                    $exam['questions'][$loc['questionIndex']]['question'] = $question;
+                                    $exam['questions'][$loc['questionIndex']]['optionA'] = $optionA;
+                                    $exam['questions'][$loc['questionIndex']]['optionB'] = $optionB;
+                                    $exam['questions'][$loc['questionIndex']]['optionC'] = $optionC;
+                                    $exam['questions'][$loc['questionIndex']]['optionD'] = $optionD;
+                                    $exam['questions'][$loc['questionIndex']]['correctAnswer'] = $correctAnswer;
+                                    $exam['questions'][$loc['questionIndex']]['explanation'] = $explIdx !== null ? trim($line[$explIdx] ?? '') : '';
+                                    break;
+                                }
+                            }
+                            unset($exam);
+                            Log::info('CSV import replaced duplicate', ['row' => $rowIndex, 'question' => mb_substr($question, 0, 100)]);
+                            continue;
+                        }
+                    } else {
+                        $existingQuestionIndex[$qKey] = true;
+                    }
+                }
+
+                $imported[] = [
+                    'id' => $rowIndex,
+                    'question' => $question,
+                    'optionA' => $optionA,
+                    'optionB' => $optionB,
+                    'optionC' => $optionC,
+                    'optionD' => $optionD,
+                    'correctAnswer' => $correctAnswer,
+                    'explanation' => $explIdx !== null ? trim($line[$explIdx] ?? '') : '',
+                    'marks' => ($marksIdx !== null && is_numeric(trim($line[$marksIdx] ?? ''))) ? (int)trim($line[$marksIdx]) : 1,
+                    'difficulty' => $diffIdx !== null ? ucfirst(strtolower(trim($line[$diffIdx] ?? ''))) : 'Medium',
+                    'topic' => $topicIdx !== null ? (trim($line[$topicIdx] ?: $request->topic ?: 'General')) : ($request->topic ?: 'General'),
+                    'imageUrl' => $imgIdx !== null ? trim($line[$imgIdx] ?? '') : '',
+                ];
+            }
+
+            fclose($handle);
+
+            $examId = null;
+
+            if (!empty($imported)) {
+                $count = count($imported);
+                $examId = 'exam_' . uniqid();
+                $duration = $request->duration ? (int)$request->duration : max(10, min(120, intdiv($count, 2)));
+                $defaultMarks = $request->defaultMarks ? (int)$request->defaultMarks : 1;
+
+                $db['exams'][] = [
+                    'id' => $examId,
+                    'title' => $examTitle,
+                    'subject' => $request->subject,
+                    'level' => $request->class,
+                    'class' => $request->class,
+                    'term' => $request->term,
+                    'session' => $request->session,
+                    'examType' => $request->exam_type,
+                    'topic' => $request->topic ?: 'General',
+                    'subTopic' => $request->subTopic ?: '',
+                    'duration' => $duration,
+                    'defaultMarks' => $defaultMarks,
+                    'totalMarks' => $count * $defaultMarks,
+                    'instructions' => "Answer all questions. Each question carries {$defaultMarks} mark(s).",
+                    'questions' => $imported,
+                    'creatorId' => $user['id'] ?? 'unknown',
+                    'creatorName' => $user['name'] ?? 'Unknown',
+                    'isPublished' => false,
+                    'source' => 'csv_import',
+                    'createdAt' => now()->toIso8601String(),
+                ];
+            }
+
+            if (!isset($db['importLogs'])) {
+                $db['importLogs'] = [];
+            }
+            $db['importLogs'][] = [
+                'id' => 'imp_' . uniqid(),
+                'userId' => $user['id'] ?? 'unknown',
+                'userName' => $user['name'] ?? 'Unknown',
+                'subject' => $request->subject,
+                'class' => $request->class,
+                'term' => $request->term,
+                'session' => $request->session,
+                'fileHash' => $fileHash,
+                'fileName' => $file->getClientOriginalName(),
+                'imported' => count($imported),
+                'skipped' => count($skipped),
+                'replaced' => count($replaced),
+                'totalRows' => $rowIndex,
+                'errors' => count($errors),
+                'date' => now()->toIso8601String(),
+            ];
+
+            JsonDb::saveWithoutSync($db);
+
+            Log::info('CSV import completed', [
+                'imported' => count($imported),
+                'skipped' => count($skipped),
+                'replaced' => count($replaced),
+                'errors' => count($errors),
+                'totalRows' => $rowIndex,
+                'examId' => $examId,
+            ]);
+
+            $successMessage = 'Successfully imported ' . count($imported) . ' questions.' .
+                (count($skipped) > 0 ? ' Skipped ' . count($skipped) . ' duplicates.' : '') .
+                (count($replaced) > 0 ? ' Replaced ' . count($replaced) . ' duplicates.' : '');
+
+            if (empty($imported) && count($errors) > 0) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'No questions were imported. ' . count($errors) . ' row(s) contained errors.',
+                    'imported' => 0,
+                    'skipped' => count($skipped),
+                    'replaced' => count($replaced),
+                    'errors' => $errors,
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => true,
+                'imported' => count($imported),
+                'skipped' => count($skipped),
+                'replaced' => count($replaced),
+                'errors' => $errors,
+                'message' => $successMessage,
+                'examId' => $examId,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('CSV import exception: ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'error' => 'An unexpected error occurred during import: ' . $e->getMessage(),
+            ], 500);
+        }
     }
 
     public function convertJsonToExam(Request $request)

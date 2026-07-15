@@ -521,7 +521,10 @@
                                     <label class="text-xs font-semibold text-slate-600 block mb-1">Topic (Optional)</label>
                                     <input type="text" id="csv-topic" placeholder="e.g., Algebra" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500">
                                 </div>
-                                <div></div>
+                                <div>
+                                    <label class="text-xs font-semibold text-slate-600 block mb-1">Sub Topic (Optional)</label>
+                                    <input type="text" id="csv-subtopic" placeholder="e.g., Quadratic Equations" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500">
+                                </div>
                             </div>
                             <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-emerald-400 transition" id="csv-drop-zone">
                                 <input type="file" id="csv-file-input" accept=".csv" class="hidden" onchange="handleCsvFile(this)">
@@ -1575,6 +1578,7 @@ async function confirmCsvImport() {
 
     const btn = document.getElementById('csv-import-btn');
     const progress = document.getElementById('csv-import-progress');
+    btn.disabled = true;
     btn.classList.add('hidden');
     progress.classList.remove('hidden');
 
@@ -1593,10 +1597,20 @@ async function confirmCsvImport() {
 
     try {
         const res = await fetch('/api/csv-import/import', { method: 'POST', body: formData });
-        const data = await res.json();
+        let data;
+        try {
+            data = await res.json();
+        } catch (parseError) {
+            progress.classList.add('hidden');
+            btn.classList.remove('hidden');
+            btn.disabled = false;
+            alert('Server returned an invalid response. Please check the server logs.');
+            return;
+        }
 
         progress.classList.add('hidden');
         btn.classList.remove('hidden');
+        btn.disabled = false;
 
         if (!data.success) {
             alert(data.error || 'Import failed.');
@@ -1607,7 +1621,8 @@ async function confirmCsvImport() {
     } catch (e) {
         progress.classList.add('hidden');
         btn.classList.remove('hidden');
-        alert('Network error during import.');
+        btn.disabled = false;
+        alert('Network error during import. Please check your connection and try again.');
     }
 }
 
@@ -1616,7 +1631,10 @@ function showCsvResult(data) {
     document.getElementById('csv-step-3').classList.remove('hidden');
     document.getElementById('csv-import-step-label').textContent = 'Step 3 of 3: Complete';
 
-    document.getElementById('csv-result-title').textContent = 'Import Complete!';
+    const hasErrors = data.errors && Object.keys(data.errors).length > 0;
+    const isFullySuccessful = data.imported > 0 && !hasErrors;
+
+    document.getElementById('csv-result-title').textContent = isFullySuccessful ? 'Import Complete!' : 'Import Completed with Issues';
     document.getElementById('csv-result-message').textContent = data.message;
 
     document.getElementById('csv-result-details').innerHTML = `
@@ -1636,16 +1654,21 @@ function showCsvResult(data) {
 
     const errDiv = document.getElementById('csv-result-errors');
     const errList = document.getElementById('csv-result-error-list');
-    if (data.errors && Object.keys(data.errors).length > 0) {
+    if (hasErrors) {
         errDiv.classList.remove('hidden');
         errList.innerHTML = Object.entries(data.errors).map(([row, errs]) =>
-            `<div class="flex gap-2"><span class="font-medium whitespace-nowrap">Row ${row}:</span><span>${errs.join('; ')}</span></div>`
+            `<div class="flex gap-2"><span class="font-medium whitespace-nowrap">Row ${row}:</span><span>${Array.isArray(errs) ? errs.join('; ') : errs}</span></div>`
         ).join('');
     } else {
         errDiv.classList.add('hidden');
     }
 
-    loadTeacherData();
+    // Refresh exam list and switch to CBT tab so user sees imported questions
+    loadTeacherData().then(() => {
+        if (data.imported > 0) {
+            switchTab('exams');
+        }
+    });
 }
 
 function downloadCsvTemplate() {
