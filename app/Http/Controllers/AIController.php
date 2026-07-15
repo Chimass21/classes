@@ -336,7 +336,17 @@ class AIController extends Controller
                 'prompt_length' => strlen($prompt),
             ]);
 
-            $response = $this->ai->generate($prompt, true);
+            // Log request data (without full noteContent to avoid log bloat)
+            $logData = $data;
+            if (!empty($logData['noteContent'])) {
+                $logData['noteContent'] = 'present(length=' . strlen($logData['noteContent']) . ')';
+            }
+            Log::info('AI Questions Request data', $logData);
+
+            // Start without json_mode for lesson note prompts to avoid any
+            // response_format compatibility issues with DeepSeek
+            $initialJsonMode = empty($lessonNoteContent);
+            $response = $this->ai->generate($prompt, $initialJsonMode);
 
             Log::info('AI Questions Response', [
                 'response_length' => strlen($response),
@@ -344,7 +354,11 @@ class AIController extends Controller
             ]);
 
             if (empty(trim($response))) {
-                Log::warning('AI returned empty response for questions');
+                Log::warning('AI returned empty response for questions', [
+                    'has_lesson_note' => !empty($lessonNoteContent),
+                    'prompt_length' => strlen($prompt),
+                    'lesson_note_length' => strlen($lessonNoteContent),
+                ]);
                 if (!empty($lessonNoteContent)) {
                     return response()->json(['success' => false, 'error' => 'The AI could not generate questions from this lesson note. Please try again or adjust the lesson note content.'], 422);
                 }
@@ -352,7 +366,10 @@ class AIController extends Controller
             }
 
             if ($this->isRefusal($response)) {
-                Log::warning('AI refused questions request', ['topic' => $data['topic']]);
+                Log::warning('AI refused questions request', [
+                    'topic' => $data['topic'],
+                    'has_lesson_note' => !empty($lessonNoteContent),
+                ]);
                 if (!empty($lessonNoteContent)) {
                     return response()->json(['success' => false, 'error' => 'The AI could not generate questions from this lesson note. Please try again.'], 422);
                 }
@@ -953,6 +970,26 @@ PROMPT;
 
         $extract = $this->extractNoteText($lessonNoteContent);
 
+        // Truncate lesson note to avoid exceeding AI context window
+        // Prioritize the most content-rich parts
+        $maxLength = 8000;
+        if (strlen($extract) > $maxLength) {
+            $truncated = mb_substr($extract, 0, $maxLength);
+            $lastBreak = mb_strrpos($truncated, "\n\n");
+            if ($lastBreak !== false && $lastBreak > $maxLength * 0.7) {
+                $extract = mb_substr($extract, 0, $lastBreak);
+            } else {
+                $extract = $truncated;
+            }
+            $extract .= "\n\n[Note: Lesson note truncated to fit within context limits. Focus on the content above to generate questions.]";
+        }
+
+        Log::info('Building questions from lesson note', [
+            'note_length' => strlen($lessonNoteContent),
+            'extract_length' => strlen($extract),
+            'truncated' => strlen($lessonNoteContent) > $maxLength,
+        ]);
+
         return <<<PROMPT
 You are a Nigerian examination expert. Your task is to generate {$count} objective (multiple-choice) questions based STRICTLY on the lesson note provided below for {$subject} ({$class}, {$term}, Week {$week}).
 
@@ -1011,20 +1048,27 @@ PROMPT;
 
         $parts = [];
 
-        if (!empty($data['topic'])) $parts[] = "Topic: " . $data['topic'];
-        if (!empty($data['subTopic'])) $parts[] = "Sub-topic: " . $data['subTopic'];
-        if (!empty($data['subject'])) $parts[] = "Subject: " . $data['subject'];
-        if (!empty($data['class'])) $parts[] = "Class: " . $data['class'];
-        if (!empty($data['term'])) $parts[] = "Term: " . $data['term'];
+        // Metadata header
+        $meta = [];
+        if (!empty($data['topic'])) $meta[] = $data['topic'];
+        if (!empty($data['subTopic'])) $meta[] = $data['subTopic'];
+        if (!empty($data['subject'])) $meta[] = $data['subject'];
+        if (!empty($data['class'])) $meta[] = $data['class'];
+        if (!empty($data['term'])) $meta[] = $data['term'];
+        if (!empty($data['week'])) $meta[] = "Week {$data['week']}";
+        if ($meta) $parts[] = implode(' | ', $meta);
+
+        // Core content sections — ordered by importance, most important first
+        // (truncation will cut from the bottom)
 
         if (!empty($data['learningObjectives'])) {
             $objectives = is_array($data['learningObjectives']) ? implode("\n", $data['learningObjectives']) : $data['learningObjectives'];
             $parts[] = "LEARNING OBJECTIVES:\n" . $objectives;
         }
 
-        if (!empty($data['introduction'])) $parts[] = "INTRODUCTION:\n" . $data['introduction'];
+        if (!empty($data['introduction'])) $parts[] = "INTRODUCTION:\n" . html_entity_decode(strip_tags($data['introduction']), ENT_QUOTES | ENT_HTML5);
 
-        if (!empty($data['content'])) $parts[] = "CONTENT:\n" . strip_tags($data['content']);
+        if (!empty($data['content'])) $parts[] = "CONTENT:\n" . html_entity_decode(strip_tags($data['content']), ENT_QUOTES | ENT_HTML5);
 
         if (!empty($data['subtopics'])) {
             $subtopics = is_array($data['subtopics']) ? implode("\n- ", $data['subtopics']) : $data['subtopics'];
@@ -1056,36 +1100,28 @@ PROMPT;
             $parts[] = "PRACTICAL APPLICATIONS:\n" . $apps;
         }
 
-        if (!empty($data['classroomActivities'])) {
-            $acts = '';
-            foreach ($data['classroomActivities'] as $a) {
-                $title = $a['title'] ?? '';
-                $desc = $a['description'] ?? '';
-                if ($title || $desc) $acts .= "- {$title}: {$desc}\n";
-            }
-            if ($acts) $parts[] = "CLASSROOM ACTIVITIES:\n" . $acts;
-        }
-
-        if (!empty($data['evaluationQuestions'])) {
-            $evals = is_array($data['evaluationQuestions']) ? implode("\n", $data['evaluationQuestions']) : $data['evaluationQuestions'];
-            $parts[] = "EVALUATION QUESTIONS:\n" . $evals;
-        }
-
-        if (!empty($data['summary'])) $parts[] = "SUMMARY:\n" . $data['summary'];
-
         if (!empty($data['keyPoints'])) {
             $points = is_array($data['keyPoints']) ? implode("\n", $data['keyPoints']) : $data['keyPoints'];
             $parts[] = "KEY POINTS:\n" . $points;
         }
 
-        if (!empty($data['detailedNote'])) $parts[] = "DETAILED NOTE:\n" . strip_tags($data['detailedNote']);
+        if (!empty($data['summary'])) $parts[] = "SUMMARY:\n" . html_entity_decode(strip_tags($data['summary']), ENT_QUOTES | ENT_HTML5);
+
+        if (!empty($data['detailedNote'])) $parts[] = "DETAILED NOTE:\n" . html_entity_decode(strip_tags($data['detailedNote']), ENT_QUOTES | ENT_HTML5);
 
         $text = implode("\n\n", $parts);
 
         $text = preg_replace('/\n{3,}/', "\n\n", $text);
         $text = trim($text);
 
-        return $text ?: strip_tags($lessonNoteContent);
+        if (!empty($text)) {
+            return $text;
+        }
+
+        // Fallback: try to extract plain text from the raw JSON
+        $fallback = strip_tags(json_encode($data, JSON_UNESCAPED_UNICODE));
+        $fallback = html_entity_decode($fallback, ENT_QUOTES | ENT_HTML5);
+        return $fallback;
     }
 
     // --- STORE HELPERS ---

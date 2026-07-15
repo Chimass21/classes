@@ -1037,6 +1037,7 @@ async function deleteNote() {
 }
 async function generateQuestionsFromNote() {
     if (!currentNoteId) return;
+    console.log('generateQuestionsFromNote: currentNoteId=', currentNoteId, 'currentNote=', currentNote?.topic, 'difficulty=', currentNote?.difficulty);
     generatingFromNote = true;
     document.getElementById('q-subject').value = document.getElementById('note-subject').value;
     document.getElementById('q-class').value = document.getElementById('note-class').value;
@@ -1099,8 +1100,14 @@ document.getElementById('questions-form')?.addEventListener('submit', async func
             displayQuestions(data.questions);
             document.getElementById('q-save-section').classList.remove('hidden');
             document.getElementById('q-save-msg').textContent = data.message;
-        } else { alert(data.error || 'Generation failed.'); }
-    } catch(e) { alert('Network error.'); }
+        } else {
+            const errMsg = data.error || data.message || 'Generation failed.';
+            if (data.errors) {
+                console.error('Validation errors:', data.errors);
+            }
+            alert(errMsg + (res.status !== 200 ? ' (HTTP ' + res.status + ')' : ''));
+        }
+    } catch(e) { alert('Network error: ' + e.message); }
     finally { btn.disabled = false; btn.textContent = 'Generate Questions'; }
 });
 
