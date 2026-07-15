@@ -589,6 +589,7 @@ class AIController extends Controller
             $examId = 'exam_' . uniqid();
             $formattedQuestions = [];
             foreach ($mcq as $i => $q) {
+                if (!is_array($q)) continue;
                 $questionText = $q['question'] ?? $q['text'] ?? $q['stem'] ?? '';
                 $formattedQuestions[] = [
                     'id' => $i + 1,
@@ -1376,6 +1377,7 @@ PROMPT;
         }
 
         foreach ($questions as $i => $q) {
+            if (!is_array($q)) continue;
             $qNum = $i + 1;
             $questionText = trim($q['question'] ?? '');
 
@@ -1480,6 +1482,7 @@ PROMPT;
     {
         $normalized = [];
         foreach ($questions as $i => $q) {
+            if (!is_array($q)) continue;
             $item = [
                 'id' => $q['id'] ?? ($i + 1),
                 'question' => $q['question'] ?? $q['text'] ?? $q['stem'] ?? $q['questionText'] ?? $q['q'] ?? '',
@@ -1500,6 +1503,7 @@ PROMPT;
         $positionsUsed = [];
 
         foreach ($questions as $i => $q) {
+            if (!is_array($q)) continue;
             $currentAnswer = strtoupper(trim($q['answer'] ?? ''));
             if (!in_array($currentAnswer, $letters, true)) {
                 $currentAnswer = $letters[$i % 4];

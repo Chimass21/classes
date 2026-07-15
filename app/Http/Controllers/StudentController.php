@@ -63,6 +63,7 @@ class StudentController extends Controller
             }
         }
 
+        $exam['questions'] = array_values(array_filter($exam['questions'] ?? [], fn($q) => is_array($q)));
         return view('student.exam', ['exam' => (object)$exam, 'studentUser' => $user]);
     }
 
@@ -85,19 +86,20 @@ class StudentController extends Controller
         $failedQuestions = [];
 
         foreach ($exam['questions'] as $index => $q) {
+            if (!is_array($q)) continue;
             $selected = $answers[$index] ?? null;
-            if ($selected === $q['correctAnswer']) {
-                $score += $q['marks'];
+            if ($selected === ($q['correctAnswer'] ?? null)) {
+                $score += (int)($q['marks'] ?? 1);
                 $correctAnswers++;
             } else {
                 $failedQuestions[] = [
-                    'question' => $q['question'],
-                    'optionA' => $q['optionA'],
-                    'optionB' => $q['optionB'],
-                    'optionC' => $q['optionC'],
-                    'optionD' => $q['optionD'],
+                    'question' => $q['question'] ?? '',
+                    'optionA' => $q['optionA'] ?? '',
+                    'optionB' => $q['optionB'] ?? '',
+                    'optionC' => $q['optionC'] ?? '',
+                    'optionD' => $q['optionD'] ?? '',
                     'selectedAnswer' => $selected,
-                    'correctAnswer' => $q['correctAnswer'],
+                    'correctAnswer' => $q['correctAnswer'] ?? '',
                 ];
             }
         }

@@ -210,7 +210,7 @@ class ExamController extends Controller
         $totalMarks = 0;
 
         $defaultMarks = $exam['defaultMarks'] ?? 5;
-        $qTypecast = fn($q) => $q + ['marks' => $defaultMarks, 'correctAnswer' => $q['correctAnswer'] ?? $q['answer'] ?? '', 'explanation' => $q['explanation'] ?? ''];
+        $qTypecast = fn($q) => is_array($q) ? $q + ['marks' => $defaultMarks, 'correctAnswer' => $q['correctAnswer'] ?? $q['answer'] ?? '', 'explanation' => $q['explanation'] ?? ''] : ['marks' => $defaultMarks, 'correctAnswer' => '', 'explanation' => ''];
         foreach ($exam['questions'] as $index => $q) {
             $q = $qTypecast($q);
             $marks = (int)($q['marks'] ?? 5);
