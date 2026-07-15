@@ -403,7 +403,7 @@ class AIController extends Controller
             $questionItems = $questions['objectives'] ?? $questions;
 
             // Validate quality and retry if needed
-            $validated = $this->validateAndRetryQuestions($questionItems, $prompt, $data);
+            $validated = $this->validateAndRetryQuestions($questionItems, $prompt, $data, !empty($lessonNoteContent));
             if ($validated === null) {
                 if (!empty($lessonNoteContent)) {
                     return response()->json(['success' => false, 'error' => 'Generated questions did not pass quality validation. Please try again.'], 422);
@@ -1300,7 +1300,7 @@ PROMPT;
      * if validation fails. Returns the validated items array or null
      * if all retries are exhausted (caller should handle fallback).
      */
-    private function validateAndRetryQuestions(array $questionItems, string $prompt, array $data): ?array
+    private function validateAndRetryQuestions(array $questionItems, string $prompt, array $data, bool $hasLessonNote = false): ?array
     {
         $subject = $data['subject'];
         $topic = $data['topic'];
@@ -1340,7 +1340,7 @@ PROMPT;
             }
 
             // Validate the current items
-            $validationErrors = $this->validateQuestionPool($currentItems, $topic, $subject);
+            $validationErrors = $this->validateQuestionPool($currentItems, $topic, $subject, $hasLessonNote);
 
             if (empty($validationErrors)) {
                 return $currentItems;
@@ -1364,7 +1364,7 @@ PROMPT;
      * - Answer key is valid (A/B/C/D)
      * - Topic keywords appear in question text
      */
-    private function validateQuestionPool(array $questions, string $topic, string $subject): array
+    private function validateQuestionPool(array $questions, string $topic, string $subject, bool $skipTopicCheck = false): array
     {
         $errors = [];
         $seenQuestions = [];
@@ -1424,24 +1424,29 @@ PROMPT;
             }
 
             // Check topic relevance — every question MUST mention the topic
-            $qTextLower = strtolower($questionText);
-            $optionsLower = strtolower(implode(' ', [$q['A'] ?? '', $q['B'] ?? '', $q['C'] ?? '', $q['D'] ?? '']));
-            $topicMatchCount = 0;
-            foreach ($topicWords as $word) {
-                if (str_contains($qTextLower, $word)) {
-                    $topicMatchCount++;
+            // (skipped when generating from a lesson note since questions are
+            // based on the note's content, which may cover subtopics without
+            // repeating the broad topic name)
+            if (!$skipTopicCheck) {
+                $qTextLower = strtolower($questionText);
+                $optionsLower = strtolower(implode(' ', [$q['A'] ?? '', $q['B'] ?? '', $q['C'] ?? '', $q['D'] ?? '']));
+                $topicMatchCount = 0;
+                foreach ($topicWords as $word) {
+                    if (str_contains($qTextLower, $word)) {
+                        $topicMatchCount++;
+                    }
                 }
-            }
-            // The question stem MUST contain at least one topic keyword
-            if (count($topicWords) > 0 && $topicMatchCount === 0) {
-                $errors[] = "Question {$qNum} does not contain any topic keyword from '{$topic}' in its stem";
-            }
-            // At least one option should reference the topic — soft check, not a blocker
-            $optionTopicMatch = false;
-            foreach ($topicWords as $word) {
-                if (str_contains($optionsLower, $word)) {
-                    $optionTopicMatch = true;
-                    break;
+                // The question stem MUST contain at least one topic keyword
+                if (count($topicWords) > 0 && $topicMatchCount === 0) {
+                    $errors[] = "Question {$qNum} does not contain any topic keyword from '{$topic}' in its stem";
+                }
+                // At least one option should reference the topic — soft check, not a blocker
+                $optionTopicMatch = false;
+                foreach ($topicWords as $word) {
+                    if (str_contains($optionsLower, $word)) {
+                        $optionTopicMatch = true;
+                        break;
+                    }
                 }
             }
         }
