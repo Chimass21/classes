@@ -123,7 +123,7 @@
                 @else
                     <form action="{{ route('switch.to.student') }}" method="POST">
                         @csrf
-                        <button type="submit" class="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-100 transition cursor-pointer">
+                        <button type="submit" class="px-3 py-1.5 bg-[#991b1b] text-white rounded-lg text-xs font-bold hover:bg-[#7f1d1d] transition cursor-pointer shadow-sm">
                             ðŸ‘¤ Student Portal
                         </button>
                     </form>
