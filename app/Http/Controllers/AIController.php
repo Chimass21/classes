@@ -297,6 +297,7 @@ class AIController extends Controller
                 'includeTheory' => 'nullable|boolean',
                 'lessonNoteId' => 'nullable|string',
                 'noteContent' => 'nullable|string',
+                'difficulty' => 'nullable|string',
             ]);
 
             // Normalise frontend fields
@@ -325,7 +326,7 @@ class AIController extends Controller
                 $data['subject'], $data['topic'], $data['count'],
                 $data['class'] ?? 'SS1', $data['term'] ?? 'First Term',
                 $data['week'] ?? 1, $data['includeTheory'] ?? false, $lessonNoteContent,
-                $data['subTopic'] ?? ''
+                $data['subTopic'] ?? '', $data['difficulty'] ?? 'Standard'
             );
 
             Log::info('AI Questions Request', [
@@ -338,7 +339,7 @@ class AIController extends Controller
                 'note_content_length' => strlen($lessonNoteContent),
             ]);
 
-            $response = $this->ai->generate($prompt, true);
+            $response = $this->ai->generate($prompt, true, 16384, 0.5);
 
             Log::info('AI Questions Response', [
                 'response_length' => strlen($response),
@@ -852,7 +853,7 @@ STRICT RULES:
 PROMPT;
     }
 
-    protected function buildQuestionsPrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic = ''): string
+    protected function buildQuestionsPrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic = '', $difficulty = 'Standard'): string
     {
         if ($lessonNoteContent) {
             return $this->buildQuestionsFromNotePrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic);
@@ -869,97 +870,34 @@ PROMPT;
     {"question": "Question with parts a, b, c", "parts": {"a": "Part a", "b": "Part b", "c": "Part c"}}
   ]' : '';
 
-        $subtopicLine = $subTopic ? "\nSUB-TOPIC (must be strictly followed): \"{$subTopic}\". Every question MUST relate specifically to this sub-topic within \"{$topic}\". Do NOT write about other sub-topics or the general topic area." : '';
+        $subtopicLine = $subTopic ? "\nSUB-TOPIC: \"{$subTopic}\". Write questions specifically about this sub-topic within \"{$topic}\"." : '';
+        $difficultyLine = $difficulty && $difficulty !== 'Standard' ? " DIFFICULTY: {$difficulty}." : '';
 
         return <<<PROMPT
-You are a Nigerian examination expert generating questions for the Nigerian {$subject} curriculum (NERDC/UBEC/WASSCE/NECO/JAMB).
-
-Your task: Generate {$count} UNIQUE objective (multiple-choice) questions{$theoryPart} about "{$topic}" in {$subject} for {$class} level ({$term}).
-
-CRITICAL — CLASS LEVEL: This is a {$class} class. Match the difficulty, depth, and scope to what {$class} students are expected to know according to the Nigerian curriculum.
+You are a Nigerian examination expert. Generate {$count} objective (multiple-choice) questions{$theoryPart} about "{$topic}" in {$subject} for {$class} level ({$term}).{$difficultyLine}
 {$subtopicLine}
 
-STEP 1 — THINK ABOUT THE SUBJECT & TOPIC SCOPE
-The subject is "{$subject}". The topic is "{$topic}". Before writing any questions, think carefully about what "{$topic}" specifically means WITHIN the subject of {$subject}. 
+SUBJECT: {$subject} — Every question MUST be about {$subject} content.
+TOPIC: {$topic} — Every question MUST test knowledge specifically about {$topic} within {$subject}.
+CLASS: {$class} — Match difficulty to {$class} per the Nigerian curriculum (NERDC/UBEC/WASSCE/NECO/JAMB).
+{$difficultyLine}
 
-- WRONG: Writing a question about atoms when the subject is Biology and the topic is "Cells". Atoms belong to Chemistry, not Biology.
-- WRONG: Writing about "Parts of Speech" when the subject is Literature and the topic is "Plot". 
-- WRONG: Writing about general Chemistry concepts when the topic is specifically "Flame" in Chemistry.
-- CORRECT: Every question MUST test a concept that belongs to "{$topic}" WITHIN "{$subject}".
+VARY QUESTION STYLES across the set. At most 2 WH-word starters per 10 questions. Include:
+- Directives (State/Define/List)
+- Fill-the-blank (___)
+- Scenario/Application
+- Classification (example of)
+- Comparison/Differentiation
+- Negative/Exception (All EXCEPT)
+- True/False statements about
+- Cause-Effect
+- Sequence/Order
+- Calculations (if math/science)
 
-Consider its:
-- Definition and key concepts specific to {$subject}
-- Types, classifications, or categories within {$subject}
-- Properties, characteristics, or features in {$subject} context
-- Causes, effects, or applications in {$subject}
-- Related formulas, laws, or principles in {$subject}
-- Real-world examples relevant to Nigeria
+Each question: 4 UNIQUE options (A/B/C/D), exactly ONE correct answer, wrong options plausible but clearly wrong. Randomize answer position (~25% each).
 
-Use ALL of these aspects to create diverse questions that cover the full scope of "{$topic}" in {$subject}.
-
-STEP 2 — STRICT SUBJECT & TOPIC ENFORCEMENT
-This is the MOST IMPORTANT rule. FAILURE means your response is rejected.
-
-You MUST obey ALL of these:
-- The subject is "{$subject}". EVERY question MUST be about {$subject} content, NOT about another subject.
-- The topic is "{$topic}". EVERY question's text (the stem) MUST contain the word "{$topic}" or a direct keyword from it
-- EVERY question MUST test knowledge ABOUT "{$topic}" in {$subject} — not about a different topic within {$subject}
-- If a sub-topic is given, write ONLY about that sub-topic
-- If you don't know enough about "{$topic}" to write {$count} quality questions, write what you do know — do NOT invent questions about other topics or subjects
-- ZERO questions about unrelated topics
-
-STEP 3 — QUESTION STYLE DIVERSITY (CRITICAL)
-You MUST vary every single question's opening and structure. Do NOT start most questions with What, Why, When, Where, Who, Which, or How. At most 2 out of every 10 questions may begin with a WH word. Use a balanced mix of the following styles:
-
-1. COMMAND / DIRECTIVE — "State the function of {$topic} in {$subject}." / "Define {$topic}." / "List the main types of {$topic}."
-2. COMPLETION / FILL-THE-BLANK — "The process of {$topic} is called ___."
-3. SCENARIO / APPLICATION — Present a real-world {$subject} scenario related to {$topic}.
-4. TRUE / FALSE — "Which of the following statements about {$topic} is correct?"
-5. COMPARISON / CONTRAST — "Which of the following distinguishes {$topic} from a related concept?"
-6. CLASSIFICATION — "Which of the following is an example of {$topic}?"
-7. CAUSE-EFFECT — "What is the primary effect of {$topic}?"
-8. FORMULA / CALCULATION — For math/science {$topic}, include calculation problems.
-9. NEGATIVE / EXCEPTION — "All of the following are true about {$topic} EXCEPT:"
-10. SEQUENCE / ORDER — "Arrange the following steps of {$topic} in the correct order."
-
-For every set of 10 questions, aim to cover at least 6 different styles.
-If {$subject} is Mathematics or a calculation-based science, include at least 2-3 problem-solving questions.
-If {$subject} is a language or arts, include more application and classification questions.
-
-STEP 4 — WRITE THE QUESTIONS
-For each question:
-1. Confirm it is 100% about "{$topic}" in "{$subject}" for {$class} level
-2. Pick one specific aspect of "{$topic}" to test
-3. Choose a question style from the list above that best suits that aspect
-4. Write a clear question stem using that style
-5. Write 4 distinct options (A, B, C, D) — one correct, three wrong but plausible
-6. Randomize which letter has the correct answer (aim for ~25% A, 25% B, 25% C, 25% D)
-7. NEVER repeat the same question or answer concept
-
-STEP 5 — SELF-VERIFICATION
-After writing all {$count} questions, check EVERY SINGLE ONE:
-- Is this question about "{$subject}"? If NO, delete it.
-- Does the question stem contain "{$topic}" keyword? If NO, rewrite it.
-- Is this question about "{$topic}" and NOT about a different topic? If NO, delete and replace it.
-- Is this appropriate for {$class} level? If NO, adjust difficulty.
-- Does this question start with What, Why, When, Where, Who, Which, or How? If YES, count it. At most 2 per 10 may be WH questions.
-- Are all 4 options unique? If NO, fix.
-- Is exactly one option correct? If NO, fix.
-
-Return ONLY valid JSON in this exact format (no text before or after):
-{
-  "objectives": [
-    {
-      "id": 1,
-      "question": "Question stem about {$topic}:",
-      "A": "Option A",
-      "B": "Option B",
-      "C": "Option C",
-      "D": "Option D",
-      "answer": "A"
-    }
-  ]{$theoryPart}
-}
+Return ONLY valid JSON:
+{"objectives":[{"id":1,"question":"stem about {$topic}","A":"opt","B":"opt","C":"opt","D":"opt","answer":"A"}]{$theoryPart}}
 PROMPT;
     }
 
@@ -1251,20 +1189,11 @@ PROMPT;
             $class = $data['class'] ?? 'SS1';
 
             $subtopic = $data['subTopic'] ?? '';
-            $subtopicLine = $subTopic ? " Sub-topic to focus on: \"{$subTopic}\"." : '';
-            $simplePrompt = "You are a Nigerian exam expert for {$subject} ({$class} level). Generate {$count} multiple-choice questions STRICTLY about \"{$topic}\" in {$subject} for {$class} level.{$subtopicLine}\n\n"
-                . "CRITICAL: The subject is {$subject}. EVERY question MUST be about {$subject} content. The topic is \"{$topic}\". EVERY question stem MUST contain the word \"{$topic}\". Questions about any other subject or topic are FORBIDDEN.\n\n"
-                . "QUESTION STYLE: Do NOT start questions with What, Why, When, Where, Who, Which, or How. Instead, vary every question's opening. Use these styles:\n"
-                . "  - Completion: \"The process of {$topic} is called ___\" (stem + options to complete)\n"
-                . "  - Directive: \"State the main function of {$topic}.\" / \"Define {$topic}.\"\n"
-                . "  - Scenario: \"If a student observes X, which aspect of {$topic} does this demonstrate?\"\n"
-                . "  - Comparison: \"Which of the following distinguishes type A of {$topic} from type B?\"\n"
-                . "  - Classification: \"Which of the following is an example of {$topic}?\"\n"
-                . "  - Negative: \"All of the following are true about {$topic} EXCEPT:\"\n"
-                . "  - Calculation: (for math/science) present a problem with numeric answer options\n"
-                . "  - True/False: \"Which of the following statements about {$topic} is correct?\"\n"
-                . "Use a different style for every question. At most 2 out of every 10 questions may start with a WH word.\n\n"
-                . "Return ONLY a JSON array with NO other text. Each question must have: 'id' (number), 'question' (text containing '{$topic}'), 'A','B','C','D' (options with one correct), and 'answer' (A/B/C/D).\n\n"
+            $subtopicLine = $subtopic ? " Sub-topic: \"{$subtopic}\"." : '';
+            $simplePrompt = "You are a Nigerian exam expert for {$subject} ({$class} level). Generate {$count} multiple-choice questions about \"{$topic}\" in {$subject} for {$class} level.{$subtopicLine}\n\n"
+                . "SUBJECT: {$subject}. TOPIC: {$topic}. CLASS: {$class}. Every question must be about {$subject} content related to {$topic}.\n\n"
+                . "Vary question styles — use at most 2 'What/Why/How' questions per 10. Include: definitions, completions (___), scenarios, classifications, comparisons, negatives (EXCEPT), calculations (if applicable), and true/false.\n\n"
+                . "Return ONLY a JSON array. Each item: {\"id\":number,\"question\":\"text\",\"A\":\"opt\",\"B\":\"opt\",\"C\":\"opt\",\"D\":\"opt\",\"answer\":\"A\"}.\n\n"
                 . "Example: [{\"id\":1,\"question\":\"The correct definition of {$topic} is:\",\"A\":\"opt1\",\"B\":\"opt2\",\"C\":\"opt3\",\"D\":\"opt4\",\"answer\":\"A\"}]";
 
             $retryResponse = $this->ai->generate($simplePrompt, false, 8192, 0.5);
@@ -1335,21 +1264,21 @@ PROMPT;
         $subject = $data['subject'];
         $topic = $data['topic'];
         $class = $data['class'] ?? 'SS1';
+        $requiredCount = min($data['count'] ?? 10, 50);
+        $minAcceptable = max(1, (int) ceil($requiredCount * 0.5));
         $currentItems = $questionItems;
 
         for ($attempt = 0; $attempt <= self::MAX_RETRIES; $attempt++) {
             if ($attempt > 0) {
-                // Retry with strict prompt
                 try {
-                    $retryPrompt = $this->buildStrictRetryPrompt($prompt, $subject, $topic, $class);
+                    $retryPrompt = $this->buildStrictRetryPrompt($prompt, $subject, $topic, $class, 'questions', $data['count'] ?? 20);
                     if (!empty($validationErrors)) {
-                        $retryPrompt .= "\n\nPREVIOUS QUALITY ISSUES TO FIX:\n" . implode("\n", array_slice($validationErrors, 0, 5));
+                        $retryPrompt .= "\n\nPREVIOUS ISSUES:\n" . implode("\n", array_slice($validationErrors, 0, 5));
                     }
-                    // Lower temperature for retries to get more focused/factual responses
                     $retryResponse = $this->ai->generate($retryPrompt, true, 16384, 0.4);
 
                     if ($this->isRefusal($retryResponse)) {
-                        return null;
+                        return $this->filterValidQuestions($currentItems, $topic, $subject, $hasLessonNote, $minAcceptable);
                     }
 
                     $retryData = json_decode($retryResponse, true);
@@ -1359,30 +1288,81 @@ PROMPT;
                             $retryData = $cleaned;
                         }
                     }
-                    if (!is_array($retryData) || empty($retryData)) {
-                        continue;
+                    if (is_array($retryData) && !empty($retryData)) {
+                        $currentItems = $retryData['objectives'] ?? $retryData;
                     }
-                    $currentItems = $retryData['objectives'] ?? $retryData;
                 } catch (\Exception $e) {
                     Log::warning('Question retry attempt failed', ['error' => $e->getMessage()]);
-                    continue;
                 }
             }
 
-            // Validate the current items
-            $validationErrors = $this->validateQuestionPool($currentItems, $topic, $subject, $hasLessonNote);
-
-            if (empty($validationErrors)) {
-                return $currentItems;
+            // Filter out invalid questions instead of rejecting the whole set
+            $valid = $this->filterValidQuestions($currentItems, $topic, $subject, $hasLessonNote, $minAcceptable);
+            if ($valid !== null) {
+                return $valid;
             }
 
-            Log::warning("Question validation failed (attempt {$attempt})", [
-                'errors' => $validationErrors,
-                'question_count' => count($currentItems),
+            $validationErrors = $this->validateQuestionPool($currentItems, $topic, $subject, $hasLessonNote);
+            Log::warning("Question pool validation failed (attempt {$attempt})", [
+                'errors' => array_slice($validationErrors ?? [], 0, 10),
+                'total' => count($currentItems),
             ]);
         }
 
-        return null;
+        // Last resort: return whatever passes validation
+        return $this->filterValidQuestions($currentItems, $topic, $subject, $hasLessonNote, 1);
+    }
+
+    /**
+     * Filter questions that pass validation. Returns the filtered array
+     * if at least $minCount questions survive, or null otherwise.
+     */
+    private function filterValidQuestions(array $questions, string $topic, string $subject, bool $skipTopicCheck, int $minCount): ?array
+    {
+        $requiredCount = $minCount;
+        $valid = [];
+        $topicLower = strtolower(trim($topic));
+        $topicWords = array_filter(explode(' ', $topicLower), fn($w) => strlen($w) > 2);
+        if (empty($topicWords)) {
+            $topicWords = [$topicLower];
+        }
+
+        foreach ($questions as $q) {
+            if (!is_array($q)) continue;
+            $questionText = trim($q['question'] ?? '');
+            if (empty($questionText)) continue;
+
+            // Check 4 non-empty options
+            $hasOptions = true;
+            $options = [];
+            foreach (['A', 'B', 'C', 'D'] as $letter) {
+                $opt = trim($q[$letter] ?? '');
+                if (empty($opt)) { $hasOptions = false; break; }
+                $options[$letter] = $opt;
+            }
+            if (!$hasOptions) continue;
+
+            // Check unique options
+            if (count(array_unique(array_map('strtolower', $options))) < 4) continue;
+
+            // Check valid answer key
+            $answer = strtoupper(trim($q['answer'] ?? ''));
+            if (!in_array($answer, ['A', 'B', 'C', 'D'], true)) continue;
+
+            // Topic relevance (soft unless skipTopicCheck)
+            if (!$skipTopicCheck) {
+                $allText = strtolower($questionText . ' ' . implode(' ', $options));
+                $hasKeyword = false;
+                foreach ($topicWords as $word) {
+                    if (str_contains($allText, $word)) { $hasKeyword = true; break; }
+                }
+                if (!$hasKeyword) continue;
+            }
+
+            $valid[] = $q;
+        }
+
+        return count($valid) >= $minCount ? $valid : null;
     }
 
     // --- QUALITY VALIDATION ---
@@ -1454,29 +1434,31 @@ PROMPT;
                 $errors[] = "Question {$qNum} has duplicate options: " . implode(', ', $repeated);
             }
 
-            // Check topic relevance — every question MUST mention the topic
-            // (skipped when generating from a lesson note since questions are
-            // based on the note's content, which may cover subtopics without
-            // repeating the broad topic name)
+            // Check topic relevance — at least one keyword should appear
+            // in the question OR options (not just stem); helps avoid
+            // rejecting valid questions that use synonyms or rephrasing.
             if (!$skipTopicCheck) {
                 $qTextLower = strtolower($questionText);
                 $optionsLower = strtolower(implode(' ', [$q['A'] ?? '', $q['B'] ?? '', $q['C'] ?? '', $q['D'] ?? '']));
+                $allText = $qTextLower . ' ' . $optionsLower;
                 $topicMatchCount = 0;
                 foreach ($topicWords as $word) {
                     if (str_contains($qTextLower, $word)) {
                         $topicMatchCount++;
                     }
                 }
-                // The question stem MUST contain at least one topic keyword
-                if (count($topicWords) > 0 && $topicMatchCount === 0) {
-                    $errors[] = "Question {$qNum} does not contain any topic keyword from '{$topic}' in its stem";
-                }
-                // At least one option should reference the topic — soft check, not a blocker
-                $optionTopicMatch = false;
-                foreach ($topicWords as $word) {
-                    if (str_contains($optionsLower, $word)) {
-                        $optionTopicMatch = true;
-                        break;
+                // If stem has no keyword, check if at least one option does
+                $optionMatch = false;
+                if ($topicMatchCount === 0) {
+                    foreach ($topicWords as $word) {
+                        if (str_contains($optionsLower, $word)) {
+                            $optionMatch = true;
+                            break;
+                        }
+                    }
+                    if (!$optionMatch) {
+                        // Neither stem nor options contain the topic — likely off-topic
+                        $errors[] = "Question {$qNum} does not reference '{$topic}' in its stem or options";
                     }
                 }
             }
@@ -1695,7 +1677,7 @@ PROMPT;
         return false;
     }
 
-    protected function buildStrictRetryPrompt(string $originalPrompt, string $subject, string $topic, string $class, string $type = 'questions'): string
+    protected function buildStrictRetryPrompt(string $originalPrompt, string $subject, string $topic, string $class, string $type = 'questions', int $count = 20): string
     {
         if ($type === 'lesson_note') {
             return "You are a Nigerian curriculum expert. Your ONLY task: Write a DETAILED LESSON NOTE about \"{$topic}\" in {$subject} for {$class}.\n\n"
@@ -1709,17 +1691,16 @@ PROMPT;
                  . "- Return ONLY valid JSON with no text before or after.\n";
         }
 
-        return "You are a Nigerian examination expert. Your ONLY task: Generate questions about \"{$topic}\" in {$subject} for {$class}.\n\n"
-             . "PREVIOUS ATTEMPT REJECTED — REASON: Questions were off-topic (not about \"{$topic}\").\n\n"
-             . "CRITICAL INSTRUCTIONS:\n"
-             . "- The topic is \"{$topic}\". Generate {$originalPrompt}\n"
-             . "- EVERY question stem MUST contain the word \"{$topic}\" in its text.\n"
-             . "- If a question does not contain \"{$topic}\", it is WRONG and will be rejected.\n"
-             . "- Cover different aspects of \"{$topic}\": definition, types, properties, causes, effects, examples, applications.\n"
-             . "- Do NOT write about any other topic in {$subject}.\n"
-             . "- VARY question styles: use commands (\"State...\", \"Define...\"), completions, scenarios, comparisons, negatives (\"All EXCEPT\"), calculations, and true/false statements. Do NOT start questions with What, Why, How, When, Where, Who, or Which.\n"
-             . "- Write questions that a {$class} student would face in a WAEC/NECO/JAMB exam.\n"
-             . "- Return ONLY valid JSON.\n";
+        return "You are a Nigerian examination expert for {$subject} ({$class}). Generate {$count} objective questions about \"{$topic}\".\n\n"
+             . "PREVIOUS ATTEMPT REJECTED — QUESTIONS WERE OFF-TOPIC.\n\n"
+             . "STRICT RULES:\n"
+             . "- SUBJECT: {$subject}. TOPIC: {$topic}. CLASS: {$class}.\n"
+             . "- Every question must be about content IN {$subject} that relates to {$topic}.\n"
+             . "- Vary styles: directives (State/Define/List), fill-the-blank, scenarios, classifications, compare/contrast, cause-effect, All-EXCEPT, calculations, true/false.\n"
+             . "- At most 2 WH-word starters per 10 questions.\n"
+             . "- 4 UNIQUE options (A/B/C/D), exactly ONE correct answer.\n"
+             . "- Write questions appropriate for a {$class} student in the Nigerian curriculum.\n"
+             . "- Return ONLY valid JSON in this format: {\"objectives\":[{\"id\":1,\"question\":\"stem\",\"A\":\"opt\",\"B\":\"opt\",\"C\":\"opt\",\"D\":\"opt\",\"answer\":\"A\"}]}\n";
     }
 
     private function extractJson(string $text): ?array

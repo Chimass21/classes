@@ -342,11 +342,23 @@
                                         <input type="text" id="q-subtopic" placeholder="e.g., Quadratic Equations" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
                                     </div>
                                 </div>
-                                <div class="flex items-center gap-2">
-                                    <input type="checkbox" id="q-theory" class="rounded border-slate-300">
-                                    <label for="q-theory" class="text-sm text-slate-700">Include Theory / Essay / Structured Questions</label>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Difficulty</label>
+                                        <select id="q-difficulty" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                            <option value="">Standard</option>
+                                            <option value="Easy">Easy</option>
+                                            <option value="Standard">Standard</option>
+                                            <option value="Hard">Hard</option>
+                                        </select>
+                                    </div>
+                                    <div class="flex items-center gap-2 mt-6">
+                                        <input type="checkbox" id="q-theory" class="rounded border-slate-300">
+                                        <label for="q-theory" class="text-sm text-slate-700">Include Theory / Essay / Structured Questions</label>
+                                    </div>
                                 </div>
                                 <button type="submit" id="q-submit-btn" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm rounded-lg transition cursor-pointer">Generate Questions</button>
+                                <div id="q-error" class="hidden mt-2 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg"></div>
                             </form>
                             <div id="q-save-section" class="hidden p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
                                 <p class="text-sm text-emerald-800 font-medium" id="q-save-msg"></p>
@@ -1081,6 +1093,8 @@ function readAloud(elementId) {
 document.getElementById('questions-form')?.addEventListener('submit', async function(e) {
     e.preventDefault();
     const btn = document.getElementById('q-submit-btn');
+    const errEl = document.getElementById('q-error');
+    if (errEl) { errEl.classList.add('hidden'); errEl.textContent = ''; }
     btn.disabled = true; btn.textContent = 'Generating...';
     const lessonNoteId = currentNoteId || null;
     const payload = {
@@ -1092,6 +1106,7 @@ document.getElementById('questions-form')?.addEventListener('submit', async func
         week: parseInt(document.getElementById('q-week').value) || 1,
         count: parseInt(document.getElementById('q-count').value),
         includeTheory: document.getElementById('q-theory').checked,
+        difficulty: document.getElementById('q-difficulty')?.value || '',
         lessonNoteId: lessonNoteId,
     };
     if (generatingFromNote && currentNote) {
@@ -1112,12 +1127,15 @@ document.getElementById('questions-form')?.addEventListener('submit', async func
             document.getElementById('q-save-msg').textContent = data.message;
         } else {
             const errMsg = data.error || data.message || 'Generation failed.';
-            if (data.errors) {
-                console.error('Validation errors:', data.errors);
-            }
-            alert(errMsg + (res.status !== 200 ? ' (HTTP ' + res.status + ')' : ''));
+            if (errEl) {
+                errEl.textContent = errMsg + (res.status !== 200 ? ' (HTTP ' + res.status + ')' : '');
+                errEl.classList.remove('hidden');
+            } else { alert(errMsg); }
         }
-    } catch(e) { alert('Network error: ' + e.message); }
+    } catch(e) {
+        if (errEl) { errEl.textContent = 'Network error: ' + e.message; errEl.classList.remove('hidden'); }
+        else { alert('Network error: ' + e.message); }
+    }
     finally { btn.disabled = false; btn.textContent = 'Generate Questions'; }
 });
 
