@@ -432,6 +432,11 @@ function startAutoSaveInterval() {
 }
 
 function restoreServerAutoSave() {
+  // Skip if this is a fresh retake
+  if (localStorage.getItem('cbt_retake_' + examId) === 'true') {
+    try { localStorage.removeItem('cbt_retake_' + examId); } catch(e) {}
+    return;
+  }
   if (Object.keys(selectedAnswers).length > 0) return; // Already have local answers
   fetch('/api/exams/' + examId + '/autosave/load', {
     method: 'POST',
@@ -458,14 +463,47 @@ function showAlreadySubmitted() {
   document.getElementById('exam-active').classList.add('hidden');
   const headerControls = document.getElementById('header-controls');
   headerControls.innerHTML = '<a href="{{ route("student.dashboard") }}" class="px-5 py-2 text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-all">Return to Dashboard</a>';
+
+  // Load attempt history
+  try {
+    const hist = localStorage.getItem('brain_history_' + examId);
+    if (hist) attempts = JSON.parse(hist);
+  } catch(e) {}
+  const bestScore = attempts.length > 0 ? Math.max(...attempts.map(a => a.percentage)) : 0;
+  const avgScore = attempts.length > 0 ? Math.round(attempts.reduce((s, a) => s + a.percentage, 0) / attempts.length) : 0;
+
+  const attemptsHtml = attempts.length === 0 ? '<p class="text-xs text-slate-400 italic">No previous attempts recorded.</p>' :
+    '<div class="space-y-2 max-h-48 overflow-y-auto pr-1">' + attempts.map((a, i) =>
+      '<div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100">' +
+        '<div><span class="font-extrabold text-sm text-slate-800">Attempt #' + (i + 1) + '</span>' +
+          '<p class="text-[10px] text-slate-400">' + new Date(a.date).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + (a.timeSpent ? ' &middot; ' + formatTime(a.timeSpent) : '') + '</p></div>' +
+        '<span class="font-black uppercase py-1.5 px-3 rounded-lg text-xs ' + (a.percentage >= 50 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-600 border border-rose-200') + '">' + a.percentage + '%</span>' +
+      '</div>'
+    ).join('') + '</div>';
+
   document.getElementById('exam-results').innerHTML = `
     <div class="p-8 sm:p-10 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl text-center shadow-sm slide-up">
       <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
         <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
       </div>
       <h2 class="text-xl sm:text-2xl font-black text-slate-800">Already Submitted</h2>
-      <p class="text-sm text-slate-500 mt-2 max-w-md mx-auto">This exam has already been completed. Your results are available in your dashboard.</p>
-      <a href="{{ route("student.dashboard") }}" class="mt-6 inline-block px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all">Go to Dashboard</a>
+      <p class="text-sm text-slate-500 mt-2 max-w-md mx-auto">This exam has already been completed. You can retake it or view results in your dashboard.</p>
+      <div class="mt-6 flex flex-wrap justify-center gap-3">
+        <button onclick="handleRetake()" class="px-6 py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-xl transition-all cursor-pointer flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          Retake Exam
+        </button>
+        <a href="{{ route("student.dashboard") }}" class="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all inline-block">Go to Dashboard</a>
+      </div>
+      ${attempts.length > 0 ? `
+      <div class="mt-8 text-left max-w-md mx-auto">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Attempt History</h4>
+        <div class="grid grid-cols-2 gap-2 mb-4">
+          <div class="p-3 bg-slate-50 rounded-xl text-center border border-slate-100"><span class="text-[9px] text-slate-400 uppercase font-black block">Best</span><strong class="text-lg font-black text-slate-800">${bestScore}%</strong></div>
+          <div class="p-3 bg-slate-50 rounded-xl text-center border border-slate-100"><span class="text-[9px] text-slate-400 uppercase font-black block">Average</span><strong class="text-lg font-black text-indigo-600">${avgScore}%</strong></div>
+        </div>
+        ${attemptsHtml}
+      </div>` : ''}
     </div>`;
   document.getElementById('exam-results').classList.remove('hidden');
 }
@@ -630,7 +668,11 @@ function showResults() {
   // Attempt history HTML
   const attemptsHtml = attempts.length === 0 ? '<p class="text-xs text-slate-400 italic">First logged attempt.</p>' :
     '<div class="space-y-2 max-h-48 overflow-y-auto pr-1">' + attempts.map((a, i) =>
-      '<div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100"><div><span class="font-extrabold text-sm text-slate-800">Attempt #' + (i + 1) + '</span><p class="text-[10px] text-slate-400">' + new Date(a.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) + '</p></div><span class="font-black uppercase py-1.5 px-3 rounded-lg text-xs ' + (a.percentage >= 50 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-600 border border-rose-200') + '">' + a.percentage + '%</span></div>'
+      '<div class="flex items-center justify-between p-2.5 bg-slate-50 rounded-xl border border-slate-100">' +
+        '<div><span class="font-extrabold text-sm text-slate-800">Attempt #' + (i + 1) + '</span>' +
+          '<p class="text-[10px] text-slate-400">' + new Date(a.date).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) + (a.timeSpent ? ' &middot; ' + formatTime(a.timeSpent) : '') + '</p></div>' +
+        '<span class="font-black uppercase py-1.5 px-3 rounded-lg text-xs ' + (a.percentage >= 50 ? 'bg-emerald-50 text-emerald-700 border border-emerald-200' : 'bg-rose-50 text-rose-600 border border-rose-200') + '">' + a.percentage + '%</span>' +
+      '</div>'
     ).join('') + '</div>';
 
   // Topic performance bars HTML
@@ -929,7 +971,14 @@ function handleRetake() {
       localStorage.removeItem('cbt_submitted_' + examId);
       sessionStorage.removeItem('cbt_submitted_' + examId);
       sessionStorage.removeItem('cbt_postsubmit_' + examId);
+      localStorage.setItem('cbt_retake_' + examId, 'true');
     } catch(e) {}
+    // Clear server auto-save from previous attempt
+    fetch('/api/exams/' + examId + '/autosave', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ studentId, answers: {} })
+    }).catch(function() {});
     selectedAnswers = {};
     flaggedQuestions = {};
     secondsLeft = examDuration * 60;
