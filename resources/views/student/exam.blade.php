@@ -226,9 +226,9 @@ function initExam() {
   if (saved) {
     try {
       const p = JSON.parse(saved);
-      if (p && p.secondsLeft > 0 && !p.submitted) {
+      if (p && !p.submitted) {
         selectedAnswers = p.selectedAnswers || {};
-        secondsLeft = p.secondsLeft;
+        secondsLeft = Math.max(0, p.secondsLeft || 0);
         endTime = p.endTime || null;
         currentIndex = p.currentQuestionIndex || 0;
         flaggedQuestions = p.flaggedQuestions || {};
@@ -359,10 +359,7 @@ function startTimer() {
   if (timerInterval) clearInterval(timerInterval);
   const timerEl = document.getElementById('timer-text');
   timerInterval = setInterval(function() {
-    if (!isExamActive || submitted) {
-      if (secondsLeft <= 0 && isExamActive && !submitted && !submitting) {
-        triggerSubmit(true);
-      }
+    if (!isExamActive || submitted || submitting) {
       return;
     }
     // Calculate remaining time from absolute endTime
@@ -374,7 +371,8 @@ function startTimer() {
       timerEl.textContent = '00:00';
       timerEl.parentElement.className = 'flex items-center gap-1.5 sm:gap-2 bg-red-600 text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border border-red-700 font-mono text-xs sm:text-sm font-black animate-pulse';
       isExamActive = false;
-      submitted = true;
+      clearInterval(timerInterval);
+      clearInterval(autoSaveInterval);
       triggerSubmit(true);
       return;
     }
