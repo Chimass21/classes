@@ -329,7 +329,7 @@ function renderQuestion() {
       <div class="flex items-center gap-3 min-w-0 flex-1">
         <span class="w-8 h-8 rounded-lg font-mono font-black flex items-center justify-center shrink-0 border text-sm leading-none transition ${isSelected ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-100 text-slate-500 border-slate-200'}">${opt.key}</span>
         <span class="break-words min-w-0 leading-snug">${opt.label}</span>
-      </div>${isSelected ? '<div class="w-5 h-5 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] shrink-0 shadow-sm">✓</div>' : ''}
+      </div>${isSelected ? '<div class="w-5 h-5 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] shrink-0 shadow-sm">&#10003;</div>' : ''}
     </button>`;
   }).join('');
   buildNavGrid();
@@ -687,9 +687,9 @@ function showResults() {
     const isCorrect = item.selectedAnswer === item.correctAnswer;
     const isNotAnswered = !item.selectedAnswer;
     let badgeColor, badgeText, badgeIcon;
-    if (isCorrect) { badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200'; badgeText = 'Correct'; badgeIcon = '✓'; }
+    if (isCorrect) { badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200'; badgeText = 'Correct'; badgeIcon = '&#10004;'; }
     else if (isNotAnswered) { badgeColor = 'bg-amber-50 text-amber-700 border-amber-200'; badgeText = 'Not Answered'; badgeIcon = '—'; }
-    else { badgeColor = 'bg-rose-50 text-rose-700 border-rose-200'; badgeText = 'Wrong'; badgeIcon = '✗'; }
+    else { badgeColor = 'bg-rose-50 text-rose-700 border-rose-200'; badgeText = 'Wrong'; badgeIcon = '&#10008;'; }
     const rOptA = item.optionA || (item.options && item.options.A) || item.A || '';
     const rOptB = item.optionB || (item.options && item.options.B) || item.B || '';
     const rOptC = item.optionC || (item.options && item.options.C) || item.C || '';
@@ -711,8 +711,8 @@ function showResults() {
         let borderStyle = 'border-slate-200 bg-white';
         let markerColor = 'bg-slate-100 text-slate-500 border-slate-200';
         let badge = '';
-        if (isCorrectOpt) { borderStyle = 'border-emerald-300 bg-emerald-50/50 ring-1 ring-emerald-200'; markerColor = 'bg-emerald-500 text-white border-emerald-500'; badge = '<span class="text-[10px] font-extrabold text-emerald-600 shrink-0 ml-auto">✓ Correct</span>'; }
-        else if (isSelectedOpt && !isCorrectOpt) { borderStyle = 'border-rose-300 bg-rose-50/50 ring-1 ring-rose-200'; markerColor = 'bg-rose-500 text-white border-rose-500'; badge = '<span class="text-[10px] font-extrabold text-rose-600 shrink-0 ml-auto">✗ Your Answer</span>'; }
+        if (isCorrectOpt) { borderStyle = 'border-emerald-300 bg-emerald-50/50 ring-1 ring-emerald-200'; markerColor = 'bg-emerald-500 text-white border-emerald-500'; badge = '<span class="text-[10px] font-extrabold text-emerald-600 shrink-0 ml-auto">&#10004; Correct</span>'; }
+        else if (isSelectedOpt && !isCorrectOpt) { borderStyle = 'border-rose-300 bg-rose-50/50 ring-1 ring-rose-200'; markerColor = 'bg-rose-500 text-white border-rose-500'; badge = '<span class="text-[10px] font-extrabold text-rose-600 shrink-0 ml-auto">&#10008; Your Answer</span>'; }
         return '<div class="p-3 border rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2.5 transition-all ' + borderStyle + '"><span class="w-7 h-7 rounded-lg flex items-center justify-center font-mono font-bold shrink-0 text-xs shadow-xs border ' + markerColor + '">' + opt.key + '</span><span class="break-words min-w-0 flex-1 leading-snug">' + opt.label + '</span>' + badge + '</div>';
       }).join('') + '</div>' +
       '<div class="p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl flex items-start gap-3 mt-1"><svg class="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><div class="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium break-words min-w-0"><strong class="text-indigo-700 font-extrabold">Explanation:</strong> ' + (item.explanation || 'The correct answer is Option ' + item.correctAnswer + '.') + '</div></div>' +
@@ -729,7 +729,7 @@ function showResults() {
     ${result.failedQuestions.map((item, idx) => {
       const isCorrect = item.selectedAnswer === item.correctAnswer;
       const isNotAnswered = !item.selectedAnswer;
-      const statusBadge = isCorrect ? '<span style="color:#059669;font-weight:800">✓ Correct</span>' : (isNotAnswered ? '<span style="color:#d97706;font-weight:800">— Not Answered</span>' : '<span style="color:#e11d48;font-weight:800">✗ Wrong</span>');
+      const statusBadge = isCorrect ? '<span style="color:#059669;font-weight:800">&#10004; Correct</span>' : (isNotAnswered ? '<span style="color:#d97706;font-weight:800">— Not Answered</span>' : '<span style="color:#e11d48;font-weight:800">&#10008; Wrong</span>');
       const optLabels = [
         { k: 'A', v: item.optionA || (item.options?.A) || item.A || '' },
         { k: 'B', v: item.optionB || (item.options?.B) || item.B || '' },
@@ -749,7 +749,7 @@ function showResults() {
           let bg = '#fff', border = '#e2e8f0', marker = '#f1f5f9';
           if (isCorrectOpt) { bg = '#f0fdf4'; border = '#86efac'; marker = '#22c55e'; }
           else if (isSelectedOpt && !isCorrectOpt) { bg = '#fff1f2'; border = '#fda4af'; marker = '#e11d48'; }
-          const mark = isCorrectOpt ? ' ✓' : (isSelectedOpt && !isCorrectOpt ? ' ✗' : '');
+          const mark = isCorrectOpt ? ' &#10004;' : (isSelectedOpt && !isCorrectOpt ? ' &#10008;' : '');
           const markColor = isCorrectOpt ? '#059669' : (isSelectedOpt && !isCorrectOpt ? '#e11d48' : 'transparent');
           return '<div style="padding:6px 10px;border:1px solid ' + border + ';border-radius:6px;background:' + bg + ';font-size:12px;font-weight:600;color:#334155;display:flex;align-items:center;gap:6px">' +
             '<span style="width:20px;height:20px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;background:' + marker + ';border:1px solid ' + border + '">' + opt.k + '</span>' +

@@ -1,29 +1,29 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('content')
 <style>
     select, input[type="text"], input[type="number"], textarea {
-        background: linear-gradient(135deg, #fff5f5 0%, #fff0f7 25%, #f0f4ff 50%, #f0fdf4 75%, #fefce8 100%) !important;
-        border: 2px solid transparent !important;
-        background-clip: padding-box !important;
-        border-image: linear-gradient(135deg, #ec4899, #8b5cf6, #06b6d4, #10b981) 1 !important;
+        background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 50%, #f1f5f9 100%) !important;
+        border: 2px solid #cbd5e1 !important;
+        border-radius: 0.5rem !important;
         transition: all 0.3s ease !important;
         font-weight: 600 !important;
-        color: #1e293b !important;
+        color: #0f172a !important;
     }
     select:hover, input:hover, textarea:hover {
-        box-shadow: 0 0 20px rgba(139,92,246,0.25), 0 0 40px rgba(236,72,153,0.1) !important;
+        border-color: #1e3a5f !important;
+        box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.1) !important;
         transform: translateY(-1px);
     }
     select:focus, input:focus, textarea:focus {
-        box-shadow: 0 0 0 3px rgba(139,92,246,0.3), 0 0 30px rgba(6,182,212,0.2) !important;
-        border-image: linear-gradient(135deg, #f43f5e, #a855f7, #0ea5e9, #22c55e) 2 !important;
+        border-color: #1e3a5f !important;
+        box-shadow: 0 0 0 3px rgba(30, 58, 95, 0.2), 0 0 20px rgba(37, 99, 235, 0.1) !important;
         outline: none !important;
     }
     button[type="submit"], .generate-btn, .action-btn {
-        background: linear-gradient(135deg, #ec4899, #8b5cf6, #06b6d4) !important;
+        background: linear-gradient(135deg, #1e3a5f, #2563eb) !important;
         border: none !important;
-        box-shadow: 0 4px 15px rgba(139,92,246,0.4), 0 0 30px rgba(236,72,153,0.2) !important;
+        box-shadow: 0 4px 15px rgba(30, 58, 95, 0.3), 0 0 30px rgba(37, 99, 235, 0.15) !important;
         transition: all 0.3s ease !important;
         font-weight: 700 !important;
         letter-spacing: 0.5px !important;
@@ -32,7 +32,7 @@
     }
     button[type="submit"]:hover, .generate-btn:hover, .action-btn:hover {
         transform: translateY(-2px) scale(1.02) !important;
-        box-shadow: 0 6px 25px rgba(139,92,246,0.5), 0 0 50px rgba(6,182,212,0.3) !important;
+        box-shadow: 0 6px 25px rgba(30, 58, 95, 0.4), 0 0 50px rgba(37, 99, 235, 0.2) !important;
     }
     button[type="submit"]:active, .generate-btn:active, .action-btn:active {
         transform: translateY(0) scale(0.98) !important;
@@ -56,20 +56,20 @@
     }
     .tab-btn:hover {
         transform: translateY(-1px);
-        box-shadow: 0 4px 15px rgba(99,102,241,0.3);
+        box-shadow: 0 4px 15px rgba(30, 58, 95, 0.2);
     }
-    .tab-btn.border-indigo-600 {
-        background: linear-gradient(135deg, #eef2ff, #f0fdf4) !important;
+    .tab-btn.border-\[\#1e3a5f\] {
+        background: linear-gradient(135deg, #eef2ff, #dbeafe) !important;
     }
     #plan-action-buttons button, #note-action-buttons button, #q-action-buttons button {
-        background: linear-gradient(135deg, #f43f5e, #ec4899) !important;
+        background: linear-gradient(135deg, #991b1b, #b91c1c) !important;
         border: none !important;
-        box-shadow: 0 3px 10px rgba(244,63,94,0.3) !important;
+        box-shadow: 0 3px 10px rgba(153, 27, 27, 0.3) !important;
         transition: all 0.3s ease !important;
     }
     #plan-action-buttons button:hover, #note-action-buttons button:hover, #q-action-buttons button:hover {
         transform: translateY(-2px) scale(1.05) !important;
-        box-shadow: 0 5px 20px rgba(244,63,94,0.4) !important;
+        box-shadow: 0 5px 20px rgba(153, 27, 27, 0.4) !important;
     }
     .lp-table select, .lp-table input, .lp-table textarea {
         background: white !important;
@@ -82,8 +82,8 @@
     }
     [class*="bg-gradient"]:hover {
         transform: translateY(-2px) scale(1.02) !important;
-        filter: brightness(1.1) saturate(1.2) !important;
-        box-shadow: 0 6px 25px rgba(139,92,246,0.4), 0 0 50px rgba(236,72,153,0.2) !important;
+        filter: brightness(1.05) saturate(1.1) !important;
+        box-shadow: 0 6px 25px rgba(30, 58, 95, 0.3), 0 0 50px rgba(37, 99, 235, 0.15) !important;
     }
     [class*="bg-gradient"]::after {
         content: '';
@@ -106,7 +106,7 @@
         <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
                 <div class="flex items-center gap-2">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="w-2 h-2 rounded-full bg-[#2563eb] animate-pulse"></span>
                     <span class="text-[10px] font-bold uppercase tracking-widest text-slate-400">Educator Dashboard</span>
                 </div>
                 <h1 class="text-2xl font-bold text-slate-900">Teacher Portal</h1>
@@ -116,19 +116,19 @@
                 @if(Session::get('user._switched'))
                     <form action="{{ route('switch.back') }}" method="POST">
                         @csrf
-                        <button type="submit" class="px-3 py-1.5 bg-amber-50 text-amber-700 rounded-lg text-xs font-bold hover:bg-amber-100 transition cursor-pointer">
-                            ⬅ Back to {{ ucfirst(Session::get('user._original_role')) }}
+                        <button type="submit" class="px-3 py-1.5 bg-[#1e3a5f]/10 text-[#1e3a5f] rounded-lg text-xs font-bold hover:bg-[#1e3a5f]/20 transition cursor-pointer">
+                            â¬… Back to {{ ucfirst(Session::get('user._original_role')) }}
                         </button>
                     </form>
                 @else
                     <form action="{{ route('switch.to.student') }}" method="POST">
                         @csrf
-                        <button type="submit" class="px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-lg text-xs font-bold hover:bg-indigo-100 transition cursor-pointer">
-                            👤 Student Portal
+                        <button type="submit" class="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold hover:bg-blue-100 transition cursor-pointer">
+                            ðŸ‘¤ Student Portal
                         </button>
                     </form>
                 @endif
-                <span class="px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-bold">{{ Session::get('user.name') }}</span>
+                <span class="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold">{{ Session::get('user.name') }}</span>
                 <button onclick="initTeacherDashboard()" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-slate-600 transition cursor-pointer" title="Refresh">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
                 </button>
@@ -137,7 +137,7 @@
 
         {{-- Loading --}}
         <div id="loading" class="py-20 text-center">
-            <div class="w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto"></div>
+            <div class="w-8 h-8 border-4 border-[#2563eb] border-t-transparent rounded-full animate-spin mx-auto"></div>
             <p class="text-sm text-slate-400 mt-3 font-medium">Loading dashboard...</p>
         </div>
 
@@ -148,7 +148,7 @@
             <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                 <div class="border-b border-slate-200 overflow-x-auto">
                     <div class="flex min-w-max">
-                        <button onclick="switchTab('lesson-planner')" id="tab-lesson-planner-btn" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-indigo-600 text-indigo-700 bg-white transition cursor-pointer whitespace-nowrap">Lesson Planner</button>
+                        <button onclick="switchTab('lesson-planner')" id="tab-lesson-planner-btn" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-[#1e3a5f] text-[#1e3a5f] bg-white transition cursor-pointer whitespace-nowrap">Lesson Planner</button>
                         <button onclick="switchTab('lesson-notes')" id="tab-lesson-notes-btn" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition cursor-pointer whitespace-nowrap">Lesson Notes</button>
                         <button onclick="switchTab('questions')" id="tab-questions-btn" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition cursor-pointer whitespace-nowrap">Question Pool</button>
                         <button onclick="switchTab('cbt-engine')" id="tab-cbt-engine-btn" class="tab-btn px-4 py-3 text-sm font-semibold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition cursor-pointer whitespace-nowrap">CBT Engine</button>
@@ -166,50 +166,50 @@
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Subject</label>
-                                        <select id="plan-subject" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                        <select id="plan-subject" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                             <option value="">Select subject...</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Class</label>
-                                        <select id="plan-class" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"></select>
+                                        <select id="plan-class" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-3 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Term</label>
-                                        <select id="plan-term" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"></select>
+                                        <select id="plan-term" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Week</label>
-                                        <select id="plan-week" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"></select>
+                                        <select id="plan-week" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Duration</label>
-                                        <input type="text" id="plan-duration" value="40 Minutes" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                        <input type="text" id="plan-duration" value="40 Minutes" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Topic</label>
-                                        <input type="text" id="plan-topic" required placeholder="e.g., Addition of Whole Numbers" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                        <input type="text" id="plan-topic" required placeholder="e.g., Addition of Whole Numbers" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Sub-topic (Optional)</label>
-                                        <input type="text" id="plan-subtopic" placeholder="e.g., Addition of 3-digit numbers" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                        <input type="text" id="plan-subtopic" placeholder="e.g., Addition of 3-digit numbers" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">School Name</label>
-                                        <input type="text" id="plan-school" value="ClassPortal Academy" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                        <input type="text" id="plan-school" value="ClassPortal Academy" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Teacher's Name</label>
-                                        <input type="text" id="plan-teacher" value="{{ Session::get('user.name') }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                        <input type="text" id="plan-teacher" value="{{ Session::get('user.name') }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                 </div>
-                                <button type="submit" id="plan-submit-btn" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-lg transition cursor-pointer">Generate Lesson Plan</button>
+                                <button type="submit" id="plan-submit-btn" class="w-full py-2.5 bg-[#1e3a5f] hover:bg-[#15294a] text-white font-bold text-sm rounded-lg transition cursor-pointer">Generate Lesson Plan</button>
                             </form>
                         </div>
                         <div>
@@ -241,21 +241,21 @@
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Subject</label>
-                                        <select id="note-subject" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"></select>
+                                        <select id="note-subject" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Class</label>
-                                        <select id="note-class" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"></select>
+                                        <select id="note-class" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-3 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Term</label>
-                                        <select id="note-term" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"></select>
+                                        <select id="note-term" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Week</label>
-                                        <select id="note-week" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"></select>
+                                        <select id="note-week" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Periods</label>
@@ -267,11 +267,11 @@
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Topic</label>
-                                        <input type="text" id="note-topic" required placeholder="e.g., Linear Equations" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                        <input type="text" id="note-topic" required placeholder="e.g., Linear Equations" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Sub-topic (Optional)</label>
-                                        <input type="text" id="note-subtopic" placeholder="e.g., Solving by Substitution" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                        <input type="text" id="note-subtopic" placeholder="e.g., Solving by Substitution" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
@@ -282,7 +282,7 @@
                                         </select>
                                     </div>
                                 </div>
-                                <button type="submit" id="note-submit-btn" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm rounded-lg transition cursor-pointer">Generate Lesson Note</button>
+                                <button type="submit" id="note-submit-btn" class="w-full py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white font-bold text-sm rounded-lg transition cursor-pointer">Generate Lesson Note</button>
                             </form>
                         </div>
                         <div>
@@ -311,7 +311,7 @@
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Subject</label>
-                                        <select id="q-subject" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500"></select>
+                                        <select id="q-subject" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Class</label>
@@ -329,23 +329,23 @@
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Count</label>
-                                        <input type="number" id="q-count" required min="1" max="200" value="20" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                        <input type="number" id="q-count" required min="1" max="200" value="20" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Topic</label>
-                                        <input type="text" id="q-topic" required placeholder="e.g. Algebra" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                        <input type="text" id="q-topic" required placeholder="e.g. Algebra" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Sub-topic (Optional)</label>
-                                        <input type="text" id="q-subtopic" placeholder="e.g., Quadratic Equations" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                        <input type="text" id="q-subtopic" placeholder="e.g., Quadratic Equations" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Difficulty</label>
-                                        <select id="q-difficulty" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-indigo-500">
+                                        <select id="q-difficulty" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                             <option value="">Standard</option>
                                             <option value="Easy">Easy</option>
                                             <option value="Standard">Standard</option>
@@ -357,14 +357,14 @@
                                         <label for="q-theory" class="text-sm text-slate-700">Include Theory / Essay / Structured Questions</label>
                                     </div>
                                 </div>
-                                <button type="submit" id="q-submit-btn" class="w-full py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-bold text-sm rounded-lg transition cursor-pointer">Generate Questions</button>
-                                <div id="q-error" class="hidden mt-2 p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg"></div>
+                                <button type="submit" id="q-submit-btn" class="w-full py-2.5 bg-[#1e3a5f] hover:bg-[#15294a] text-white font-bold text-sm rounded-lg transition cursor-pointer">Generate Questions</button>
+                                <div id="q-error" class="hidden mt-2 p-3 bg-[#991b1b]/10 border border-[#991b1b]/20 text-[#991b1b] text-xs rounded-lg"></div>
                             </form>
-                            <div id="q-save-section" class="hidden p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                                <p class="text-sm text-emerald-800 font-medium" id="q-save-msg"></p>
+                            <div id="q-save-section" class="hidden p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                <p class="text-sm text-[#1d4ed8] font-medium" id="q-save-msg"></p>
                                 <div class="flex gap-2 mt-2">
-                                    <button onclick="saveQuestions()" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 cursor-pointer">Save to Pool</button>
-                                    <button onclick="convertToCBT()" class="px-3 py-1.5 bg-indigo-600 text-white text-xs font-bold rounded-lg hover:bg-indigo-700 cursor-pointer">Convert to CBT</button>
+                                    <button onclick="saveQuestions()" class="px-3 py-1.5 bg-[#2563eb] text-white text-xs font-bold rounded-lg hover:bg-[#1d4ed8] cursor-pointer">Save to Pool</button>
+                                    <button onclick="convertToCBT()" class="px-3 py-1.5 bg-[#1e3a5f] text-white text-xs font-bold rounded-lg hover:bg-[#15294a] cursor-pointer">Convert to CBT</button>
                                 </div>
                             </div>
                         </div>
@@ -390,7 +390,7 @@
                     <div class="space-y-6">
                         <div class="flex flex-wrap items-center justify-between gap-3">
                             <h3 class="text-lg font-bold text-slate-900">CBT Exam Manager</h3>
-                            <button onclick="openCsvImport()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition cursor-pointer flex items-center gap-2">
+                            <button onclick="openCsvImport()" class="px-4 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition cursor-pointer flex items-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                                 Import Questions (CSV)
                             </button>
@@ -430,12 +430,12 @@
                                                 <td class="p-2 border border-slate-200">Abuja</td>
                                                 <td class="p-2 border border-slate-200">Kano</td>
                                                 <td class="p-2 border border-slate-200">Ibadan</td>
-                                                <td class="p-2 border border-slate-200 font-bold text-emerald-700">B</td>
+                                                <td class="p-2 border border-slate-200 font-bold text-[#2563eb]">B</td>
                                                 <td class="p-2 border border-slate-200">Abuja is the capital city of Nigeria.</td>
                                                 <td class="p-2 border border-slate-200">1</td>
                                                 <td class="p-2 border border-slate-200">Easy</td>
                                                 <td class="p-2 border border-slate-200">Geography</td>
-                                                <td class="p-2 border border-slate-200 text-slate-400">—</td>
+                                                <td class="p-2 border border-slate-200 text-slate-400">â€”</td>
                                             </tr>
                                             <tr class="bg-slate-50 text-slate-600">
                                                 <td class="p-2 border border-slate-200 font-medium text-slate-800">Which planet is known as the Red Planet?</td>
@@ -443,12 +443,12 @@
                                                 <td class="p-2 border border-slate-200">Mars</td>
                                                 <td class="p-2 border border-slate-200">Venus</td>
                                                 <td class="p-2 border border-slate-200">Jupiter</td>
-                                                <td class="p-2 border border-slate-200 font-bold text-emerald-700">B</td>
+                                                <td class="p-2 border border-slate-200 font-bold text-[#2563eb]">B</td>
                                                 <td class="p-2 border border-slate-200">Mars is called the Red Planet due to its reddish appearance.</td>
                                                 <td class="p-2 border border-slate-200">1</td>
                                                 <td class="p-2 border border-slate-200">Easy</td>
                                                 <td class="p-2 border border-slate-200">Space</td>
-                                                <td class="p-2 border border-slate-200 text-slate-400">—</td>
+                                                <td class="p-2 border border-slate-200 text-slate-400">â€”</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -459,8 +459,8 @@
                                     <span><strong class="text-slate-700">Explanation, Marks, Topic, Image URL</strong> are optional</span>
                                 </div>
                                 <div class="flex items-center gap-3 text-slate-500">
-                                    <span>Download a <button type="button" onclick="downloadCsvTemplate()" class="text-indigo-600 hover:underline font-medium cursor-pointer">CSV template</button> to get started.</span>
-                                    <button onclick="navigator.clipboard.writeText('Question,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Marks,Difficulty,Topic,Image URL');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Headers',2000)" class="px-2.5 py-1 bg-slate-100 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-md font-medium transition cursor-pointer text-xs">
+                                    <span>Download a <button type="button" onclick="downloadCsvTemplate()" class="text-[#1e3a5f] hover:underline font-medium cursor-pointer">CSV template</button> to get started.</span>
+                                    <button onclick="navigator.clipboard.writeText('Question,Option A,Option B,Option C,Option D,Correct Answer,Explanation,Marks,Difficulty,Topic,Image URL');this.textContent='Copied!';setTimeout(()=>this.textContent='Copy Headers',2000)" class="px-2.5 py-1 bg-slate-100 hover:bg-blue-100 text-[#1e3a5f] border border-blue-200 rounded-md font-medium transition cursor-pointer text-xs">
                                         Copy Headers
                                     </button>
                                 </div>
@@ -495,23 +495,23 @@
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Subject *</label>
-                                        <select id="csv-subject" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500">
+                                        <select id="csv-subject" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                             <option value="">Select subject...</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Class *</label>
-                                        <select id="csv-class" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"></select>
+                                        <select id="csv-class" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Term *</label>
-                                        <select id="csv-term" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500"></select>
+                                        <select id="csv-term" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Session *</label>
-                                        <input type="text" id="csv-session" value="<?php echo date('Y') . '/' . (date('Y') + 1); ?>" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500">
+                                        <input type="text" id="csv-session" value="<?php echo date('Y') . '/' . (date('Y') + 1); ?>" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-3 gap-3">
@@ -524,35 +524,35 @@
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Duration (min)</label>
-                                        <input type="number" id="csv-duration" value="30" min="1" max="180" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500">
+                                        <input type="number" id="csv-duration" value="30" min="1" max="180" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Marks Per Q</label>
-                                        <input type="number" id="csv-marks" value="1" min="1" max="100" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500">
+                                        <input type="number" id="csv-marks" value="1" min="1" max="100" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Topic (Optional)</label>
-                                        <input type="text" id="csv-topic" placeholder="e.g., Algebra" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500">
+                                        <input type="text" id="csv-topic" placeholder="e.g., Algebra" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Sub Topic (Optional)</label>
-                                        <input type="text" id="csv-subtopic" placeholder="e.g., Quadratic Equations" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-emerald-500">
+                                        <input type="text" id="csv-subtopic" placeholder="e.g., Quadratic Equations" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                 </div>
-                                <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-emerald-400 transition" id="csv-drop-zone">
+                                <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-[#2563eb] transition" id="csv-drop-zone">
                                     <input type="file" id="csv-file-input" accept=".csv" class="hidden" onchange="handleCsvFile(this)">
                                     <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-                                    <p class="text-sm text-slate-500 mb-1">Drag & drop your CSV file here, or <button type="button" onclick="document.getElementById('csv-file-input').click()" class="text-emerald-600 font-semibold hover:underline cursor-pointer">browse</button></p>
-                                    <p class="text-xs text-slate-400">Supports up to 5,000 questions. <button type="button" onclick="downloadCsvTemplate()" class="text-indigo-600 hover:underline cursor-pointer font-medium">Download CSV Template</button></p>
-                                    <div id="csv-file-info" class="hidden mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                                        <p class="text-sm text-emerald-800 font-medium" id="csv-file-name"></p>
+                                    <p class="text-sm text-slate-500 mb-1">Drag & drop your CSV file here, or <button type="button" onclick="document.getElementById('csv-file-input').click()" class="text-[#2563eb] font-semibold hover:underline cursor-pointer">browse</button></p>
+                                    <p class="text-xs text-slate-400">Supports up to 5,000 questions. <button type="button" onclick="downloadCsvTemplate()" class="text-[#1e3a5f] hover:underline cursor-pointer font-medium">Download CSV Template</button></p>
+                                    <div id="csv-file-info" class="hidden mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                        <p class="text-sm text-[#1d4ed8] font-medium" id="csv-file-name"></p>
                                     </div>
                                 </div>
                                 <div class="flex justify-end gap-2 pt-2">
                                     <button onclick="closeCsvImport()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Cancel</button>
-                                    <button id="csv-preview-btn" onclick="previewCsvImport()" disabled class="px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg opacity-50 cursor-not-allowed transition">Preview Import</button>
+                                    <button id="csv-preview-btn" onclick="previewCsvImport()" disabled class="px-4 py-2 bg-[#1e3a5f] text-white text-sm font-bold rounded-lg opacity-50 cursor-not-allowed transition">Preview Import</button>
                                 </div>
                             </div>
 
@@ -560,25 +560,25 @@
                             <div id="csv-step-2" class="hidden p-4 sm:p-6 space-y-3 sm:space-y-4">
                                 <div id="csv-preview-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3"></div>
 
-                                <div id="csv-preview-errors" class="hidden p-3 sm:p-4 bg-red-50 border border-red-200 rounded-lg">
-                                    <button onclick="this.parentElement.classList.add('hidden')" class="float-right text-red-400 hover:text-red-600 cursor-pointer p-1">&times;</button>
-                                    <h4 class="text-sm font-bold text-red-800 mb-2" id="csv-error-title">Errors Found</h4>
-                                    <div id="csv-error-list" class="text-xs text-red-700 space-y-1 max-h-32 overflow-y-auto"></div>
+                                <div id="csv-preview-errors" class="hidden p-3 sm:p-4 bg-[#991b1b]/10 border border-[#991b1b]/20 rounded-lg">
+                                    <button onclick="this.parentElement.classList.add('hidden')" class="float-right text-[#991b1b] hover:text-[#991b1b] cursor-pointer p-1">&times;</button>
+                                    <h4 class="text-sm font-bold text-[#7f1d1d] mb-2" id="csv-error-title">Errors Found</h4>
+                                    <div id="csv-error-list" class="text-xs text-[#991b1b] space-y-1 max-h-32 overflow-y-auto"></div>
                                 </div>
 
                                 <div>
                                     <label class="text-xs font-semibold text-slate-600 block mb-2">Duplicate Handling</label>
                                     <div class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
-                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50 transition text-xs sm:text-sm flex-1 min-w-0">
-                                            <input type="radio" name="duplicate_handling" value="import_all" checked class="accent-emerald-600 shrink-0">
+                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-[#2563eb] has-[:checked]:bg-blue-50 transition text-xs sm:text-sm flex-1 min-w-0">
+                                            <input type="radio" name="duplicate_handling" value="import_all" checked class="accent-[#2563eb] shrink-0">
                                             <div class="min-w-0"><span class="font-medium text-slate-800">Import All</span><p class="text-xs text-slate-500 hidden sm:block">Import everything including duplicates</p></div>
                                         </label>
-                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50 transition text-xs sm:text-sm flex-1 min-w-0">
-                                            <input type="radio" name="duplicate_handling" value="skip" class="accent-amber-600 shrink-0">
+                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-[#1e3a5f] has-[:checked]:bg-[#1e3a5f]/10 transition text-xs sm:text-sm flex-1 min-w-0">
+                                            <input type="radio" name="duplicate_handling" value="skip" class="accent-[#1e3a5f] shrink-0">
                                             <div class="min-w-0"><span class="font-medium text-slate-800">Skip Duplicates</span><p class="text-xs text-slate-500 hidden sm:block">Skip questions that already exist</p></div>
                                         </label>
-                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-red-500 has-[:checked]:bg-red-50 transition text-xs sm:text-sm flex-1 min-w-0">
-                                            <input type="radio" name="duplicate_handling" value="replace" class="accent-red-600 shrink-0">
+                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-[#991b1b] has-[:checked]:bg-[#991b1b]/10 transition text-xs sm:text-sm flex-1 min-w-0">
+                                            <input type="radio" name="duplicate_handling" value="replace" class="accent-[#991b1b] shrink-0">
                                             <div class="min-w-0"><span class="font-medium text-slate-800">Replace Existing</span><p class="text-xs text-slate-500 hidden sm:block">Update matching questions</p></div>
                                         </label>
                                     </div>
@@ -587,8 +587,8 @@
                                 <div id="csv-step-2-actions" class="flex items-center justify-between gap-3 flex-wrap">
                                     <button onclick="csvGoBack(1)" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Back</button>
                                     <div class="flex items-center gap-3">
-                                        <span id="csv-import-progress" class="hidden px-4 py-2 text-sm text-emerald-700 font-semibold"><span class="animate-spin inline-block w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full mr-2 align-middle"></span>Importing...</span>
-                                        <button id="csv-import-btn" onclick="confirmCsvImport()" class="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition cursor-pointer">Import Questions</button>
+                                        <span id="csv-import-progress" class="hidden px-4 py-2 text-sm text-[#2563eb] font-semibold"><span class="animate-spin inline-block w-4 h-4 border-2 border-[#2563eb] border-t-transparent rounded-full mr-2 align-middle"></span>Importing...</span>
+                                        <button id="csv-import-btn" onclick="confirmCsvImport()" class="px-6 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition cursor-pointer">Import Questions</button>
                                     </div>
                                 </div>
 
@@ -613,7 +613,7 @@
                                     <div id="csv-pagination" class="hidden flex items-center justify-between px-3 sm:px-4 py-3 border-t border-slate-200 bg-slate-50 text-xs">
                                         <div class="flex items-center gap-2">
                                             <span class="text-slate-500" id="csv-page-info">Page 1 of 1</span>
-                                            <select id="csv-page-size" onchange="setCsvPageSize(+this.value)" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:border-emerald-500">
+                                            <select id="csv-page-size" onchange="setCsvPageSize(+this.value)" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:border-[#2563eb]">
                                                 <option value="10">10 / page</option>
                                                 <option value="25" selected>25 / page</option>
                                                 <option value="50">50 / page</option>
@@ -632,19 +632,19 @@
 
                             {{-- Step 3: Result --}}
                             <div id="csv-step-3" class="hidden p-6 text-center space-y-4">
-                                <div class="w-16 h-16 mx-auto bg-emerald-100 rounded-full flex items-center justify-center">
-                                    <svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                <div class="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center">
+                                    <svg class="w-8 h-8 text-[#2563eb]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                                 </div>
                                 <h3 class="text-xl font-bold text-slate-900" id="csv-result-title">Import Complete!</h3>
                                 <p class="text-sm text-slate-500" id="csv-result-message"></p>
                                 <div id="csv-result-details" class="grid grid-cols-3 gap-3 max-w-sm mx-auto"></div>
-                                <div id="csv-result-errors" class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-left">
-                                    <h4 class="text-sm font-bold text-red-800 mb-2">Row Errors</h4>
-                                    <div id="csv-result-error-list" class="text-xs text-red-700 space-y-1 max-h-40 overflow-y-auto"></div>
+                                <div id="csv-result-errors" class="hidden mt-4 p-4 bg-[#991b1b]/10 border border-[#991b1b]/20 rounded-lg text-left">
+                                    <h4 class="text-sm font-bold text-[#7f1d1d] mb-2">Row Errors</h4>
+                                    <div id="csv-result-error-list" class="text-xs text-[#991b1b] space-y-1 max-h-40 overflow-y-auto"></div>
                                 </div>
                                 <div class="flex justify-center gap-2 pt-2">
                                     <button onclick="closeCsvImport()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Close</button>
-                                    <button onclick="csvGoBack(1); closeCsvImport(); openCsvImport();" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg transition cursor-pointer">Import Another</button>
+                                    <button onclick="csvGoBack(1); closeCsvImport(); openCsvImport();" class="px-4 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition cursor-pointer">Import Another</button>
                                 </div>
                             </div>
                         </div>
@@ -665,27 +665,27 @@
                         <div class="p-6 space-y-4">
                             <div>
                                 <label class="text-xs font-semibold text-slate-600 block mb-1">Exam Title</label>
-                                <input type="text" id="exam-settings-title" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-purple-500">
+                                <input type="text" id="exam-settings-title" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#1e3a5f]">
                             </div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="text-xs font-semibold text-slate-600 block mb-1">Duration (minutes)</label>
-                                    <input type="number" id="exam-settings-duration" min="1" max="180" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-purple-500">
+                                    <input type="number" id="exam-settings-duration" min="1" max="180" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#1e3a5f]">
                                 </div>
                                 <div>
                                     <label class="text-xs font-semibold text-slate-600 block mb-1">Marks Per Question</label>
-                                    <input type="number" id="exam-settings-marks" min="1" max="100" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-purple-500">
+                                    <input type="number" id="exam-settings-marks" min="1" max="100" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#1e3a5f]">
                                 </div>
                             </div>
                             <div>
                                 <label class="text-xs font-semibold text-slate-600 block mb-1">Instructions</label>
-                                <textarea id="exam-settings-instructions" rows="3" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-purple-500"></textarea>
+                                <textarea id="exam-settings-instructions" rows="3" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#1e3a5f]"></textarea>
                             </div>
-                            <div id="exam-settings-status" class="hidden text-xs font-semibold text-emerald-600 bg-emerald-50 p-3 rounded-lg"></div>
+                            <div id="exam-settings-status" class="hidden text-xs font-semibold text-[#2563eb] bg-blue-50 p-3 rounded-lg"></div>
                         </div>
                         <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
                             <button onclick="closeExamSettings()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Cancel</button>
-                            <button id="exam-settings-save-btn" onclick="saveExamSettings()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-sm font-bold rounded-lg transition cursor-pointer">Save Settings</button>
+                            <button id="exam-settings-save-btn" onclick="saveExamSettings()" class="px-4 py-2 bg-[#1e3a5f] hover:bg-[#15294a] text-white text-sm font-bold rounded-lg transition cursor-pointer">Save Settings</button>
                         </div>
                     </div>
                 </div>
@@ -758,7 +758,7 @@ async function initTeacherDashboard() {
         document.getElementById('loading').classList.add('hidden');
         document.getElementById('content').classList.remove('hidden');
     } catch(e) {
-        document.getElementById('loading').innerHTML = '<p class="text-sm text-red-600 font-medium">Failed to load. <button onclick="initTeacherDashboard()" class="underline cursor-pointer">Retry</button></p>';
+        document.getElementById('loading').innerHTML = '<p class="text-sm text-[#991b1b] font-medium">Failed to load. <button onclick="initTeacherDashboard()" class="underline cursor-pointer">Retry</button></p>';
     }
 }
 
@@ -904,13 +904,13 @@ function displayLessonPlan(plan) {
     `;
 
     document.getElementById('plan-action-buttons').innerHTML = `
-        <button onclick="downloadPlan('pdf')" class="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 cursor-pointer no-print">PDF</button>
-        <button onclick="downloadPlan('docx')" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer no-print">DOCX</button>
-        <button onclick="printPlan()" class="px-3 py-1.5 bg-slate-600 text-white text-xs font-bold rounded-lg hover:bg-slate-700 cursor-pointer no-print">Print</button>
-        <button onclick="copyPlanContent()" class="px-3 py-1.5 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 cursor-pointer no-print">Copy</button>
-        <button onclick="sharePlan()" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 cursor-pointer no-print">Share</button>
-        <button onclick="readAloud('plan-content')" class="px-3 py-1.5 bg-purple-600 text-white text-xs font-bold rounded-lg hover:bg-purple-700 cursor-pointer no-print">Read Aloud</button>
-        <button onclick="deletePlan()" class="px-3 py-1.5 bg-red-700 text-white text-xs font-bold rounded-lg hover:bg-red-800 cursor-pointer no-print">Delete</button>
+        <button onclick="downloadPlan('pdf')" class="px-3 py-1.5 bg-[#991b1b] text-white text-xs font-bold rounded-lg hover:bg-[#7f1d1d] cursor-pointer no-print">PDF</button>
+        <button onclick="downloadPlan('docx')" class="px-3 py-1.5 bg-[#2563eb] text-white text-xs font-bold rounded-lg hover:bg-[#1d4ed8] cursor-pointer no-print">DOCX</button>
+        <button onclick="printPlan()" class="px-3 py-1.5 bg-[#1f2937] text-white text-xs font-bold rounded-lg hover:bg-[#111827] cursor-pointer no-print">Print</button>
+        <button onclick="copyPlanContent()" class="px-3 py-1.5 bg-[#1e3a5f] text-white text-xs font-bold rounded-lg hover:bg-[#15294a] cursor-pointer no-print">Copy</button>
+        <button onclick="sharePlan()" class="px-3 py-1.5 bg-[#2563eb] text-white text-xs font-bold rounded-lg hover:bg-[#1d4ed8] cursor-pointer no-print">Share</button>
+        <button onclick="readAloud('plan-content')" class="px-3 py-1.5 bg-[#1e3a5f] text-white text-xs font-bold rounded-lg hover:bg-[#15294a] cursor-pointer no-print">Read Aloud</button>
+        <button onclick="deletePlan()" class="px-3 py-1.5 bg-[#7f1d1d] text-white text-xs font-bold rounded-lg hover:bg-[#5c1414] cursor-pointer no-print">Delete</button>
     `;
 }
 
@@ -982,22 +982,22 @@ function displayLessonNote(note) {
     const advDisadv = note.advantagesDisadvantages || {};
     const keyPoints = note.keyPoints || [];
 
-    let examplesHtml = examples.map(ex => `<div class="p-3 bg-slate-50 border-l-4 border-emerald-500 rounded mb-2"><strong class="text-sm">${ex.title || 'Example'}:</strong><p class="text-xs mt-1">${ex.description || ''}</p></div>`).join('');
-    let definitionsHtml = definitions.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Definitions of Key Terms</h3><table class="w-full text-sm border-collapse">${definitions.map(d => `<tr class="border-b border-slate-200"><td class="py-2 pr-3 font-semibold text-emerald-700 w-1/3">${d.term || ''}</td><td class="py-2 text-slate-600">${d.definition || ''}</td></tr>`).join('')}</table></div>` : '';
+    let examplesHtml = examples.map(ex => `<div class="p-3 bg-slate-50 border-l-4 border-[#2563eb] rounded mb-2"><strong class="text-sm">${ex.title || 'Example'}:</strong><p class="text-xs mt-1">${ex.description || ''}</p></div>`).join('');
+    let definitionsHtml = definitions.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Definitions of Key Terms</h3><table class="w-full text-sm border-collapse">${definitions.map(d => `<tr class="border-b border-slate-200"><td class="py-2 pr-3 font-semibold text-[#2563eb] w-1/3">${d.term || ''}</td><td class="py-2 text-slate-600">${d.definition || ''}</td></tr>`).join('')}</table></div>` : '';
     let practicalHtml = practicalApps.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Practical Applications</h3><ul class="text-sm space-y-1 list-disc pl-5 text-slate-600">${practicalApps.map(a => `<li>${a}</li>`).join('')}</ul></div>` : '';
     let illustrationsHtml = illustrations.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Illustrations / Diagrams</h3>${illustrations.map(i => `<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg mb-2 text-sm text-slate-600 font-mono text-xs">${i}</div>`).join('')}</div>` : '';
     let advHtml = '';
     if (advDisadv.advantages && advDisadv.advantages.length) {
-        advHtml += `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Advantages</h3><ul class="text-sm space-y-1 list-disc pl-5 text-green-700">${advDisadv.advantages.map(a => `<li>${a}</li>`).join('')}</ul></div>`;
+        advHtml += `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Advantages</h3><ul class="text-sm space-y-1 list-disc pl-5 text-[#2563eb]">${advDisadv.advantages.map(a => `<li>${a}</li>`).join('')}</ul></div>`;
     }
     if (advDisadv.disadvantages && advDisadv.disadvantages.length) {
-        advHtml += `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Disadvantages</h3><ul class="text-sm space-y-1 list-disc pl-5 text-red-700">${advDisadv.disadvantages.map(d => `<li>${d}</li>`).join('')}</ul></div>`;
+        advHtml += `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Disadvantages</h3><ul class="text-sm space-y-1 list-disc pl-5 text-[#991b1b]">${advDisadv.disadvantages.map(d => `<li>${d}</li>`).join('')}</ul></div>`;
     }
-    let keyPointsHtml = keyPoints.length ? `<div class="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl"><h3 class="text-sm font-bold text-emerald-800 mb-2">Key Points to Remember</h3><ul class="text-sm space-y-1 list-disc pl-5 text-emerald-700">${keyPoints.map(k => `<li>${k}</li>`).join('')}</ul></div>` : '';
+    let keyPointsHtml = keyPoints.length ? `<div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl"><h3 class="text-sm font-bold text-[#1d4ed8] mb-2">Key Points to Remember</h3><ul class="text-sm space-y-1 list-disc pl-5 text-[#2563eb]">${keyPoints.map(k => `<li>${k}</li>`).join('')}</ul></div>` : '';
 
     container.innerHTML = `
-        <div class="text-center border-b-2 border-emerald-600 pb-3 mb-4">
-            <h1 class="text-xl font-bold text-emerald-700">${note.topic || ''}</h1>
+        <div class="text-center border-b-2 border-[#2563eb] pb-3 mb-4">
+            <h1 class="text-xl font-bold text-[#2563eb]">${note.topic || ''}</h1>
             <p class="text-xs text-slate-500">${note.subject || ''} | ${note.class || ''} | ${note.term || ''} | Week ${note.week || ''} | ${note.periods || ''}</p>
         </div>
         ${note.content || ''}
@@ -1014,15 +1014,15 @@ function displayLessonNote(note) {
     `;
 
     document.getElementById('note-action-buttons').innerHTML = `
-        <button onclick="downloadNote('pdf')" class="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 cursor-pointer">PDF</button>
-        <button onclick="downloadNote('docx')" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer">DOCX</button>
-        <button onclick="printNote()" class="px-3 py-1.5 bg-slate-600 text-white text-xs font-bold rounded-lg hover:bg-slate-700 cursor-pointer">Print</button>
-        <button onclick="copyNoteContent()" class="px-3 py-1.5 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 cursor-pointer">Copy</button>
-        <button onclick="copyNoteLink()" class="px-3 py-1.5 bg-cyan-600 text-white text-xs font-bold rounded-lg hover:bg-cyan-700 cursor-pointer" title="Copy note link"><svg class="w-3.5 h-3.5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg></button>
-        <button onclick="deleteNote()" class="px-3 py-1.5 bg-red-700 text-white text-xs font-bold rounded-lg hover:bg-red-800 cursor-pointer">Delete</button>
-        <button onclick="shareNote()" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 cursor-pointer">Share</button>
-        <button onclick="readAloud('note-content')" class="px-3 py-1.5 bg-purple-600 text-white text-xs font-bold rounded-lg hover:bg-purple-700 cursor-pointer">Read Aloud</button>
-        <button onclick="generateQuestionsFromNote()" class="px-3 py-1.5 bg-pink-600 text-white text-xs font-bold rounded-lg hover:bg-pink-700 cursor-pointer">Generate Q from Note</button>
+        <button onclick="downloadNote('pdf')" class="px-3 py-1.5 bg-[#991b1b] text-white text-xs font-bold rounded-lg hover:bg-[#7f1d1d] cursor-pointer">PDF</button>
+        <button onclick="downloadNote('docx')" class="px-3 py-1.5 bg-[#2563eb] text-white text-xs font-bold rounded-lg hover:bg-[#1d4ed8] cursor-pointer">DOCX</button>
+        <button onclick="printNote()" class="px-3 py-1.5 bg-[#1f2937] text-white text-xs font-bold rounded-lg hover:bg-[#111827] cursor-pointer">Print</button>
+        <button onclick="copyNoteContent()" class="px-3 py-1.5 bg-[#1e3a5f] text-white text-xs font-bold rounded-lg hover:bg-[#15294a] cursor-pointer">Copy</button>
+        <button onclick="copyNoteLink()" class="px-3 py-1.5 bg-[#2563eb] text-white text-xs font-bold rounded-lg hover:bg-[#1d4ed8] cursor-pointer" title="Copy note link"><svg class="w-3.5 h-3.5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg></button>
+        <button onclick="deleteNote()" class="px-3 py-1.5 bg-[#7f1d1d] text-white text-xs font-bold rounded-lg hover:bg-[#5c1414] cursor-pointer">Delete</button>
+        <button onclick="shareNote()" class="px-3 py-1.5 bg-[#2563eb] text-white text-xs font-bold rounded-lg hover:bg-[#1d4ed8] cursor-pointer">Share</button>
+        <button onclick="readAloud('note-content')" class="px-3 py-1.5 bg-[#1e3a5f] text-white text-xs font-bold rounded-lg hover:bg-[#15294a] cursor-pointer">Read Aloud</button>
+        <button onclick="generateQuestionsFromNote()" class="px-3 py-1.5 bg-[#991b1b] text-white text-xs font-bold rounded-lg hover:bg-[#7f1d1d] cursor-pointer">Generate Q from Note</button>
     `;
 }
 
@@ -1159,17 +1159,17 @@ function displayQuestions(qs) {
                     <li>C. ${q.C || q.option_c || q.options?.C || ''}</li>
                     <li>D. ${q.D || q.option_d || q.options?.D || ''}</li>
                 </ul>
-                <p class="text-xs text-emerald-700 font-bold mt-1">Answer: ${q.answer || q.correctAnswer || q.correct_answer || ''}</p>
+                <p class="text-xs text-[#2563eb] font-bold mt-1">Answer: ${q.answer || q.correctAnswer || q.correct_answer || ''}</p>
             </div>
         `).join('');
     }
     if (theory.length) {
         html += `<h3 class="text-base font-bold text-slate-800 mt-4 mb-3">Theory Questions</h3>`;
-        html += theory.map(q => `<div class="p-3 bg-amber-50 border border-amber-200 rounded-lg mb-2"><p class="text-sm font-medium">${q.question}</p><p class="text-xs text-slate-500 mt-1">Model Answer: ${q.answer || ''}</p></div>`).join('');
+        html += theory.map(q => `<div class="p-3 bg-[#1e3a5f]/10 border border-[#1e3a5f]/20 rounded-lg mb-2"><p class="text-sm font-medium">${q.question}</p><p class="text-xs text-slate-500 mt-1">Model Answer: ${q.answer || ''}</p></div>`).join('');
     }
     if (essay.length) {
         html += `<h3 class="text-base font-bold text-slate-800 mt-4 mb-3">Essay Questions</h3>`;
-        html += essay.map(q => `<div class="p-3 bg-purple-50 border border-purple-200 rounded-lg mb-2"><p class="text-sm font-medium">${q.question}</p><p class="text-xs text-slate-500 mt-1">Guidance: ${q.guidance || ''}</p></div>`).join('');
+        html += essay.map(q => `<div class="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-2"><p class="text-sm font-medium">${q.question}</p><p class="text-xs text-slate-500 mt-1">Guidance: ${q.guidance || ''}</p></div>`).join('');
     }
     if (structured.length) {
         html += `<h3 class="text-base font-bold text-slate-800 mt-4 mb-3">Structured Questions</h3>`;
@@ -1178,10 +1178,10 @@ function displayQuestions(qs) {
     container.innerHTML = html || '<p class="text-sm text-slate-400">No questions generated.</p>';
 
     document.getElementById('q-action-buttons').innerHTML = `
-        <button onclick="copyQuestions()" class="px-3 py-1.5 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 cursor-pointer">Copy</button>
-        <button onclick="shareQuestions()" class="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-lg hover:bg-emerald-700 cursor-pointer">Share</button>
-        <button onclick="printQuestions()" class="px-3 py-1.5 bg-slate-600 text-white text-xs font-bold rounded-lg hover:bg-slate-700 cursor-pointer">Print</button>
-        <button onclick="readAloud('q-content')" class="px-3 py-1.5 bg-purple-600 text-white text-xs font-bold rounded-lg hover:bg-purple-700 cursor-pointer">Read Aloud</button>
+        <button onclick="copyQuestions()" class="px-3 py-1.5 bg-[#1e3a5f] text-white text-xs font-bold rounded-lg hover:bg-[#15294a] cursor-pointer">Copy</button>
+        <button onclick="shareQuestions()" class="px-3 py-1.5 bg-[#2563eb] text-white text-xs font-bold rounded-lg hover:bg-[#1d4ed8] cursor-pointer">Share</button>
+        <button onclick="printQuestions()" class="px-3 py-1.5 bg-[#1f2937] text-white text-xs font-bold rounded-lg hover:bg-[#111827] cursor-pointer">Print</button>
+        <button onclick="readAloud('q-content')" class="px-3 py-1.5 bg-[#1e3a5f] text-white text-xs font-bold rounded-lg hover:bg-[#15294a] cursor-pointer">Read Aloud</button>
     `;
 }
 
@@ -1252,8 +1252,8 @@ function renderSubjectFilter(containerId, allItems, currentFilter, setFilter, re
     const container = document.getElementById(containerId);
     if (!container) return;
     const subs = [...new Set(allItems.map(i => i.subject).filter(Boolean))];
-    const allBtn = `<button onclick="setFilter('');${renderFn}()" class="py-1.5 px-3 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer border ${!currentFilter ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">All</button>`;
-    const btns = subs.map(s => `<button onclick="setFilter('${s}');${renderFn}()" class="py-1.5 px-3 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer border ${currentFilter === s ? 'bg-indigo-600 text-white border-indigo-700' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">${s}</button>`);
+    const allBtn = `<button onclick="setFilter('');${renderFn}()" class="py-1.5 px-3 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer border ${!currentFilter ? 'bg-[#1e3a5f] text-white border-[#15294a]' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">All</button>`;
+    const btns = subs.map(s => `<button onclick="setFilter('${s}');${renderFn}()" class="py-1.5 px-3 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer border ${currentFilter === s ? 'bg-[#1e3a5f] text-white border-[#15294a]' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">${s}</button>`);
     container.innerHTML = allBtn + btns.join('');
 }
 
@@ -1275,15 +1275,15 @@ function renderPlans() {
     }
     container.innerHTML = filtered.slice().reverse().map(p => {
         const objs = p.behaviouralObjectives || [];
-        const subHtml = objs.length ? `<div class="flex flex-wrap gap-1 mt-1.5">${objs.slice(0, 3).map(o => `<span class="text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100">${o.replace(/^By the end of the lesson, students should be able to /i, '').replace(/^Students will /i, '').substring(0, 40)}</span>`).join('')}${objs.length > 3 ? `<span class="text-[10px] text-slate-400">+${objs.length - 3} more</span>` : ''}</div>` : '';
+        const subHtml = objs.length ? `<div class="flex flex-wrap gap-1 mt-1.5">${objs.slice(0, 3).map(o => `<span class="text-[10px] bg-blue-50 text-[#1e3a5f] px-2 py-0.5 rounded-full border border-blue-100">${o.replace(/^By the end of the lesson, students should be able to /i, '').replace(/^Students will /i, '').substring(0, 40)}</span>`).join('')}${objs.length > 3 ? `<span class="text-[10px] text-slate-400">+${objs.length - 3} more</span>` : ''}</div>` : '';
         return `
-        <div class="flex items-start gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:border-indigo-300 transition" onclick="viewPlan('${p.id}')">
+        <div class="flex items-start gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:border-[#2563eb] transition" onclick="viewPlan('${p.id}')">
             <div class="flex-1 min-w-0">
                 <div class="font-medium text-sm text-slate-900">${p.topic || 'Lesson Plan'}</div>
                 <div class="text-xs text-slate-400">${p.subject || ''} | ${p.class || ''} | Week ${p.week || ''} | ${p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''}</div>
                 ${subHtml}
             </div>
-            <button onclick="event.stopPropagation();deletePlan('${p.id}')" class="shrink-0 p-1.5 bg-white border border-slate-200 rounded-lg hover:bg-red-50 hover:border-red-300 hover:text-red-600 text-slate-400 transition cursor-pointer" title="Delete">
+            <button onclick="event.stopPropagation();deletePlan('${p.id}')" class="shrink-0 p-1.5 bg-white border border-slate-200 rounded-lg hover:bg-[#991b1b]/10 hover:border-[#991b1b] hover:text-[#991b1b] text-slate-400 transition cursor-pointer" title="Delete">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
             </button>
         </div>`;
@@ -1313,13 +1313,13 @@ function renderNotes() {
         const subs = n.subtopics || [];
         const subHtml = subs.length ? `<div class="flex flex-wrap gap-1 mt-1.5">${subs.slice(0, 3).map(s => `<span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full border border-slate-150">${s}</span>`).join('')}${subs.length > 3 ? `<span class="text-[10px] text-slate-400">+${subs.length - 3} more</span>` : ''}</div>` : '';
         return `
-        <div class="flex items-start gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:border-emerald-300 transition" onclick="viewNote('${n.id}')">
+        <div class="flex items-start gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:border-[#2563eb] transition" onclick="viewNote('${n.id}')">
             <div class="flex-1 min-w-0">
                 <div class="font-medium text-sm text-slate-900">${n.topic || 'Lesson Note'}</div>
                 <div class="text-xs text-slate-400">${n.subject || ''} | ${n.class || ''} | ${n.createdAt ? new Date(n.createdAt).toLocaleDateString() : ''}</div>
                 ${subHtml}
             </div>
-            <button onclick="event.stopPropagation();deleteNote('${n.id}')" class="shrink-0 p-1.5 bg-white border border-slate-200 rounded-lg hover:bg-red-50 hover:border-red-300 hover:text-red-600 text-slate-400 transition cursor-pointer" title="Delete">
+            <button onclick="event.stopPropagation();deleteNote('${n.id}')" class="shrink-0 p-1.5 bg-white border border-slate-200 rounded-lg hover:bg-[#991b1b]/10 hover:border-[#991b1b] hover:text-[#991b1b] text-slate-400 transition cursor-pointer" title="Delete">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
             </button>
         </div>`;
@@ -1346,7 +1346,7 @@ function renderQuestionSets() {
         return;
     }
     container.innerHTML = filtered.slice().reverse().map(q => `
-        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:border-pink-300 transition" onclick="viewQuestionSet('${q.id}')">
+        <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:border-[#991b1b] transition" onclick="viewQuestionSet('${q.id}')">
             <div class="font-medium text-sm text-slate-900">${q.topic || 'Question Set'}</div>
             <div class="text-xs text-slate-400">${q.subject || ''} | ${(q.questions || []).length} questions | ${q.createdAt ? new Date(q.createdAt).toLocaleDateString() : ''}</div>
         </div>
@@ -1380,15 +1380,15 @@ function renderExams() {
                     <h5 class="font-semibold text-slate-900">${e.title || 'Exam'}</h5>
                     <p class="text-xs text-slate-500">${e.subject || ''} | ${e.questions?.length || 0} questions | ${e.duration || 0} min | ${marks} mark(s) per Q</p>
                 </div>
-                <span class="px-2 py-0.5 rounded text-xs font-semibold ${e.isPublished ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'}">${e.isPublished ? 'Live' : 'Draft'}</span>
+                <span class="px-2 py-0.5 rounded text-xs font-semibold ${e.isPublished ? 'bg-blue-50 text-[#2563eb]' : 'bg-[#1e3a5f]/10 text-[#1e3a5f]'}">${e.isPublished ? 'Live' : 'Draft'}</span>
             </div>
             <div class="mt-3 flex flex-wrap gap-1.5">
-                <button onclick="publishExam('${e.id}')" class="px-2 py-1 bg-emerald-600 text-white text-[10px] font-bold rounded hover:bg-emerald-700 cursor-pointer">${e.isPublished ? 'Unpublish' : 'Publish'}</button>
-                <button onclick="copyExamLink('${examLink}')" class="px-2 py-1 bg-indigo-600 text-white text-[10px] font-bold rounded hover:bg-indigo-700 cursor-pointer">Copy Link</button>
-                <button onclick="openExamSettings('${e.id}')" class="px-2 py-1 bg-purple-600 text-white text-[10px] font-bold rounded hover:bg-purple-700 cursor-pointer">Settings</button>
-                <button onclick="window.open('/api/download/exam/${e.id}/pdf','_blank')" class="px-2 py-1 bg-red-600 text-white text-[10px] font-bold rounded hover:bg-red-700 cursor-pointer">PDF</button>
-                <button onclick="window.open('/api/download/exam/${e.id}/docx','_blank')" class="px-2 py-1 bg-blue-600 text-white text-[10px] font-bold rounded hover:bg-blue-700 cursor-pointer">DOCX</button>
-                <button onclick="deleteExam('${e.id}')" class="px-2 py-1 bg-red-500 text-white text-[10px] font-bold rounded hover:bg-red-600 cursor-pointer">Delete</button>
+                <button onclick="publishExam('${e.id}')" class="px-2 py-1 bg-[#2563eb] text-white text-[10px] font-bold rounded hover:bg-[#1d4ed8] cursor-pointer">${e.isPublished ? 'Unpublish' : 'Publish'}</button>
+                <button onclick="copyExamLink('${examLink}')" class="px-2 py-1 bg-[#1e3a5f] text-white text-[10px] font-bold rounded hover:bg-[#15294a] cursor-pointer">Copy Link</button>
+                <button onclick="openExamSettings('${e.id}')" class="px-2 py-1 bg-[#1e3a5f] text-white text-[10px] font-bold rounded hover:bg-[#15294a] cursor-pointer">Settings</button>
+                <button onclick="window.open('/api/download/exam/${e.id}/pdf','_blank')" class="px-2 py-1 bg-[#991b1b] text-white text-[10px] font-bold rounded hover:bg-[#7f1d1d] cursor-pointer">PDF</button>
+                <button onclick="window.open('/api/download/exam/${e.id}/docx','_blank')" class="px-2 py-1 bg-[#2563eb] text-white text-[10px] font-bold rounded hover:bg-[#1d4ed8] cursor-pointer">DOCX</button>
+                <button onclick="deleteExam('${e.id}')" class="px-2 py-1 bg-[#991b1b] text-white text-[10px] font-bold rounded hover:bg-[#7f1d1d] cursor-pointer">Delete</button>
             </div>
         </div>`;
     }).join('');
@@ -1428,7 +1428,7 @@ function renderResults() {
                     <span class="font-medium text-sm text-slate-900">${r.studentName || 'Student'}</span>
                     <span class="text-xs text-slate-400 ml-2">${r.examTitle || ''}</span>
                 </div>
-                <span class="px-2 py-0.5 rounded text-xs font-bold ${(r.percentage || 0) >= 50 ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}">${r.percentage || 0}%</span>
+                <span class="px-2 py-0.5 rounded text-xs font-bold ${(r.percentage || 0) >= 50 ? 'bg-blue-50 text-[#2563eb]' : 'bg-[#991b1b]/10 text-[#991b1b]'}">${r.percentage || 0}%</span>
             </div>
             <div class="text-xs text-slate-400 mt-1">Score: ${r.score || 0}/${r.totalQuestions || 0} | ${r.date ? new Date(r.date).toLocaleDateString() : ''}</div>
         </div>
@@ -1450,7 +1450,7 @@ function openCsvImport() {
     document.getElementById('csv-file-input').value = '';
     document.getElementById('csv-file-info').classList.add('hidden');
     document.getElementById('csv-preview-btn').disabled = true;
-    document.getElementById('csv-preview-btn').className = 'px-4 py-2 bg-emerald-600 text-white text-sm font-bold rounded-lg opacity-50 cursor-not-allowed transition';
+    document.getElementById('csv-preview-btn').className = 'px-4 py-2 bg-[#1e3a5f] text-white text-sm font-bold rounded-lg opacity-50 cursor-not-allowed transition';
     document.body.style.overflow = 'hidden';
     // Populate selects from existing curriculum data
     const subjects = document.querySelectorAll('#plan-subject option');
@@ -1488,7 +1488,7 @@ function handleCsvFile(input) {
     document.getElementById('csv-file-name').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
     document.getElementById('csv-file-info').classList.remove('hidden');
     document.getElementById('csv-preview-btn').disabled = false;
-    document.getElementById('csv-preview-btn').className = 'px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg cursor-pointer transition';
+    document.getElementById('csv-preview-btn').className = 'px-4 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg cursor-pointer transition';
 }
 
 async function previewCsvImport() {
@@ -1547,17 +1547,17 @@ function showCsvPreview(data) {
             <div class="text-lg sm:text-xl font-bold text-slate-900">${data.total_rows}</div>
             <div class="text-xs text-slate-500">Total Rows</div>
         </div>
-        <div class="p-2 sm:p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
-            <div class="text-lg sm:text-xl font-bold text-emerald-700">${data.valid_rows}</div>
-            <div class="text-xs text-emerald-600">Valid</div>
+        <div class="p-2 sm:p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+            <div class="text-lg sm:text-xl font-bold text-[#2563eb]">${data.valid_rows}</div>
+            <div class="text-xs text-[#2563eb]">Valid</div>
         </div>
-        <div class="p-2 sm:p-3 ${data.error_rows > 0 ? 'bg-red-50 border-red-200' : 'bg-slate-50 border-slate-200'} border rounded-lg text-center">
-            <div class="text-lg sm:text-xl font-bold ${data.error_rows > 0 ? 'text-red-700' : 'text-slate-500'}">${data.error_rows}</div>
-            <div class="text-xs ${data.error_rows > 0 ? 'text-red-600' : 'text-slate-500'}">Errors</div>
+        <div class="p-2 sm:p-3 ${data.error_rows > 0 ? 'bg-[#991b1b]/10 border-[#991b1b]/20' : 'bg-slate-50 border-slate-200'} border rounded-lg text-center">
+            <div class="text-lg sm:text-xl font-bold ${data.error_rows > 0 ? 'text-[#991b1b]' : 'text-slate-500'}">${data.error_rows}</div>
+            <div class="text-xs ${data.error_rows > 0 ? 'text-[#991b1b]' : 'text-slate-500'}">Errors</div>
         </div>
-        <div class="p-2 sm:p-3 bg-amber-50 border border-amber-200 rounded-lg text-center">
-            <div class="text-lg sm:text-xl font-bold text-amber-700">${data.duplicate_count}</div>
-            <div class="text-xs text-amber-600">Duplicates Found</div>
+        <div class="p-2 sm:p-3 bg-[#1e3a5f]/10 border border-[#1e3a5f]/20 rounded-lg text-center">
+            <div class="text-lg sm:text-xl font-bold text-[#1e3a5f]">${data.duplicate_count}</div>
+            <div class="text-xs text-[#1e3a5f]">Duplicates Found</div>
         </div>
     `;
 
@@ -1579,7 +1579,7 @@ function showCsvPreview(data) {
     document.getElementById('csv-import-btn').disabled = data.valid_rows === 0;
     document.getElementById('csv-import-btn').className = data.valid_rows === 0
         ? 'px-6 py-2 bg-slate-300 text-white text-sm font-bold rounded-lg cursor-not-allowed'
-        : 'px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-bold rounded-lg cursor-pointer transition';
+        : 'px-6 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg cursor-pointer transition';
 }
 
 function renderCsvPreviewPage() {
@@ -1600,17 +1600,17 @@ function renderCsvPreviewPage() {
     } else {
         tbody.innerHTML = pageRows.map(r => {
             const question = r.question.length > 60 ? r.question.substring(0, 60) + '...' : r.question;
-            return `<tr class="${r.valid ? '' : 'bg-red-50'} border-b border-slate-100">
+            return `<tr class="${r.valid ? '' : 'bg-[#991b1b]/10'} border-b border-slate-100">
                 <td class="px-2 sm:px-3 py-2 text-slate-500">${r.row}</td>
                 <td class="px-2 sm:px-3 py-2 font-medium text-slate-800 max-w-[180px] sm:max-w-[280px] truncate" title="${r.question.replace(/"/g, '&quot;')}">${question || '-'}</td>
                 <td class="px-2 sm:px-3 py-2 text-slate-600">${r.optionA || '-'}</td>
                 <td class="px-2 sm:px-3 py-2 text-slate-600">${r.optionB || '-'}</td>
                 <td class="px-2 sm:px-3 py-2 text-slate-600">${r.optionC || '-'}</td>
                 <td class="px-2 sm:px-3 py-2 text-slate-600">${r.optionD || '-'}</td>
-                <td class="px-2 sm:px-3 py-2 text-center font-bold ${r.valid ? 'text-emerald-700' : 'text-red-500'}">${r.correctAnswer || '-'}</td>
+                <td class="px-2 sm:px-3 py-2 text-center font-bold ${r.valid ? 'text-[#2563eb]' : 'text-red-500'}">${r.correctAnswer || '-'}</td>
                 <td class="px-2 sm:px-3 py-2 text-center">${r.valid
-                    ? '<span class="text-emerald-600 text-xs font-semibold">OK</span>'
-                    : '<span class="text-red-600 text-xs font-semibold" title="' + (r.errors || []).join('; ') + '">Error</span>'
+                    ? '<span class="text-[#2563eb] text-xs font-semibold">OK</span>'
+                    : '<span class="text-[#991b1b] text-xs font-semibold" title="' + (r.errors || []).join('; ') + '">Error</span>'
                 }</td>
             </tr>`;
         }).join('');
@@ -1731,13 +1731,13 @@ function showCsvResult(data) {
     document.getElementById('csv-result-message').textContent = data.message;
 
     document.getElementById('csv-result-details').innerHTML = `
-        <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-lg text-center">
-            <div class="text-xl font-bold text-emerald-700">${data.imported}</div>
-            <div class="text-xs text-emerald-600">Imported</div>
+        <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
+            <div class="text-xl font-bold text-[#2563eb]">${data.imported}</div>
+            <div class="text-xs text-[#2563eb]">Imported</div>
         </div>
-        <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-center">
-            <div class="text-xl font-bold text-amber-700">${data.skipped}</div>
-            <div class="text-xs text-amber-600">Skipped</div>
+        <div class="p-3 bg-[#1e3a5f]/10 border border-[#1e3a5f]/20 rounded-lg text-center">
+            <div class="text-xl font-bold text-[#1e3a5f]">${data.skipped}</div>
+            <div class="text-xs text-[#1e3a5f]">Skipped</div>
         </div>
         <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-center">
             <div class="text-xl font-bold text-blue-700">${data.replaced}</div>
@@ -1774,15 +1774,15 @@ document.addEventListener('DOMContentLoaded', function() {
     if (dropZone) {
         dropZone.addEventListener('dragover', function(e) {
             e.preventDefault();
-            this.classList.add('border-emerald-500', 'bg-emerald-50');
+            this.classList.add('border-[#2563eb]', 'bg-blue-50');
         });
         dropZone.addEventListener('dragleave', function(e) {
             e.preventDefault();
-            this.classList.remove('border-emerald-500', 'bg-emerald-50');
+            this.classList.remove('border-[#2563eb]', 'bg-blue-50');
         });
         dropZone.addEventListener('drop', function(e) {
             e.preventDefault();
-            this.classList.remove('border-emerald-500', 'bg-emerald-50');
+            this.classList.remove('border-[#2563eb]', 'bg-blue-50');
             const files = e.dataTransfer.files;
             if (files.length > 0) {
                 document.getElementById('csv-file-input').files = files;
@@ -1833,7 +1833,7 @@ async function saveExamSettings() {
         });
         const data = await res.json();
         if (data.success) {
-            document.getElementById('exam-settings-status').className = 'text-xs font-semibold text-emerald-600 bg-emerald-50 p-3 rounded-lg';
+            document.getElementById('exam-settings-status').className = 'text-xs font-semibold text-[#2563eb] bg-blue-50 p-3 rounded-lg';
             document.getElementById('exam-settings-status').textContent = 'Settings saved successfully!';
             document.getElementById('exam-settings-status').classList.remove('hidden');
             initTeacherDashboard();
@@ -1851,7 +1851,7 @@ async function saveExamSettings() {
 function switchTab(tab) {
     document.querySelectorAll('.tab-btn').forEach(btn => {
         const isActive = btn.id === 'tab-' + tab + '-btn';
-        btn.className = 'tab-btn px-4 py-3 text-sm font-semibold border-b-2 transition cursor-pointer whitespace-nowrap ' + (isActive ? 'border-indigo-600 text-indigo-700 bg-white' : 'border-transparent text-slate-500 hover:text-slate-700');
+        btn.className = 'tab-btn px-4 py-3 text-sm font-semibold border-b-2 transition cursor-pointer whitespace-nowrap ' + (isActive ? 'border-[#1e3a5f] text-[#1e3a5f] bg-white' : 'border-transparent text-slate-500 hover:text-slate-700');
     });
     document.querySelectorAll('.tab-panel').forEach(p => {
         p.classList.toggle('hidden', p.id !== 'tab-' + tab);
