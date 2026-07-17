@@ -305,19 +305,7 @@ class AIController extends Controller
                 $data['class'] = $data['classLevel'];
             }
 
-            $lessonNoteContent = '';
-            if (!empty($data['noteContent'])) {
-                $lessonNoteContent = $data['noteContent'];
-            } elseif (!empty($data['lessonNoteId'])) {
-                JsonDb::init();
-                $db = JsonDb::get();
-                foreach ($db['lessonNotes'] as $n) {
-                    if ($n['id'] === $data['lessonNoteId']) {
-                        $lessonNoteContent = json_encode($n);
-                        break;
-                    }
-                }
-            }
+            $lessonNoteContent = $data['noteContent'] ?? '';
 
             // Ensure every generation starts with a completely fresh context
             ContentGenerator::reset();
@@ -352,9 +340,6 @@ class AIController extends Controller
                     'prompt_length' => strlen($prompt),
                     'lesson_note_length' => strlen($lessonNoteContent),
                 ]);
-                if (!empty($lessonNoteContent)) {
-                    return response()->json(['success' => false, 'error' => 'The AI could not generate questions from this lesson note. Please try again or adjust the lesson note content.'], 422);
-                }
                 return $this->fallbackToContentGenerator($data);
             }
 
@@ -363,9 +348,6 @@ class AIController extends Controller
                     'topic' => $data['topic'],
                     'has_lesson_note' => !empty($lessonNoteContent),
                 ]);
-                if (!empty($lessonNoteContent)) {
-                    return response()->json(['success' => false, 'error' => 'The AI could not generate questions from this lesson note. Please try again.'], 422);
-                }
                 return $this->fallbackToContentGenerator($data);
             }
 
@@ -383,9 +365,6 @@ class AIController extends Controller
                     'response_length' => strlen($response),
                     'response_preview' => substr($response, 0, 3000),
                 ]);
-                if (!empty($lessonNoteContent)) {
-                    return response()->json(['success' => false, 'error' => 'The AI returned an invalid response. Please try again.'], 422);
-                }
                 return $this->fallbackToContentGenerator($data);
             }
 
@@ -396,9 +375,6 @@ class AIController extends Controller
                 Log::warning('Questions rejected - invalid format', [
                     'decoded_structure' => is_array($questions) ? array_keys($questions) : 'not_array',
                 ]);
-                if (!empty($lessonNoteContent)) {
-                    return response()->json(['success' => false, 'error' => 'The AI returned questions in an unexpected format. Please try again.'], 422);
-                }
                 return $this->fallbackToContentGenerator($data);
             }
 
@@ -407,9 +383,6 @@ class AIController extends Controller
             // Validate quality and retry if needed
             $validated = $this->validateAndRetryQuestions($questionItems, $prompt, $data, !empty($lessonNoteContent));
             if ($validated === null) {
-                if (!empty($lessonNoteContent)) {
-                    return response()->json(['success' => false, 'error' => 'Generated questions did not pass quality validation. Please try again.'], 422);
-                }
                 return $this->fallbackToContentGenerator($data);
             }
             $questionItems = $validated;

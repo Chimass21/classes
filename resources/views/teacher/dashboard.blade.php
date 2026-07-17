@@ -1096,7 +1096,6 @@ document.getElementById('questions-form')?.addEventListener('submit', async func
     const errEl = document.getElementById('q-error');
     if (errEl) { errEl.classList.add('hidden'); errEl.textContent = ''; }
     btn.disabled = true; btn.textContent = 'Generating...';
-    const lessonNoteId = currentNoteId || null;
     const payload = {
         subject: document.getElementById('q-subject').value,
         topic: document.getElementById('q-topic').value,
@@ -1107,12 +1106,15 @@ document.getElementById('questions-form')?.addEventListener('submit', async func
         count: parseInt(document.getElementById('q-count').value),
         includeTheory: document.getElementById('q-theory').checked,
         difficulty: document.getElementById('q-difficulty')?.value || '',
-        lessonNoteId: lessonNoteId,
     };
     if (generatingFromNote && currentNote) {
+        payload.lessonNoteId = currentNoteId;
         payload.noteContent = JSON.stringify(currentNote);
         payload.difficulty = currentNote.difficulty || '';
         generatingFromNote = false;
+        // Clear note refs so manual generations don't re-use note context
+        currentNoteId = null;
+        currentNote = null;
     }
     try {
         const res = await fetch('/api/ai/questions', {
