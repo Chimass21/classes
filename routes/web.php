@@ -107,6 +107,8 @@ Route::prefix('api')->group(function () {
     Route::post('/exams/{examId}/publish', [ExamController::class, 'apiPublish']);
     Route::delete('/exams/{examId}', [ExamController::class, 'apiDestroy']);
     Route::post('/exams/{examId}/submit', [ExamController::class, 'apiSubmitExam']);
+    Route::post('/exams/{examId}/autosave', [ExamController::class, 'apiAutoSave']);
+    Route::post('/exams/{examId}/autosave/load', [ExamController::class, 'apiLoadAutoSave']);
     Route::get('/results', [ResultController::class, 'apiIndex']);
     Route::get('/results/student/{studentId}', [ResultController::class, 'apiStudentResults']);
     Route::get('/notifications/user/{userId}', [HomeController::class, 'apiUserNotifications']);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Helpers\JsonDb;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 
 class ExamController extends Controller
@@ -203,6 +204,27 @@ class ExamController extends Controller
         $studentId = $request->input('studentId', 'usr_guest');
         $studentName = $request->input('studentName', 'Guest');
         $timeSpent = $request->input('timeSpent', 0);
+        $submissionId = $request->input('submissionId', '');
+
+        // Duplicate submission detection: if a result already exists for this
+        // student + exam combination (with same submissionId), reject silently.
+        if (!empty($submissionId)) {
+            foreach ($db['results'] as $existing) {
+                if (
+                    ($existing['examId'] ?? '') === $examId
+                    && ($existing['studentId'] ?? '') === $studentId
+                    && ($existing['submissionId'] ?? '') === $submissionId
+                ) {
+                    return response()->json(['success' => true, 'result' => $existing, 'duplicate' => true]);
+                }
+            }
+        }
+
+        // Server-side time validation: ensure time spent is within bounds
+        $durationSeconds = ($exam['duration'] ?? 30) * 60;
+        if ($timeSpent > $durationSeconds + 30) {
+            $timeSpent = $durationSeconds;
+        }
 
         $score = 0;
         $correctAnswers = 0;
@@ -252,13 +274,60 @@ class ExamController extends Controller
             'correctAnswers' => $correctAnswers,
             'failedQuestions' => $failedQuestions,
             'date' => now()->toIso8601String(),
-            'timeSpent' => $timeSpent,
+            'timeSpent' => (int)$timeSpent,
             'totalPossibleMarks' => $totalMarks,
+            'submissionId' => $submissionId,
         ];
 
         $db['results'][] = $result;
         JsonDb::save($db);
 
+        Log::info('Exam submitted successfully', [
+            'examId' => $examId,
+            'studentId' => $studentId,
+            'score' => $score,
+            'totalMarks' => $totalMarks,
+            'timeSpent' => $timeSpent,
+            'submissionId' => $submissionId,
+        ]);
+
         return response()->json(['success' => true, 'result' => $result]);
+    }
+
+    public function apiAutoSave(Request $request, $examId)
+    {
+        try {
+            $answers = $request->input('answers', []);
+            $studentId = $request->input('studentId', 'usr_guest');
+
+            JsonDb::init();
+            $db = JsonDb::get();
+            if (!isset($db['autosaves']) || !is_array($db['autosaves'])) {
+                $db['autosaves'] = [];
+            }
+            $key = 'autosave_' . $examId . '_' . $studentId;
+            $db['autosaves'][$key] = [
+                'examId' => $examId,
+                'studentId' => $studentId,
+                'answers' => $answers,
+                'updatedAt' => now()->toIso8601String(),
+            ];
+            JsonDb::save($db);
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            Log::warning('Auto-save failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false], 500);
+        }
+    }
+
+    public function apiLoadAutoSave(Request $request, $examId)
+    {
+        $studentId = $request->input('studentId', 'usr_guest');
+        JsonDb::init();
+        $db = JsonDb::get();
+        $key = 'autosave_' . $examId . '_' . $studentId;
+        $autosave = isset($db['autosaves']) ? ($db['autosaves'][$key] ?? null) : null;
+        return response()->json(['success' => true, 'autosave' => $autosave]);
     }
 }

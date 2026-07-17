@@ -192,22 +192,69 @@ let flaggedQuestions = {};
 let secondsLeft = examDuration * 60;
 let isExamActive = true;
 let submitting = false;
+let submitted = false;
 let result = null;
 let attempts = [];
+let autoSaveInterval = null;
+let timerInterval = null;
+let endTime = null; // Absolute timestamp when exam should end
 
 function initExam() {
+  // Check if already submitted (persistent flag)
+  if (localStorage.getItem('cbt_submitted_' + examId) === 'true' || sessionStorage.getItem('cbt_submitted_' + examId) === 'true') {
+    showAlreadySubmitted();
+    return;
+  }
+
+  // Check for sticky redirect after submit
+  const postSubmit = sessionStorage.getItem('cbt_postsubmit_' + examId);
+  if (postSubmit) {
+    sessionStorage.removeItem('cbt_postsubmit_' + examId);
+    try {
+      const savedResult = JSON.parse(postSubmit);
+      result = savedResult;
+      submitted = true;
+      isExamActive = false;
+      submitting = true;
+      showResults();
+      saveAttempt(savedResult, examDuration * 60);
+      return;
+    } catch(e) {}
+  }
+
   const saved = localStorage.getItem('cbt_progress_' + examId);
   if (saved) {
     try {
       const p = JSON.parse(saved);
-      if (p && p.secondsLeft > 0) {
+      if (p && p.secondsLeft > 0 && !p.submitted) {
         selectedAnswers = p.selectedAnswers || {};
         secondsLeft = p.secondsLeft;
+        endTime = p.endTime || null;
         currentIndex = p.currentQuestionIndex || 0;
         flaggedQuestions = p.flaggedQuestions || {};
       }
     } catch(e) {}
   }
+
+  // If endTime is not set or invalid, calculate from now
+  if (!endTime) {
+    endTime = Date.now() + secondsLeft * 1000;
+  } else {
+    // Recalculate secondsLeft from endTime
+    const remaining = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+    if (remaining > 0) {
+      secondsLeft = remaining;
+    } else {
+      secondsLeft = 0;
+      // Time already expired on page load — auto-submit immediately
+      setTimeout(() => triggerSubmit(true), 100);
+      return;
+    }
+  }
+
+  // Attempt to restore answers from server auto-save
+  restoreServerAutoSave();
+
   try {
     const hist = localStorage.getItem('brain_history_' + examId);
     if (hist) attempts = JSON.parse(hist);
@@ -216,6 +263,8 @@ function initExam() {
   updateAnsweredCount();
   renderQuestion();
   startTimer();
+  startAutoSaveInterval();
+  initTimerSync();
 }
 
 function buildNavGrid() {
@@ -307,30 +356,120 @@ function goToQuestion(index) {
 }
 
 function startTimer() {
+  if (timerInterval) clearInterval(timerInterval);
   const timerEl = document.getElementById('timer-text');
-  function tick() {
-    if (!isExamActive || secondsLeft <= 0) {
-      if (secondsLeft <= 0 && isExamActive) {
-        isExamActive = false;
-        triggerSubmit();
+  timerInterval = setInterval(function() {
+    if (!isExamActive || submitted) {
+      if (secondsLeft <= 0 && isExamActive && !submitted && !submitting) {
+        triggerSubmit(true);
       }
       return;
     }
-    secondsLeft--;
+    // Calculate remaining time from absolute endTime
+    if (endTime) {
+      secondsLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+    }
+    if (secondsLeft <= 0) {
+      secondsLeft = 0;
+      timerEl.textContent = '00:00';
+      timerEl.parentElement.className = 'flex items-center gap-1.5 sm:gap-2 bg-red-600 text-white px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border border-red-700 font-mono text-xs sm:text-sm font-black animate-pulse';
+      isExamActive = false;
+      submitted = true;
+      triggerSubmit(true);
+      return;
+    }
     const m = Math.floor(secondsLeft / 60);
     const s = secondsLeft % 60;
     timerEl.textContent = String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+    // Low time warning
+    if (secondsLeft <= 60) {
+      timerEl.parentElement.className = 'flex items-center gap-1.5 sm:gap-2 bg-red-50 text-red-700 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border border-red-100 font-mono text-xs sm:text-sm font-black';
+    }
     autoSave();
-    setTimeout(tick, 1000);
-  }
-  tick();
+  }, 1000);
+}
+
+function initTimerSync() {
+  // When the browser tab becomes visible again, recalculate time immediately
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden && isExamActive && !submitted) {
+      if (endTime) {
+        secondsLeft = Math.max(0, Math.floor((endTime - Date.now()) / 1000));
+      }
+      if (secondsLeft <= 0) {
+        triggerSubmit(true);
+      }
+    }
+  });
 }
 
 function autoSave() {
-  if (isExamActive && !result) {
-    const state = { selectedAnswers, secondsLeft, currentQuestionIndex: currentIndex, flaggedQuestions };
+  if (isExamActive && !result && !submitted) {
+    const state = {
+      selectedAnswers, secondsLeft,
+      currentQuestionIndex: currentIndex,
+      flaggedQuestions,
+      endTime,
+      submitted: false
+    };
     try { localStorage.setItem('cbt_progress_' + examId, JSON.stringify(state)); } catch(e) {}
   }
+}
+
+function startAutoSaveInterval() {
+  if (autoSaveInterval) clearInterval(autoSaveInterval);
+  autoSaveInterval = setInterval(function() {
+    if (isExamActive && !submitted && !result) {
+      // Save to server every 30 seconds
+      fetch('/api/exams/' + examId + '/autosave', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          studentId, studentName,
+          answers: selectedAnswers
+        })
+      }).catch(function() {}); // Silent fail — localStorage is the primary store
+    }
+  }, 30000);
+}
+
+function restoreServerAutoSave() {
+  if (Object.keys(selectedAnswers).length > 0) return; // Already have local answers
+  fetch('/api/exams/' + examId + '/autosave/load', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ studentId })
+  }).then(function(r) { return r.json(); }).then(function(data) {
+    if (data.success && data.autosave && data.autosave.answers) {
+      const serverAnswers = data.autosave.answers;
+      const serverCount = Object.keys(serverAnswers).length;
+      if (serverCount > Object.keys(selectedAnswers).length) {
+        selectedAnswers = serverAnswers;
+        buildNavGrid();
+        updateAnsweredCount();
+        renderQuestion();
+      }
+    }
+  }).catch(function() {});
+}
+
+function showAlreadySubmitted() {
+  submitted = true;
+  isExamActive = false;
+  submitting = true;
+  document.getElementById('exam-active').classList.add('hidden');
+  const headerControls = document.getElementById('header-controls');
+  headerControls.innerHTML = '<a href="{{ route("student.dashboard") }}" class="px-5 py-2 text-xs font-bold text-emerald-700 hover:text-emerald-900 bg-emerald-50 hover:bg-emerald-100 rounded-xl transition-all">Return to Dashboard</a>';
+  document.getElementById('exam-results').innerHTML = `
+    <div class="p-8 sm:p-10 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl text-center shadow-sm slide-up">
+      <div class="w-16 h-16 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-4">
+        <svg class="w-8 h-8 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+      </div>
+      <h2 class="text-xl sm:text-2xl font-black text-slate-800">Already Submitted</h2>
+      <p class="text-sm text-slate-500 mt-2 max-w-md mx-auto">This exam has already been completed. Your results are available in your dashboard.</p>
+      <a href="{{ route("student.dashboard") }}" class="mt-6 inline-block px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl transition-all">Go to Dashboard</a>
+    </div>`;
+  document.getElementById('exam-results').classList.remove('hidden');
 }
 
 function toggleFullscreen() {
@@ -341,29 +480,71 @@ function toggleFullscreen() {
   }
 }
 
-function triggerSubmit() {
-  if (submitting || !isExamActive) return;
-  if (!confirm('Are you sure you want to submit your exam? This action cannot be undone.')) return;
+function triggerSubmit(force) {
+  if (submitting || submitted) return;
+  if (!force && !confirm('Are you sure you want to submit your exam? This action cannot be undone.')) return;
   submitting = true;
   isExamActive = false;
-  document.getElementById('submit-btn').textContent = 'Scoring metrics...';
-  document.getElementById('submit-btn').disabled = true;
-  const timeSpent = (examDuration * 60) - secondsLeft;
+
+  // Clear timer and auto-save intervals
+  if (timerInterval) clearInterval(timerInterval);
+  if (autoSaveInterval) clearInterval(autoSaveInterval);
+
+  const btn = document.getElementById('submit-btn');
+  if (btn) { btn.textContent = 'Scoring metrics...'; btn.disabled = true; }
+  const timeSpent = Math.min((examDuration * 60) - secondsLeft, examDuration * 60);
+  const submissionId = 'sub_' + Date.now() + '_' + Math.random().toString(36).substring(2, 8);
+
+  // Persist submitted flag immediately to prevent duplicate submissions
+  try {
+    localStorage.setItem('cbt_submitted_' + examId, 'true');
+    sessionStorage.setItem('cbt_submitted_' + examId, 'true');
+    localStorage.removeItem('cbt_progress_' + examId);
+  } catch(e) {}
+
   fetch('/api/exams/' + examId + '/submit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ studentId, studentName, answers: selectedAnswers, timeSpent })
+    body: JSON.stringify({ studentId, studentName, answers: selectedAnswers, timeSpent, submissionId })
   }).then(r => r.json()).then(data => {
     if (data.success) {
       result = data.result;
+      submitted = true;
+      // Persist result for page refresh
+      try { sessionStorage.setItem('cbt_postsubmit_' + examId, JSON.stringify(data.result)); } catch(e) {}
       showResults();
       saveAttempt(data.result, timeSpent);
+      // Show time-expired notification if auto-submitted
+      if (force && secondsLeft <= 0) {
+        showTimeoutNotification();
+      }
     } else {
       computeLocalResult(timeSpent);
     }
   }).catch(() => {
     computeLocalResult(timeSpent);
   });
+}
+
+function showTimeoutNotification() {
+  const notification = document.createElement('div');
+  notification.id = 'timeout-notification';
+  notification.className = 'fixed top-4 right-4 z-50 max-w-sm p-4 bg-amber-50 border border-amber-200 rounded-xl shadow-lg slide-up';
+  notification.innerHTML = `
+    <div class="flex items-start gap-3">
+      <svg class="w-5 h-5 text-amber-600 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <div>
+        <p class="font-bold text-sm text-amber-900">Time Expired</p>
+        <p class="text-xs text-amber-700 mt-1">Your examination time has expired. Your answers have been submitted automatically. Your result and marked script are now available.</p>
+      </div>
+      <button onclick="this.parentElement.parentElement.remove()" class="text-amber-400 hover:text-amber-600 shrink-0">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+      </button>
+    </div>`;
+  document.body.appendChild(notification);
+  setTimeout(function() {
+    if (notification.parentElement) notification.remove();
+  }, 15000);
 }
 
 function computeLocalResult(timeSpent) {
@@ -744,19 +925,30 @@ function handlePrintResultSlip() {
 
 function handleRetake() {
   if (confirm('Are you sure you want to retake this exam? This will reset your current timer and answers.')) {
+    // Clear all persistent flags
+    try {
+      localStorage.removeItem('cbt_progress_' + examId);
+      localStorage.removeItem('cbt_submitted_' + examId);
+      sessionStorage.removeItem('cbt_submitted_' + examId);
+      sessionStorage.removeItem('cbt_postsubmit_' + examId);
+    } catch(e) {}
     selectedAnswers = {};
     flaggedQuestions = {};
     secondsLeft = examDuration * 60;
+    endTime = Date.now() + secondsLeft * 1000;
     isExamActive = true;
     result = null;
+    submitted = false;
     currentIndex = 0;
     submitting = false;
+    if (timerInterval) clearInterval(timerInterval);
+    if (autoSaveInterval) clearInterval(autoSaveInterval);
     document.getElementById('exam-results').classList.add('hidden');
     document.getElementById('exam-results').innerHTML = '';
     document.getElementById('exam-active').classList.remove('hidden');
     document.getElementById('submit-btn').classList.remove('hidden');
     document.getElementById('submit-btn').disabled = false;
-    document.getElementById('submit-btn').textContent = 'Finish & Submit Exam';
+    document.getElementById('submit-btn').textContent = 'Finish & Submit';
     document.getElementById('header-controls').innerHTML = `
       <button onclick="toggleFullscreen()" class="p-2 text-slate-500 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition" title="Toggle Fullscreen Mode">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
@@ -777,7 +969,7 @@ function formatTimeClock(total) {
 
 document.addEventListener('DOMContentLoaded', initExam);
 window.addEventListener('beforeunload', function(e) {
-  if (isExamActive && !result) {
+  if (isExamActive && !result && !submitted) {
     e.preventDefault();
     e.returnValue = 'Warning: Leaving or refreshing this page will abort your ongoing CBT session. Your progress will be saved where you left off.';
   }
