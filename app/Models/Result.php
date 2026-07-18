@@ -21,6 +21,8 @@ class Result extends Model
         'total_questions',
         'correct_answers',
         'failed_questions',
+        'time_spent',
+        'total_possible_marks',
     ];
 
     protected $casts = [

@@ -189,6 +189,8 @@ class JsonDb {
                     'correctAnswers' => $r->correct_answers,
                     'failedQuestions' => $r->failed_questions ?? [],
                     'date' => $r->date?->toIso8601String(),
+                    'timeSpent' => $r->time_spent ?? 0,
+                    'totalPossibleMarks' => $r->total_possible_marks ?? 0,
                 ];
             }
         } catch (\Exception $e) {}
@@ -359,6 +361,8 @@ class JsonDb {
                     'total_questions' => $rData['totalQuestions'],
                     'correct_answers' => $rData['correctAnswers'],
                     'failed_questions' => $rData['failedQuestions'] ?? [],
+                    'time_spent' => $rData['timeSpent'] ?? 0,
+                    'total_possible_marks' => $rData['totalPossibleMarks'] ?? 0,
                 ]
             );
         }
