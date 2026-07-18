@@ -149,6 +149,13 @@ Route::get('/migrate-passwords', function () {
     return "$count passwords hashed.";
 });
 
+// Clear all caches (visit this URL after deployment to refresh)
+Route::get('/clear-cache', function () {
+    \Illuminate\Support\Facades\Artisan::call('optimize:clear');
+    $output = \Illuminate\Support\Facades\Artisan::output();
+    return '<h2>Cache Cleared</h2><pre>' . $output . '</pre><p><a href="/login">Go to Login</a></p>';
+});
+
 // Shared note view
 Route::get('/shared/note/{id}', [HomeController::class, 'sharedNoteView'])->name('shared.note');
 
