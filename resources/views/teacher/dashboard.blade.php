@@ -1282,8 +1282,8 @@ function renderSubjectFilter(containerId, allItems, currentFilter, setFilter, re
     const container = document.getElementById(containerId);
     if (!container) return;
     const subs = [...new Set(allItems.map(i => i.subject).filter(Boolean))];
-    const allBtn = `<button onclick="setFilter('');${renderFn}()" class="py-1.5 px-3 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer border ${!currentFilter ? 'bg-slate-800 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">All</button>`;
-    const btns = subs.map(s => `<button onclick="setFilter('${s}');${renderFn}()" class="py-1.5 px-3 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer border ${currentFilter === s ? 'bg-slate-800 text-white border-slate-900' : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'}">${s}</button>`);
+    const allBtn = `<button onclick="setFilter('');${renderFn}()" class="py-1.5 px-3 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer border ${!currentFilter ? 'bg-blue-600 text-white border-blue-700' : 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200'}">All</button>`;
+    const btns = subs.map(s => `<button onclick="setFilter('${s}');${renderFn}()" class="py-1.5 px-3 rounded-lg text-xs font-bold whitespace-nowrap transition cursor-pointer border ${currentFilter === s ? 'bg-blue-600 text-white border-blue-700' : 'bg-blue-100 text-blue-800 border-blue-200 hover:bg-blue-200'}">${s}</button>`);
     container.innerHTML = allBtn + btns.join('');
 }
 
