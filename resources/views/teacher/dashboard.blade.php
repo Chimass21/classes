@@ -565,10 +565,6 @@
                                         <p class="text-sm text-[#1d4ed8] font-medium" id="csv-file-name"></p>
                                     </div>
                                 </div>
-                                <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
-                                    <button onclick="closeCsvImport()" class="w-full sm:w-auto px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Cancel</button>
-                                    <button id="csv-preview-btn" onclick="previewCsvImport()" disabled class="w-full sm:w-auto px-5 py-2.5 bg-[#1e3a5f] text-white text-sm font-bold rounded-lg opacity-50 cursor-not-allowed transition">Preview Import</button>
-                                </div>
                             </div>
 
                             {{-- Step 2: Preview --}}
@@ -599,13 +595,7 @@
                                     </div>
                                 </div>
 
-                                <div id="csv-step-2-actions" class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 py-3 px-4 bg-white border border-slate-200 rounded-xl shadow-sm">
-                                    <button onclick="csvGoBack(1)" class="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer text-center">Back</button>
-                                    <div class="flex items-center justify-center sm:justify-end gap-3">
-                                        <span id="csv-import-progress" class="hidden px-4 py-2 text-sm text-[#2563eb] font-semibold"><span class="animate-spin inline-block w-4 h-4 border-2 border-[#2563eb] border-t-transparent rounded-full mr-2 align-middle"></span>Importing...</span>
-                                        <button id="csv-import-btn" onclick="confirmCsvImport()" class="w-full sm:w-auto px-6 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition-all duration-200 cursor-pointer shadow-md hover:shadow-lg border border-blue-600">Import Questions</button>
-                                    </div>
-                                </div>
+
 
                                 <div class="border border-slate-200 rounded-lg overflow-hidden bg-white">
                                     <div class="overflow-x-auto">
@@ -657,14 +647,30 @@
                                     <h4 class="text-sm font-bold text-[#7f1d1d] mb-2">Row Errors</h4>
                                     <div id="csv-result-error-list" class="text-xs text-[#991b1b] space-y-1 max-h-40 overflow-y-auto"></div>
                                 </div>
-                                <div class="flex flex-col sm:flex-row justify-center gap-2 pt-2">
-                                    <button onclick="closeCsvImport()" class="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Close</button>
-                                    <button onclick="csvGoBack(1); closeCsvImport(); openCsvImport();" class="w-full sm:w-auto px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition cursor-pointer">Import Another</button>
-                                </div>
                             </div>
                         </div>
 
-
+                        {{-- Footer: always visible action buttons --}}
+                        <div class="shrink-0 border-t border-slate-200 px-4 sm:px-6 py-3 bg-white rounded-b-2xl" id="csv-import-footer">
+                            {{-- Step 1: Upload --}}
+                            <div id="csv-footer-step-1" class="flex flex-col sm:flex-row justify-end gap-2">
+                                <button onclick="closeCsvImport()" class="w-full sm:w-auto px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-sm font-bold rounded-lg transition cursor-pointer border border-slate-300 shadow-sm">Cancel</button>
+                                <button id="csv-preview-btn" onclick="previewCsvImport()" disabled class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-[#1e3a5f] to-[#2563eb] text-white text-sm font-bold rounded-lg opacity-60 cursor-not-allowed transition shadow-md">Preview Import</button>
+                            </div>
+                            {{-- Step 2: Preview --}}
+                            <div id="csv-footer-step-2" class="hidden flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                                <button onclick="csvGoBack(1)" class="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer text-center">Back</button>
+                                <div class="flex items-center gap-3">
+                                    <span id="csv-import-progress" class="hidden px-4 py-2 text-sm text-[#2563eb] font-semibold"><span class="animate-spin inline-block w-4 h-4 border-2 border-[#2563eb] border-t-transparent rounded-full mr-2 align-middle"></span>Importing...</span>
+                                    <button id="csv-import-btn" onclick="confirmCsvImport()" class="w-full sm:w-auto px-6 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition-all duration-200 cursor-pointer shadow-md hover:shadow-lg border border-blue-600">Import Questions</button>
+                                </div>
+                            </div>
+                            {{-- Step 3: Complete --}}
+                            <div id="csv-footer-step-3" class="hidden flex flex-col sm:flex-row justify-center gap-2">
+                                <button onclick="closeCsvImport()" class="w-full sm:w-auto px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-sm font-bold rounded-lg transition cursor-pointer border border-slate-300 shadow-sm">Close</button>
+                                <button onclick="csvGoBack(1); closeCsvImport(); openCsvImport();" class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-[#1e3a5f] to-[#2563eb] hover:from-[#15294a] hover:to-[#1d4ed8] text-white text-sm font-bold rounded-lg transition cursor-pointer shadow-md">Import Another</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -1506,7 +1512,7 @@ function renderResults() {
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${isPassed ? 'bg-blue-50 text-[#2563eb] border border-blue-200' : 'bg-[#991b1b]/10 text-[#991b1b] border border-[#991b1b]/20'}">${pct}%</span>
-                    <button onclick="downloadGradedScript('${r.examId}', '${r.id}')" class="px-3 py-1.5 bg-[#1e3a5f] hover:bg-[#15294a] text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-sm hover:shadow-md border border-[#2d4a7a]" title="Download Graded Script PDF">
+                    <button onclick="downloadGradedScript('${r.examId}', '${r.id}')" class="px-3.5 py-1.5 bg-gradient-to-r from-[#6b1d3a] via-[#7f1d1d] to-[#5c2d1a] hover:from-[#7f1d3a] hover:via-[#991b1b] hover:to-[#6b2d1a] text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border border-[#8b2d3a]" title="Download Graded Script PDF">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         <span>Script</span>
                     </button>
@@ -1554,13 +1560,15 @@ function openCsvImport() {
     document.getElementById('csv-step-1').classList.remove('hidden');
     document.getElementById('csv-step-2').classList.add('hidden');
     document.getElementById('csv-step-3').classList.add('hidden');
-    document.getElementById('csv-step-2-actions').classList.add('hidden');
+    document.getElementById('csv-footer-step-1').classList.remove('hidden');
+    document.getElementById('csv-footer-step-2').classList.add('hidden');
+    document.getElementById('csv-footer-step-3').classList.add('hidden');
     csvFile = null;
     csvPreviewData = null;
     document.getElementById('csv-file-input').value = '';
     document.getElementById('csv-file-info').classList.add('hidden');
     document.getElementById('csv-preview-btn').disabled = true;
-    document.getElementById('csv-preview-btn').className = 'px-4 py-2 bg-[#1e3a5f] text-white text-sm font-bold rounded-lg opacity-50 cursor-not-allowed transition';
+    document.getElementById('csv-preview-btn').className = 'w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-[#1e3a5f] to-[#2563eb] text-white text-sm font-bold rounded-lg opacity-60 cursor-not-allowed transition shadow-md';
     document.body.style.overflow = 'hidden';
     // Populate selects from existing curriculum data
     const subjects = document.querySelectorAll('#plan-subject option');
@@ -1598,7 +1606,7 @@ function handleCsvFile(input) {
     document.getElementById('csv-file-name').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
     document.getElementById('csv-file-info').classList.remove('hidden');
     document.getElementById('csv-preview-btn').disabled = false;
-    document.getElementById('csv-preview-btn').className = 'px-4 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg cursor-pointer transition';
+    document.getElementById('csv-preview-btn').className = 'w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-[#1e3a5f] to-[#2563eb] hover:from-[#15294a] hover:to-[#1d4ed8] text-white text-sm font-bold rounded-lg cursor-pointer transition shadow-md';
 }
 
 async function previewCsvImport() {
@@ -1649,7 +1657,9 @@ async function previewCsvImport() {
 function showCsvPreview(data) {
     document.getElementById('csv-step-1').classList.add('hidden');
     document.getElementById('csv-step-2').classList.remove('hidden');
-    document.getElementById('csv-step-2-actions').classList.remove('hidden');
+    document.getElementById('csv-footer-step-1').classList.add('hidden');
+    document.getElementById('csv-footer-step-2').classList.remove('hidden');
+    document.getElementById('csv-footer-step-3').classList.add('hidden');
     document.getElementById('csv-import-step-label').textContent = 'Step 2 of 3: Review & Confirm';
 
     document.getElementById('csv-preview-stats').innerHTML = `
@@ -1770,7 +1780,9 @@ function csvGoBack(step) {
     document.getElementById('csv-step-1').classList.toggle('hidden', step !== 1);
     document.getElementById('csv-step-2').classList.toggle('hidden', step !== 2);
     document.getElementById('csv-step-3').classList.toggle('hidden', step !== 3);
-    document.getElementById('csv-step-2-actions').classList.toggle('hidden', step !== 2);
+    document.getElementById('csv-footer-step-1').classList.toggle('hidden', step !== 1);
+    document.getElementById('csv-footer-step-2').classList.toggle('hidden', step !== 2);
+    document.getElementById('csv-footer-step-3').classList.toggle('hidden', step !== 3);
 }
 
 async function confirmCsvImport() {
@@ -1830,8 +1842,10 @@ async function confirmCsvImport() {
 
 function showCsvResult(data) {
     document.getElementById('csv-step-2').classList.add('hidden');
-    document.getElementById('csv-step-2-actions').classList.add('hidden');
     document.getElementById('csv-step-3').classList.remove('hidden');
+    document.getElementById('csv-footer-step-1').classList.add('hidden');
+    document.getElementById('csv-footer-step-2').classList.add('hidden');
+    document.getElementById('csv-footer-step-3').classList.remove('hidden');
     document.getElementById('csv-import-step-label').textContent = 'Step 3 of 3: Complete';
 
     const hasErrors = data.errors && Object.keys(data.errors).length > 0;
