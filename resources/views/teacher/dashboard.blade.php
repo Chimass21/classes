@@ -569,7 +569,7 @@
                                     <div class="text-xs text-blue-700 font-semibold">Review your questions below, then import.</div>
                                     <div class="flex items-center gap-2">
                                         <button onclick="csvGoBack(1)" class="px-4 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition cursor-pointer border border-slate-300 shadow-sm">Back</button>
-                                        <button id="csv-import-btn-top" onclick="confirmCsvImport()" class="px-5 py-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer shadow-md border border-blue-600">Import Questions</button>
+                                        <button id="csv-import-btn-top" onclick="confirmCsvImport()" class="px-5 py-1.5 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer shadow-sm border border-blue-500">Import Questions</button>
                                     </div>
                                 </div>
                                 <div id="csv-preview-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3"></div>
@@ -658,20 +658,20 @@
                             {{-- Step 1: Upload --}}
                             <div id="csv-footer-step-1" class="flex flex-col sm:flex-row justify-end gap-2">
                                 <button onclick="closeCsvImport()" class="w-full sm:w-auto px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-sm font-bold rounded-lg transition cursor-pointer border border-slate-300 shadow-sm">Cancel</button>
-                                <button id="csv-preview-btn" onclick="previewCsvImport()" disabled class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-[#1e3a5f] to-[#2563eb] text-white text-sm font-bold rounded-lg opacity-60 cursor-not-allowed transition shadow-md">Preview Import</button>
+                                <button id="csv-preview-btn" onclick="previewCsvImport()" disabled class="w-full sm:w-auto px-6 py-2.5 bg-blue-800 text-white text-sm font-bold rounded-lg opacity-60 cursor-not-allowed transition shadow-sm">Preview Import</button>
                             </div>
                             {{-- Step 2: Preview --}}
                             <div id="csv-footer-step-2" class="hidden flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
                                 <button onclick="csvGoBack(1)" class="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer text-center">Back</button>
                                 <div class="flex items-center gap-3">
                                     <span id="csv-import-progress" class="hidden px-4 py-2 text-sm text-[#2563eb] font-semibold"><span class="animate-spin inline-block w-4 h-4 border-2 border-[#2563eb] border-t-transparent rounded-full mr-2 align-middle"></span>Importing...</span>
-                                    <button id="csv-import-btn" onclick="confirmCsvImport()" class="w-full sm:w-auto px-6 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition-all duration-200 cursor-pointer shadow-md hover:shadow-lg border border-blue-600">Import Questions</button>
+                                    <button id="csv-import-btn" onclick="confirmCsvImport()" class="w-full sm:w-auto px-6 py-2.5 bg-blue-700 hover:bg-blue-800 text-white text-sm font-bold rounded-lg transition-all duration-200 cursor-pointer shadow-sm border border-blue-500">Import Questions</button>
                                 </div>
                             </div>
                             {{-- Step 3: Complete --}}
                             <div id="csv-footer-step-3" class="hidden flex flex-col sm:flex-row justify-center gap-2">
                                 <button onclick="closeCsvImport()" class="w-full sm:w-auto px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-sm font-bold rounded-lg transition cursor-pointer border border-slate-300 shadow-sm">Close</button>
-                                <button onclick="csvGoBack(1); closeCsvImport(); openCsvImport();" class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-[#1e3a5f] to-[#2563eb] hover:from-[#15294a] hover:to-[#1d4ed8] text-white text-sm font-bold rounded-lg transition cursor-pointer shadow-md">Import Another</button>
+                                <button onclick="csvGoBack(1); closeCsvImport(); openCsvImport();" class="w-full sm:w-auto px-6 py-2.5 bg-blue-800 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition cursor-pointer shadow-sm">Import Another</button>
                             </div>
                         </div>
                     </div>
@@ -1572,7 +1572,7 @@ function openCsvImport() {
     document.getElementById('csv-file-input').value = '';
     document.getElementById('csv-file-info').classList.add('hidden');
     document.getElementById('csv-preview-btn').disabled = true;
-    document.getElementById('csv-preview-btn').className = 'w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-[#1e3a5f] to-[#2563eb] text-white text-sm font-bold rounded-lg opacity-60 cursor-not-allowed transition shadow-md';
+    document.getElementById('csv-preview-btn').className = 'w-full sm:w-auto px-6 py-2.5 bg-blue-800 text-white text-sm font-bold rounded-lg opacity-60 cursor-not-allowed transition shadow-sm';
     document.body.style.overflow = 'hidden';
     // Populate selects from existing curriculum data
     const subjects = document.querySelectorAll('#plan-subject option');
@@ -1610,7 +1610,7 @@ function handleCsvFile(input) {
     document.getElementById('csv-file-name').textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
     document.getElementById('csv-file-info').classList.remove('hidden');
     document.getElementById('csv-preview-btn').disabled = false;
-    document.getElementById('csv-preview-btn').className = 'w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-[#1e3a5f] to-[#2563eb] hover:from-[#15294a] hover:to-[#1d4ed8] text-white text-sm font-bold rounded-lg cursor-pointer transition shadow-md';
+    document.getElementById('csv-preview-btn').className = 'w-full sm:w-auto px-6 py-2.5 bg-blue-800 hover:bg-blue-700 text-white text-sm font-bold rounded-lg cursor-pointer transition shadow-sm';
 }
 
 async function previewCsvImport() {
