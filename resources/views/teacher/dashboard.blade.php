@@ -490,8 +490,8 @@
                 </div>
 
                 {{-- === CSV Import Modal === --}}
-                <div id="csv-import-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-start justify-center p-2 sm:p-4 overflow-y-auto" style="padding-top:env(safe-area-inset-top, 8px);padding-bottom:env(safe-area-inset-bottom, 8px)">
-                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl mx-auto flex flex-col max-h-[95vh] sm:max-h-[90vh]">
+                <div id="csv-import-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-start sm:items-center justify-center overflow-y-auto p-2 sm:p-4" style="padding-top:env(safe-area-inset-top, 4px);padding-bottom:env(safe-area-inset-bottom, 4px)">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl mx-auto my-auto flex flex-col sm:max-h-[90vh]" style="max-height:calc(100dvh - 8px)">
                         {{-- Header --}}
                         <div class="shrink-0 rounded-t-2xl border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
                             <div class="min-w-0">
@@ -1512,7 +1512,7 @@ function renderResults() {
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${isPassed ? 'bg-blue-50 text-[#2563eb] border border-blue-200' : 'bg-[#991b1b]/10 text-[#991b1b] border border-[#991b1b]/20'}">${pct}%</span>
-                    <button onclick="downloadGradedScript('${r.examId}', '${r.id}')" class="px-3.5 py-1.5 bg-gradient-to-r from-[#6b1d3a] via-[#7f1d1d] to-[#5c2d1a] hover:from-[#7f1d3a] hover:via-[#991b1b] hover:to-[#6b2d1a] text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border border-[#8b2d3a]" title="Download Graded Script PDF">
+                    <button onclick="downloadGradedScript('${r.examId}', '${r.id}')" class="px-3 py-1.5 bg-[#991b1b] hover:bg-[#b91c1c] text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border-2 border-red-200" title="Download Graded Script PDF">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         <span>Script</span>
                     </button>
