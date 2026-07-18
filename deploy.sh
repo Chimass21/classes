@@ -150,6 +150,13 @@ if [ -f artisan ]; then
     log "  -> Clearing cache..."
     php artisan optimize:clear 2>&1 || log "  -> Cache clear skipped (non-fatal)."
     
+    log "  -> Rebuilding frontend assets..."
+    if command -v npm > /dev/null 2>&1; then
+        npm run build 2>&1 || log "  -> npm build skipped (non-fatal)."
+    else
+        log "  -> npm not found. Skipping asset build."
+    fi
+    
     log "  -> Generating optimized cache..."
     php artisan optimize 2>&1 || log "  -> Optimize skipped (non-fatal)."
 else
