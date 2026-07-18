@@ -494,7 +494,7 @@
                     <div class="min-h-full flex items-start sm:items-center justify-center p-2 sm:p-4">
                         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl mx-auto my-auto">
                         {{-- Header --}}
-                        <div class="sticky top-0 z-10 rounded-t-2xl border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between bg-white shadow-sm">
+                        <div class="rounded-t-2xl border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between bg-white">
                             <div class="min-w-0">
                                 <h3 class="text-base sm:text-lg font-bold text-slate-900 truncate">Import Questions (CSV)</h3>
                                 <p class="text-[11px] sm:text-xs text-slate-500" id="csv-import-step-label">Step 1 of 3: Upload File</p>
@@ -654,7 +654,7 @@
                         </div>
 
                         {{-- Footer: always visible action buttons --}}
-                        <div class="sticky bottom-0 z-10 border-t border-slate-200 px-4 sm:px-6 py-3 bg-white rounded-b-2xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]" id="csv-import-footer">
+                        <div class="border-t border-slate-200 px-4 sm:px-6 py-3 bg-white rounded-b-2xl" id="csv-import-footer">
                             {{-- Step 1: Upload --}}
                             <div id="csv-footer-step-1" class="flex flex-col sm:flex-row justify-end gap-2">
                                 <button onclick="closeCsvImport()" class="w-full sm:w-auto px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-sm font-bold rounded-lg transition cursor-pointer border border-slate-300 shadow-sm">Cancel</button>
