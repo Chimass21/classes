@@ -305,11 +305,31 @@
                 <div id="tab-questions" class="tab-panel p-5 hidden">
                     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
                         <h3 class="text-lg font-bold text-slate-900">Question Pool</h3>
-                        <button onclick="openCsvImport()" class="px-4 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition cursor-pointer flex items-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                            Import Questions (CSV)
+                        <button onclick="openCsvImport()" class="px-5 py-2.5 bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] hover:from-[#1d4ed8] hover:to-[#1e3a5f] text-white text-sm font-bold rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                            <span class="hidden sm:inline">Import Questions</span><span class="sm:hidden">CSV Import</span>
                         </button>
                     </div>
+
+                    {{-- CSV Import Quick-Access Card --}}
+                    <div class="mb-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 sm:p-5">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-[#2563eb] to-[#1e3a5f] flex items-center justify-center text-white shrink-0">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-slate-900">Bulk Import Questions via CSV</h4>
+                                    <p class="text-xs text-slate-500 mt-0.5">Upload a CSV file with your questions, options, and answers. Supports up to 5,000 questions at once.</p>
+                                </div>
+                            </div>
+                            <button onclick="openCsvImport()" class="w-full sm:w-auto px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-lg shrink-0">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                Select CSV File
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="space-y-4">
                             <h3 class="text-lg font-bold text-slate-900">Generate Questions</h3>
@@ -700,7 +720,16 @@
                 {{-- === RESULTS TAB === --}}
                 <div id="tab-results" class="tab-panel p-5 hidden">
                     <div class="space-y-4">
-                        <h3 class="text-lg font-bold text-slate-900">Student Results</h3>
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900">Results Dashboard</h3>
+                                <p class="text-sm text-slate-500">View and download student results grouped by exam set</p>
+                            </div>
+                            <button onclick="openCsvImport()" class="px-4 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition cursor-pointer flex items-center gap-2 shrink-0 shadow-md hover:shadow-lg">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                Import CSV
+                            </button>
+                        </div>
                         <div id="results-list" class="space-y-2"></div>
                     </div>
                 </div>
@@ -1459,52 +1488,65 @@ function renderResults() {
         const group = examMap[examId];
         const results = group.results;
         const count = results.length;
-        const avgPercentage = Math.round(results.reduce((sum, r) => sum + (r.percentage || 0), 0) / count);
-        const bestScore = Math.max(...results.map(r => r.percentage || 0));
-        const worstScore = Math.min(...results.map(r => r.percentage || 0));
+        const avgPercentage = count > 0 ? Math.round(results.reduce((sum, r) => sum + (r.percentage || 0), 0) / count) : 0;
+        const bestScore = results.length > 0 ? Math.max(...results.map(r => r.percentage || 0)) : 0;
+        const worstScore = results.length > 0 ? Math.min(...results.map(r => r.percentage || 0)) : 0;
+        const passedCount = results.filter(r => (r.percentage || 0) >= 50).length;
+        const totalStudents = results.length;
 
         const studentsHtml = results.map(r => {
-            const isPassed = (r.percentage || 0) >= 50;
+            const pct = r.percentage || 0;
+            const isPassed = pct >= 50;
             const dateStr = r.date ? new Date(r.date).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
             const timeSpent = r.timeSpent || 0;
             const timeStr = timeSpent < 60 ? timeSpent + 's' : Math.floor(timeSpent / 60) + 'm ' + (timeSpent % 60) + 's';
-            const grade = (r.percentage || 0) >= 75 ? 'A' : (r.percentage || 0) >= 60 ? 'B' : (r.percentage || 0) >= 50 ? 'C' : (r.percentage || 0) >= 40 ? 'D' : 'F';
+            const grade = pct >= 75 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 40 ? 'D' : 'F';
             const examObj = teacherData.exams.find(e => e.id === r.examId);
             const examLevel = examObj ? (examObj.level || '') : '';
-            return `<div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white border border-slate-100 rounded-lg hover:border-slate-200 transition gap-2">
+
+            const gradeColors = { 'A': 'bg-emerald-100 text-emerald-700', 'B': 'bg-blue-100 text-blue-700', 'C': 'bg-amber-100 text-amber-700', 'D': 'bg-orange-100 text-orange-700', 'F': 'bg-red-100 text-red-700' };
+
+            return `<div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white border border-slate-100 rounded-lg hover:border-slate-200 hover:shadow-sm transition-all gap-2">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="font-semibold text-sm text-slate-900">${r.studentName || 'Student'}</span>
                         <span class="text-[10px] px-1.5 py-0.5 rounded font-bold ${isPassed ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}">${isPassed ? 'Pass' : 'Fail'}</span>
-                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600 font-bold">Grade ${grade}</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded font-bold ${gradeColors[grade] || 'bg-slate-100 text-slate-600'}">Grade ${grade}</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-medium">${r.subject || ''}</span>
                     </div>
-                    <div class="text-xs text-slate-400 mt-0.5">Score: ${r.score || 0}/${r.totalPossibleMarks || r.totalQuestions || 0} | ${dateStr}${timeStr ? ' | ' + timeStr : ''}</div>
+                    <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-400 mt-0.5">
+                        <span>Score: <strong class="text-slate-600">${r.score || 0}/${r.totalPossibleMarks || r.totalQuestions || 0}</strong></span>
+                        <span>${dateStr}</span>
+                        ${timeStr ? `<span>Time: ${timeStr}</span>` : ''}
+                        <span class="px-1.5 py-0.5 rounded bg-blue-50 text-blue-600 font-semibold text-[10px]">${r.totalQuestions || 0} Qs</span>
+                        <span class="px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-600 font-semibold text-[10px]">Submitted</span>
+                    </div>
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
-                    <span class="px-2 py-0.5 rounded text-xs font-bold ${isPassed ? 'bg-blue-50 text-[#2563eb]' : 'bg-[#991b1b]/10 text-[#991b1b]'}">${r.percentage || 0}%</span>
-                    <button onclick="downloadGradedScript('${r.examId}', '${r.id}')" class="px-2 py-1 bg-[#1e3a5f] hover:bg-[#15294a] text-white text-[10px] font-bold rounded transition cursor-pointer whitespace-nowrap" title="Download Graded Script PDF">
-                        <svg class="w-3 h-3 inline-block mr-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        Script
+                    <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${isPassed ? 'bg-blue-50 text-[#2563eb] border border-blue-200' : 'bg-[#991b1b]/10 text-[#991b1b] border border-[#991b1b]/20'}">${pct}%</span>
+                    <button onclick="downloadGradedScript('${r.examId}', '${r.id}')" class="px-2.5 py-1.5 bg-[#1e3a5f] hover:bg-[#15294a] text-white text-[10px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1 shadow-sm hover:shadow-md" title="Download Graded Script PDF">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span class="hidden sm:inline">Script</span>
                     </button>
                 </div>
             </div>`;
         }).join('');
 
-        return `<div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
+        return `<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
             <button onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('.chevron').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition cursor-pointer">
                 <div class="flex items-center gap-3 flex-1 min-w-0">
-                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-[#1e3a5f] to-[#2563eb] flex items-center justify-center text-white font-bold text-sm shrink-0">${group.subject.charAt(0) || '?'}</div>
+                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-[#1e3a5f] to-[#2563eb] flex items-center justify-center text-white font-bold text-sm shrink-0">${(group.subject || '?').charAt(0).toUpperCase()}</div>
                     <div class="min-w-0">
                         <h4 class="font-bold text-sm text-slate-900 truncate">${group.examTitle}</h4>
-                        <p class="text-xs text-slate-400 truncate">${group.subject}${group.level ? ' | ' + group.level : ''} | ${count} student${count > 1 ? 's' : ''}</p>
+                        <p class="text-xs text-slate-400 truncate">${group.subject}${group.level ? ' | ' + group.level : ''} | ${count} student${count > 1 ? 's' : ''} | ${passedCount}/${totalStudents} passed</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-3 shrink-0">
-                    <div class="hidden sm:flex items-center gap-2 text-xs">
-                        <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 font-semibold">Best: ${bestScore}%</span>
-                        <span class="px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-semibold">Avg: ${avgPercentage}%</span>
+                    <div class="hidden md:flex items-center gap-2 text-xs">
+                        <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 font-semibold whitespace-nowrap">Best: ${bestScore}%</span>
+                        <span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold whitespace-nowrap">Avg: ${avgPercentage}%</span>
                     </div>
-                    <svg class="w-4 h-4 text-slate-400 chevron transition transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    <svg class="w-4 h-4 text-slate-400 chevron transition transform duration-200 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </div>
             </button>
             <div class="hidden border-t border-slate-100">
