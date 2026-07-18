@@ -303,33 +303,6 @@
 
                 {{-- === QUESTION POOL TAB === --}}
                 <div id="tab-questions" class="tab-panel p-5 hidden">
-                    <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-                        <h3 class="text-lg font-bold text-slate-900">Question Pool</h3>
-                        <button onclick="openCsvImport()" class="px-5 py-2.5 bg-gradient-to-r from-[#2563eb] to-[#1d4ed8] hover:from-[#1d4ed8] hover:to-[#1e3a5f] text-white text-sm font-bold rounded-xl transition-all duration-300 cursor-pointer flex items-center gap-2 shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                            <span class="hidden sm:inline">Import Questions</span><span class="sm:hidden">CSV Import</span>
-                        </button>
-                    </div>
-
-                    {{-- CSV Import Quick-Access Card --}}
-                    <div class="mb-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 sm:p-5">
-                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-[#2563eb] to-[#1e3a5f] flex items-center justify-center text-white shrink-0">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                                </div>
-                                <div>
-                                    <h4 class="text-sm font-bold text-slate-900">Bulk Import Questions via CSV</h4>
-                                    <p class="text-xs text-slate-500 mt-0.5">Upload a CSV file with your questions, options, and answers. Supports up to 5,000 questions at once.</p>
-                                </div>
-                            </div>
-                            <button onclick="openCsvImport()" class="w-full sm:w-auto px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-lg shrink-0">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                Select CSV File
-                            </button>
-                        </div>
-                    </div>
-
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="space-y-4">
                             <h3 class="text-lg font-bold text-slate-900">Generate Questions</h3>
@@ -417,10 +390,25 @@
                     <div class="space-y-6">
                         <div class="flex flex-wrap items-center justify-between gap-3">
                             <h3 class="text-lg font-bold text-slate-900">CBT Exam Manager</h3>
-                            <button onclick="openCsvImport()" class="px-4 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition cursor-pointer flex items-center gap-2">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                Import Questions (CSV)
-                            </button>
+                        </div>
+
+                        {{-- CSV Import Card --}}
+                        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 sm:p-5">
+                            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-[#2563eb] to-[#1e3a5f] flex items-center justify-center text-white shrink-0">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                    </div>
+                                    <div>
+                                        <h4 class="text-sm font-bold text-slate-900">Bulk Import Questions via CSV</h4>
+                                        <p class="text-xs text-slate-500 mt-0.5">Upload a CSV file with your questions, options, and answers. Supports up to 5,000 questions at once.</p>
+                                    </div>
+                                </div>
+                                <button onclick="openCsvImport()" class="w-full sm:w-auto px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-lg shrink-0">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                                    Select CSV File
+                                </button>
+                            </div>
                         </div>
                         <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
                             <button onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-4 text-xs font-bold text-slate-500 hover:text-slate-700 transition cursor-pointer border-b border-slate-100 bg-slate-50">
@@ -720,15 +708,9 @@
                 {{-- === RESULTS TAB === --}}
                 <div id="tab-results" class="tab-panel p-5 hidden">
                     <div class="space-y-4">
-                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                            <div>
-                                <h3 class="text-lg font-bold text-slate-900">Results Dashboard</h3>
-                                <p class="text-sm text-slate-500">View and download student results grouped by exam set</p>
-                            </div>
-                            <button onclick="openCsvImport()" class="px-4 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition cursor-pointer flex items-center gap-2 shrink-0 shadow-md hover:shadow-lg">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                                Import CSV
-                            </button>
+                        <div>
+                            <h3 class="text-lg font-bold text-slate-900">Results Dashboard</h3>
+                            <p class="text-sm text-slate-500">View and download student results grouped by exam set</p>
                         </div>
                         <div id="results-list" class="space-y-2"></div>
                     </div>
