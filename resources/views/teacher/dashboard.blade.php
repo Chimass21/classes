@@ -504,59 +504,10 @@
                             </button>
                         </div>
 
-                        <div class="px-4 sm:px-6 py-4 sm:py-6">
+                        <div class="px-3 sm:px-6 py-3 sm:py-6">
                             {{-- Step 1: Upload --}}
-                            <div id="csv-step-1" class="space-y-3 sm:space-y-4">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Subject *</label>
-                                        <select id="csv-subject" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
-                                            <option value="">Select subject...</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Class *</label>
-                                        <select id="csv-class" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Term *</label>
-                                        <select id="csv-term" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
-                                    </div>
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Session *</label>
-                                        <input type="text" id="csv-session" value="<?php echo date('Y') . '/' . (date('Y') + 1); ?>" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Exam Type *</label>
-                                        <select id="csv-exam-type" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm">
-                                            <option value="CBT">CBT (Multiple Choice)</option>
-                                            <option value="Mixed">Mixed (Objective & Theory)</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Duration (min)</label>
-                                        <input type="number" id="csv-duration" value="30" min="1" max="180" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
-                                    </div>
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Marks Per Q</label>
-                                        <input type="number" id="csv-marks" value="1" min="1" max="100" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Topic (Optional)</label>
-                                        <input type="text" id="csv-topic" placeholder="e.g., Algebra" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
-                                    </div>
-                                    <div>
-                                        <label class="text-xs font-semibold text-slate-600 block mb-1">Sub Topic (Optional)</label>
-                                        <input type="text" id="csv-subtopic" placeholder="e.g., Quadratic Equations" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
-                                    </div>
-                                </div>
-                                <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 sm:p-6 text-center hover:border-[#2563eb] transition" id="csv-drop-zone">
+                            <div id="csv-step-1" class="space-y-2 sm:space-y-3">
+                                <div class="border-2 border-dashed border-slate-300 rounded-xl p-3 sm:p-5 text-center hover:border-[#2563eb] transition" id="csv-drop-zone">
                                     <input type="file" id="csv-file-input" accept=".csv" class="hidden" onchange="handleCsvFile(this)">
                                     <svg class="w-8 h-8 sm:w-10 sm:h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
                                     <p class="text-xs sm:text-sm text-slate-500 mb-1">Drag & drop your CSV file here, or <button type="button" onclick="document.getElementById('csv-file-input').click()" class="text-[#2563eb] font-semibold hover:underline cursor-pointer">browse</button></p>
@@ -565,10 +516,62 @@
                                         <p class="text-sm text-[#1d4ed8] font-medium" id="csv-file-name"></p>
                                     </div>
                                 </div>
+                                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                                    <div>
+                                        <label class="text-[10px] font-semibold text-slate-600 block mb-0.5">Subject *</label>
+                                        <select id="csv-subject" required class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#2563eb]">
+                                            <option value="">Select...</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] font-semibold text-slate-600 block mb-0.5">Class *</label>
+                                        <select id="csv-class" required class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#2563eb]"></select>
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] font-semibold text-slate-600 block mb-0.5">Term *</label>
+                                        <select id="csv-term" required class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#2563eb]"></select>
+                                    </div>
+                                    <div>
+                                        <label class="text-[10px] font-semibold text-slate-600 block mb-0.5">Session *</label>
+                                        <input type="text" id="csv-session" value="<?php echo date('Y') . '/' . (date('Y') + 1); ?>" class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#2563eb]">
+                                    </div>
+                                </div>
+                                <div class="flex flex-wrap gap-2">
+                                    <div class="flex-1 min-w-[80px]">
+                                        <label class="text-[10px] font-semibold text-slate-600 block mb-0.5">Type *</label>
+                                        <select id="csv-exam-type" required class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+                                            <option value="CBT">CBT</option>
+                                            <option value="Mixed">Mixed</option>
+                                        </select>
+                                    </div>
+                                    <div class="w-[70px]">
+                                        <label class="text-[10px] font-semibold text-slate-600 block mb-0.5">Duration</label>
+                                        <input type="number" id="csv-duration" value="30" min="1" max="180" class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#2563eb]">
+                                    </div>
+                                    <div class="w-[70px]">
+                                        <label class="text-[10px] font-semibold text-slate-600 block mb-0.5">Marks/Q</label>
+                                        <input type="number" id="csv-marks" value="1" min="1" max="100" class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#2563eb]">
+                                    </div>
+                                    <div class="flex-1 min-w-[100px]">
+                                        <label class="text-[10px] font-semibold text-slate-600 block mb-0.5">Topic</label>
+                                        <input type="text" id="csv-topic" placeholder="e.g., Algebra" class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#2563eb]">
+                                    </div>
+                                    <div class="flex-1 min-w-[100px]">
+                                        <label class="text-[10px] font-semibold text-slate-600 block mb-0.5">Sub Topic</label>
+                                        <input type="text" id="csv-subtopic" placeholder="e.g., Equations" class="w-full px-2 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-[#2563eb]">
+                                    </div>
+                                </div>
                             </div>
 
                             {{-- Step 2: Preview --}}
                             <div id="csv-step-2" class="hidden space-y-3 sm:space-y-4">
+                                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                                    <div class="text-xs text-blue-700 font-semibold">Review your questions below, then import.</div>
+                                    <div class="flex items-center gap-2">
+                                        <button onclick="csvGoBack(1)" class="px-4 py-1.5 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold rounded-lg transition cursor-pointer border border-slate-300 shadow-sm">Back</button>
+                                        <button id="csv-import-btn-top" onclick="confirmCsvImport()" class="px-5 py-1.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-xs font-bold rounded-lg transition-all duration-200 cursor-pointer shadow-md border border-blue-600">Import Questions</button>
+                                    </div>
+                                </div>
                                 <div id="csv-preview-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3"></div>
 
                                 <div id="csv-preview-errors" class="hidden p-3 sm:p-4 bg-[#991b1b]/10 border border-[#991b1b]/20 rounded-lg">
@@ -1513,7 +1516,7 @@ function renderResults() {
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${isPassed ? 'bg-blue-50 text-[#2563eb] border border-blue-200' : 'bg-[#991b1b]/10 text-[#991b1b] border border-[#991b1b]/20'}">${pct}%</span>
-                    <button onclick="downloadGradedScript('${r.examId}', '${r.id}')" class="px-3 py-1.5 bg-[#991b1b] hover:bg-[#b91c1c] text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border-2 border-red-200" title="Download Graded Script PDF">
+                    <button onclick="downloadGradedScript('${r.examId}', '${r.id}')" class="px-3 py-1.5 bg-red-800 hover:bg-red-700 text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border-2 border-white" title="Download Graded Script PDF">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         <span>Script</span>
                     </button>
@@ -1792,9 +1795,10 @@ async function confirmCsvImport() {
     const duplicateHandling = document.querySelector('input[name="duplicate_handling"]:checked')?.value || 'import_all';
 
     const btn = document.getElementById('csv-import-btn');
+    const btnTop = document.getElementById('csv-import-btn-top');
     const progress = document.getElementById('csv-import-progress');
-    btn.disabled = true;
-    btn.classList.add('hidden');
+    if (btn) { btn.disabled = true; btn.classList.add('hidden'); }
+    if (btnTop) { btnTop.disabled = true; btnTop.classList.add('hidden'); }
     progress.classList.remove('hidden');
 
     const formData = new FormData();
@@ -1817,15 +1821,15 @@ async function confirmCsvImport() {
             data = await res.json();
         } catch (parseError) {
             progress.classList.add('hidden');
-            btn.classList.remove('hidden');
-            btn.disabled = false;
+            if (btn) { btn.classList.remove('hidden'); btn.disabled = false; }
+            if (btnTop) { btnTop.classList.remove('hidden'); btnTop.disabled = false; }
             alert('Server returned an invalid response. Please check the server logs.');
             return;
         }
 
         progress.classList.add('hidden');
-        btn.classList.remove('hidden');
-        btn.disabled = false;
+        if (btn) { btn.classList.remove('hidden'); btn.disabled = false; }
+        if (btnTop) { btnTop.classList.remove('hidden'); btnTop.disabled = false; }
 
         if (!data.success) {
             alert(data.error || 'Import failed.');
@@ -1835,8 +1839,8 @@ async function confirmCsvImport() {
         showCsvResult(data);
     } catch (e) {
         progress.classList.add('hidden');
-        btn.classList.remove('hidden');
-        btn.disabled = false;
+        if (btn) { btn.classList.remove('hidden'); btn.disabled = false; }
+        if (btnTop) { btnTop.classList.remove('hidden'); btnTop.disabled = false; }
         alert('Network error during import. Please check your connection and try again.');
     }
 }
