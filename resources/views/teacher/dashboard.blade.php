@@ -490,15 +490,15 @@
                 </div>
 
                 {{-- === CSV Import Modal === --}}
-                <div id="csv-import-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-start justify-center pt-4 pb-4 sm:pt-6 sm:pb-6 overflow-y-auto">
-                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 flex flex-col max-h-[90vh]">
+                <div id="csv-import-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-start justify-center p-2 sm:p-4 overflow-y-auto" style="padding-top:env(safe-area-inset-top, 8px);padding-bottom:env(safe-area-inset-bottom, 8px)">
+                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl mx-auto flex flex-col max-h-[95vh] sm:max-h-[90vh]">
                         {{-- Header --}}
-                        <div class="shrink-0 rounded-t-2xl border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-                            <div>
-                                <h3 class="text-lg font-bold text-slate-900">Import Questions (CSV)</h3>
-                                <p class="text-xs text-slate-500" id="csv-import-step-label">Step 1 of 3: Upload File</p>
+                        <div class="shrink-0 rounded-t-2xl border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+                            <div class="min-w-0">
+                                <h3 class="text-base sm:text-lg font-bold text-slate-900 truncate">Import Questions (CSV)</h3>
+                                <p class="text-[11px] sm:text-xs text-slate-500" id="csv-import-step-label">Step 1 of 3: Upload File</p>
                             </div>
-                            <button onclick="closeCsvImport()" class="p-2 hover:bg-slate-100 rounded-lg transition cursor-pointer">
+                            <button onclick="closeCsvImport()" class="p-2 hover:bg-slate-100 rounded-lg transition cursor-pointer shrink-0 ml-2">
                                 <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                             </button>
                         </div>
@@ -506,73 +506,73 @@
                         {{-- Scrollable body --}}
                         <div class="overflow-y-auto flex-1 min-h-0">
                             {{-- Step 1: Upload --}}
-                            <div id="csv-step-1" class="p-6 space-y-4">
-                                <div class="grid grid-cols-2 gap-3">
+                            <div id="csv-step-1" class="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Subject *</label>
-                                        <select id="csv-subject" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
+                                        <select id="csv-subject" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                             <option value="">Select subject...</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Class *</label>
-                                        <select id="csv-class" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
+                                        <select id="csv-class" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-2 gap-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Term *</label>
-                                        <select id="csv-term" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
+                                        <select id="csv-term" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]"></select>
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Session *</label>
-                                        <input type="text" id="csv-session" value="<?php echo date('Y') . '/' . (date('Y') + 1); ?>" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
+                                        <input type="text" id="csv-session" value="<?php echo date('Y') . '/' . (date('Y') + 1); ?>" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-3 gap-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Exam Type *</label>
-                                        <select id="csv-exam-type" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm">
+                                        <select id="csv-exam-type" required class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm">
                                             <option value="CBT">CBT (Multiple Choice)</option>
                                             <option value="Mixed">Mixed (Objective & Theory)</option>
                                         </select>
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Duration (min)</label>
-                                        <input type="number" id="csv-duration" value="30" min="1" max="180" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
+                                        <input type="number" id="csv-duration" value="30" min="1" max="180" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Marks Per Q</label>
-                                        <input type="number" id="csv-marks" value="1" min="1" max="100" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
+                                        <input type="number" id="csv-marks" value="1" min="1" max="100" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                 </div>
-                                <div class="grid grid-cols-2 gap-3">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Topic (Optional)</label>
-                                        <input type="text" id="csv-topic" placeholder="e.g., Algebra" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
+                                        <input type="text" id="csv-topic" placeholder="e.g., Algebra" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Sub Topic (Optional)</label>
-                                        <input type="text" id="csv-subtopic" placeholder="e.g., Quadratic Equations" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
+                                        <input type="text" id="csv-subtopic" placeholder="e.g., Quadratic Equations" class="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-[#2563eb]">
                                     </div>
                                 </div>
-                                <div class="border-2 border-dashed border-slate-300 rounded-xl p-6 text-center hover:border-[#2563eb] transition" id="csv-drop-zone">
+                                <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 sm:p-6 text-center hover:border-[#2563eb] transition" id="csv-drop-zone">
                                     <input type="file" id="csv-file-input" accept=".csv" class="hidden" onchange="handleCsvFile(this)">
-                                    <svg class="w-10 h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
-                                    <p class="text-sm text-slate-500 mb-1">Drag & drop your CSV file here, or <button type="button" onclick="document.getElementById('csv-file-input').click()" class="text-[#2563eb] font-semibold hover:underline cursor-pointer">browse</button></p>
-                                    <p class="text-xs text-slate-400">Supports up to 5,000 questions. <button type="button" onclick="downloadCsvTemplate()" class="text-[#1e3a5f] hover:underline cursor-pointer font-medium">Download CSV Template</button></p>
+                                    <svg class="w-8 h-8 sm:w-10 sm:h-10 mx-auto text-slate-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/></svg>
+                                    <p class="text-xs sm:text-sm text-slate-500 mb-1">Drag & drop your CSV file here, or <button type="button" onclick="document.getElementById('csv-file-input').click()" class="text-[#2563eb] font-semibold hover:underline cursor-pointer">browse</button></p>
+                                    <p class="text-[11px] sm:text-xs text-slate-400">Supports up to 5,000 questions. <button type="button" onclick="downloadCsvTemplate()" class="text-[#1e3a5f] hover:underline cursor-pointer font-medium">Download CSV Template</button></p>
                                     <div id="csv-file-info" class="hidden mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                         <p class="text-sm text-[#1d4ed8] font-medium" id="csv-file-name"></p>
                                     </div>
                                 </div>
-                                <div class="flex justify-end gap-2 pt-2">
-                                    <button onclick="closeCsvImport()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Cancel</button>
-                                    <button id="csv-preview-btn" onclick="previewCsvImport()" disabled class="px-4 py-2 bg-[#1e3a5f] text-white text-sm font-bold rounded-lg opacity-50 cursor-not-allowed transition">Preview Import</button>
+                                <div class="flex flex-col-reverse sm:flex-row justify-end gap-2 pt-2">
+                                    <button onclick="closeCsvImport()" class="w-full sm:w-auto px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Cancel</button>
+                                    <button id="csv-preview-btn" onclick="previewCsvImport()" disabled class="w-full sm:w-auto px-5 py-2.5 bg-[#1e3a5f] text-white text-sm font-bold rounded-lg opacity-50 cursor-not-allowed transition">Preview Import</button>
                                 </div>
                             </div>
 
                             {{-- Step 2: Preview --}}
-                            <div id="csv-step-2" class="hidden p-4 sm:p-6 space-y-3 sm:space-y-4">
+                            <div id="csv-step-2" class="hidden p-3 sm:p-6 space-y-3 sm:space-y-4">
                                 <div id="csv-preview-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3"></div>
 
                                 <div id="csv-preview-errors" class="hidden p-3 sm:p-4 bg-[#991b1b]/10 border border-[#991b1b]/20 rounded-lg">
@@ -583,27 +583,27 @@
 
                                 <div>
                                     <label class="text-xs font-semibold text-slate-600 block mb-2">Duplicate Handling</label>
-                                    <div class="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-3">
-                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-[#2563eb] has-[:checked]:bg-blue-50 transition text-xs sm:text-sm flex-1 min-w-0">
+                                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                                        <label class="flex items-center gap-2 p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-[#2563eb] has-[:checked]:bg-blue-50 transition text-xs sm:text-sm">
                                             <input type="radio" name="duplicate_handling" value="import_all" checked class="accent-[#2563eb] shrink-0">
-                                            <div class="min-w-0"><span class="font-medium text-slate-800">Import All</span><p class="text-xs text-slate-500 hidden sm:block">Import everything including duplicates</p></div>
+                                            <div class="min-w-0"><span class="font-medium text-slate-800">Import All</span><p class="text-[10px] sm:text-xs text-slate-500">Including duplicates</p></div>
                                         </label>
-                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-[#1e3a5f] has-[:checked]:bg-[#1e3a5f]/10 transition text-xs sm:text-sm flex-1 min-w-0">
+                                        <label class="flex items-center gap-2 p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-[#1e3a5f] has-[:checked]:bg-[#1e3a5f]/10 transition text-xs sm:text-sm">
                                             <input type="radio" name="duplicate_handling" value="skip" class="accent-[#1e3a5f] shrink-0">
-                                            <div class="min-w-0"><span class="font-medium text-slate-800">Skip Duplicates</span><p class="text-xs text-slate-500 hidden sm:block">Skip questions that already exist</p></div>
+                                            <div class="min-w-0"><span class="font-medium text-slate-800">Skip Duplicates</span><p class="text-[10px] sm:text-xs text-slate-500">Skip existing</p></div>
                                         </label>
-                                        <label class="flex items-center gap-2 p-2.5 sm:p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-[#991b1b] has-[:checked]:bg-[#991b1b]/10 transition text-xs sm:text-sm flex-1 min-w-0">
+                                        <label class="flex items-center gap-2 p-3 border border-slate-200 rounded-lg cursor-pointer hover:border-slate-300 has-[:checked]:border-[#991b1b] has-[:checked]:bg-[#991b1b]/10 transition text-xs sm:text-sm">
                                             <input type="radio" name="duplicate_handling" value="replace" class="accent-[#991b1b] shrink-0">
-                                            <div class="min-w-0"><span class="font-medium text-slate-800">Replace Existing</span><p class="text-xs text-slate-500 hidden sm:block">Update matching questions</p></div>
+                                            <div class="min-w-0"><span class="font-medium text-slate-800">Replace</span><p class="text-[10px] sm:text-xs text-slate-500">Update matching</p></div>
                                         </label>
                                     </div>
                                 </div>
 
-                                <div id="csv-step-2-actions" class="flex items-center justify-between gap-3 flex-wrap">
-                                    <button onclick="csvGoBack(1)" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Back</button>
-                                    <div class="flex items-center gap-3">
+                                <div id="csv-step-2-actions" class="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3 py-3 px-4 bg-white border border-slate-200 rounded-xl shadow-sm">
+                                    <button onclick="csvGoBack(1)" class="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer text-center">Back</button>
+                                    <div class="flex items-center justify-center sm:justify-end gap-3">
                                         <span id="csv-import-progress" class="hidden px-4 py-2 text-sm text-[#2563eb] font-semibold"><span class="animate-spin inline-block w-4 h-4 border-2 border-[#2563eb] border-t-transparent rounded-full mr-2 align-middle"></span>Importing...</span>
-                                        <button id="csv-import-btn" onclick="confirmCsvImport()" class="px-6 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition cursor-pointer">Import Questions</button>
+                                        <button id="csv-import-btn" onclick="confirmCsvImport()" class="w-full sm:w-auto px-6 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition-all duration-200 cursor-pointer shadow-md hover:shadow-lg border border-blue-600">Import Questions</button>
                                     </div>
                                 </div>
 
@@ -625,7 +625,7 @@
                                             <tbody id="csv-preview-table"></tbody>
                                         </table>
                                     </div>
-                                    <div id="csv-pagination" class="hidden flex items-center justify-between px-3 sm:px-4 py-3 border-t border-slate-200 bg-slate-50 text-xs">
+                                    <div id="csv-pagination" class="hidden flex flex-col sm:flex-row items-center justify-between gap-2 px-3 sm:px-4 py-3 border-t border-slate-200 bg-slate-50 text-xs">
                                         <div class="flex items-center gap-2">
                                             <span class="text-slate-500" id="csv-page-info">Page 1 of 1</span>
                                             <select id="csv-page-size" onchange="setCsvPageSize(+this.value)" class="border border-slate-300 rounded px-2 py-1 text-xs bg-white focus:outline-none focus:border-[#2563eb]">
@@ -636,9 +636,9 @@
                                             </select>
                                         </div>
                                         <div class="flex items-center gap-1">
-                                            <button onclick="goCsvPage(-1)" id="csv-prev-page" class="px-2 py-1 border border-slate-300 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer" disabled>&larr; Prev</button>
-                                            <span class="px-2 text-slate-600 font-medium" id="csv-page-num">1</span>
-                                            <button onclick="goCsvPage(1)" id="csv-next-page" class="px-2 py-1 border border-slate-300 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">Next &rarr;</button>
+                                            <button onclick="goCsvPage(-1)" id="csv-prev-page" class="px-3 py-1.5 border border-slate-300 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">&larr; Prev</button>
+                                            <span class="px-3 text-slate-600 font-medium" id="csv-page-num">1</span>
+                                            <button onclick="goCsvPage(1)" id="csv-next-page" class="px-3 py-1.5 border border-slate-300 rounded hover:bg-white disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer">Next &rarr;</button>
                                         </div>
                                     </div>
                                     <div id="csv-preview-more" class="hidden p-3 text-center text-xs text-slate-400 border-t border-slate-200"></div>
@@ -657,9 +657,9 @@
                                     <h4 class="text-sm font-bold text-[#7f1d1d] mb-2">Row Errors</h4>
                                     <div id="csv-result-error-list" class="text-xs text-[#991b1b] space-y-1 max-h-40 overflow-y-auto"></div>
                                 </div>
-                                <div class="flex justify-center gap-2 pt-2">
-                                    <button onclick="closeCsvImport()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Close</button>
-                                    <button onclick="csvGoBack(1); closeCsvImport(); openCsvImport();" class="px-4 py-2 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition cursor-pointer">Import Another</button>
+                                <div class="flex flex-col sm:flex-row justify-center gap-2 pt-2">
+                                    <button onclick="closeCsvImport()" class="w-full sm:w-auto px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Close</button>
+                                    <button onclick="csvGoBack(1); closeCsvImport(); openCsvImport();" class="w-full sm:w-auto px-5 py-2.5 bg-[#2563eb] hover:bg-[#1d4ed8] text-white text-sm font-bold rounded-lg transition cursor-pointer">Import Another</button>
                                 </div>
                             </div>
                         </div>
@@ -1506,9 +1506,9 @@ function renderResults() {
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${isPassed ? 'bg-blue-50 text-[#2563eb] border border-blue-200' : 'bg-[#991b1b]/10 text-[#991b1b] border border-[#991b1b]/20'}">${pct}%</span>
-                    <button onclick="downloadGradedScript('${r.examId}', '${r.id}')" class="px-2.5 py-1.5 bg-[#1e3a5f] hover:bg-[#15294a] text-white text-[10px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1 shadow-sm hover:shadow-md" title="Download Graded Script PDF">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
-                        <span class="hidden sm:inline">Script</span>
+                    <button onclick="downloadGradedScript('${r.examId}', '${r.id}')" class="px-3 py-1.5 bg-[#1e3a5f] hover:bg-[#15294a] text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-sm hover:shadow-md border border-[#2d4a7a]" title="Download Graded Script PDF">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                        <span>Script</span>
                     </button>
                 </div>
             </div>`;
@@ -1523,7 +1523,7 @@ function renderResults() {
                         <p class="text-xs text-slate-400 truncate">${group.subject}${group.level ? ' | ' + group.level : ''} | ${count} student${count > 1 ? 's' : ''} | ${passedCount}/${totalStudents} passed</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-3 shrink-0">
+                <div class="flex items-center gap-2 shrink-0">
                     <div class="hidden md:flex items-center gap-2 text-xs">
                         <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 font-semibold whitespace-nowrap">Best: ${bestScore}%</span>
                         <span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold whitespace-nowrap">Avg: ${avgPercentage}%</span>
