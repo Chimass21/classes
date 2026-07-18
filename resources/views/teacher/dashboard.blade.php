@@ -490,10 +490,11 @@
                 </div>
 
                 {{-- === CSV Import Modal === --}}
-                <div id="csv-import-modal" class="hidden fixed inset-0 z-50 bg-black/50 flex items-start sm:items-center justify-center overflow-y-auto p-2 sm:p-4" style="padding-top:env(safe-area-inset-top, 4px);padding-bottom:env(safe-area-inset-bottom, 4px)">
-                    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl mx-auto my-auto flex flex-col sm:max-h-[90vh]" style="max-height:calc(100dvh - 8px)">
+                <div id="csv-import-modal" class="hidden fixed inset-0 z-50 bg-black/50 overflow-y-auto" style="padding-top:env(safe-area-inset-top, 0px);padding-bottom:env(safe-area-inset-bottom, 0px)">
+                    <div class="min-h-full flex items-start sm:items-center justify-center p-2 sm:p-4">
+                        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl mx-auto my-auto">
                         {{-- Header --}}
-                        <div class="shrink-0 rounded-t-2xl border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+                        <div class="sticky top-0 z-10 rounded-t-2xl border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between bg-white shadow-sm">
                             <div class="min-w-0">
                                 <h3 class="text-base sm:text-lg font-bold text-slate-900 truncate">Import Questions (CSV)</h3>
                                 <p class="text-[11px] sm:text-xs text-slate-500" id="csv-import-step-label">Step 1 of 3: Upload File</p>
@@ -503,10 +504,9 @@
                             </button>
                         </div>
 
-                        {{-- Scrollable body --}}
-                        <div class="overflow-y-auto flex-1 min-h-0">
+                        <div class="px-4 sm:px-6 py-4 sm:py-6">
                             {{-- Step 1: Upload --}}
-                            <div id="csv-step-1" class="p-4 sm:p-6 space-y-3 sm:space-y-4">
+                            <div id="csv-step-1" class="space-y-3 sm:space-y-4">
                                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                     <div>
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Subject *</label>
@@ -568,7 +568,7 @@
                             </div>
 
                             {{-- Step 2: Preview --}}
-                            <div id="csv-step-2" class="hidden p-3 sm:p-6 space-y-3 sm:space-y-4">
+                            <div id="csv-step-2" class="hidden space-y-3 sm:space-y-4">
                                 <div id="csv-preview-stats" class="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3"></div>
 
                                 <div id="csv-preview-errors" class="hidden p-3 sm:p-4 bg-[#991b1b]/10 border border-[#991b1b]/20 rounded-lg">
@@ -636,7 +636,7 @@
                             </div>
 
                             {{-- Step 3: Result --}}
-                            <div id="csv-step-3" class="hidden p-6 text-center space-y-4">
+                            <div id="csv-step-3" class="hidden text-center space-y-4">
                                 <div class="w-16 h-16 mx-auto bg-blue-100 rounded-full flex items-center justify-center">
                                     <svg class="w-8 h-8 text-[#2563eb]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                                 </div>
@@ -651,7 +651,7 @@
                         </div>
 
                         {{-- Footer: always visible action buttons --}}
-                        <div class="shrink-0 border-t border-slate-200 px-4 sm:px-6 py-3 bg-white rounded-b-2xl" id="csv-import-footer">
+                        <div class="sticky bottom-0 z-10 border-t border-slate-200 px-4 sm:px-6 py-3 bg-white rounded-b-2xl shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]" id="csv-import-footer">
                             {{-- Step 1: Upload --}}
                             <div id="csv-footer-step-1" class="flex flex-col sm:flex-row justify-end gap-2">
                                 <button onclick="closeCsvImport()" class="w-full sm:w-auto px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-800 text-sm font-bold rounded-lg transition cursor-pointer border border-slate-300 shadow-sm">Cancel</button>
@@ -672,6 +672,7 @@
                             </div>
                         </div>
                     </div>
+                </div>
                 </div>
 
                 {{-- === Exam Settings Modal === --}}
