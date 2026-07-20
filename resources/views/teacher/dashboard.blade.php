@@ -1213,6 +1213,7 @@ function displayQuestions(qs) {
         <button onclick="shareQuestions()" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer">Share</button>
         <button onclick="printQuestions()" class="px-3 py-1.5 bg-gray-800 text-white text-xs font-bold rounded-lg hover:bg-gray-900 cursor-pointer">Print</button>
         <button onclick="readAloud('q-content')" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer">Read Aloud</button>
+        <button onclick="convertToCBT()" class="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg hover:bg-red-700 cursor-pointer">Convert to CBT</button>
     `;
 }
 
@@ -1388,12 +1389,15 @@ function viewQuestionSet(id) {
     const qs = teacherData.questionSets.find(q => q.id === id);
     if (!qs) return;
     currentQsId = id;
+    currentQuestions = qs.questions || [];
     const data = qs.questions || [];
     if (Array.isArray(data) && data.length && !data.objectives) {
         displayQuestions({ objectives: data });
     } else {
         displayQuestions(data);
     }
+    document.getElementById('q-save-section').classList.remove('hidden');
+    document.getElementById('q-save-msg').textContent = 'Questions loaded from pool.';
 }
 
 function renderExams() {
