@@ -393,25 +393,25 @@
                         </div>
 
                         {{-- CSV Import Card --}}
-                        <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-4 sm:p-5">
+                        <div class="bg-blue-600 rounded-xl p-4 sm:p-5 shadow-md">
                             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                                 <div class="flex items-start gap-3">
-                                    <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-slate-800 flex items-center justify-center text-white shrink-0">
+                                    <div class="w-10 h-10 rounded-lg bg-white/20 flex items-center justify-center text-white shrink-0">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                     </div>
                                     <div>
-                                        <h4 class="text-sm font-bold text-slate-900">Bulk Import Questions via CSV</h4>
-                                        <p class="text-xs text-slate-500 mt-0.5">Upload a CSV file with your questions, options, and answers. Supports up to 5,000 questions at once.</p>
+                                        <h4 class="text-sm font-bold text-white">Bulk Import Questions via CSV</h4>
+                                        <p class="text-xs text-blue-100 mt-0.5">Upload a CSV file with your questions, options, and answers. Supports up to 5,000 questions at once.</p>
                                     </div>
                                 </div>
-                                <button onclick="openCsvImport()" class="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 shadow-md hover:shadow-lg shrink-0">
+                                <button onclick="openCsvImport()" class="w-full sm:w-auto px-5 py-2.5 bg-white hover:bg-blue-50 text-blue-700 text-sm font-bold rounded-lg transition-all duration-200 cursor-pointer flex items-center justify-center gap-2 shadow-md shrink-0 border border-blue-700">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                                     Select CSV File
                                 </button>
                             </div>
                         </div>
-                        <div class="bg-white border border-slate-200 rounded-xl overflow-hidden">
-                            <button onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-4 text-xs font-bold text-slate-500 hover:text-slate-700 transition cursor-pointer border-b border-slate-100 bg-slate-50">
+                        <div class="bg-white border border-slate-300 rounded-xl overflow-hidden shadow-sm">
+                            <button onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('svg').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-4 text-xs font-bold text-white hover:bg-blue-700 transition cursor-pointer border-b border-slate-300 bg-blue-700">
                                 <span class="flex items-center gap-2">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                     CSV Format Reference
@@ -481,9 +481,10 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="bg-white border border-slate-200 rounded-xl p-5">
+                        <div class="bg-white border border-slate-300 rounded-xl p-5 shadow-sm">
+                            <h4 class="text-sm font-bold text-slate-800 mb-3">Your Published Exams</h4>
                             <div id="cbt-exams-list" class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <div class="text-center py-8 text-sm text-slate-400 col-span-2">No exams created yet.</div>
+                                <div class="text-center py-8 text-sm text-slate-500 col-span-2">No exams created yet.</div>
                             </div>
                         </div>
                     </div>
@@ -1205,7 +1206,7 @@ function displayQuestions(qs) {
         html += `<h3 class="text-base font-bold text-slate-800 mt-4 mb-3">Structured Questions</h3>`;
         html += structured.map(q => `<div class="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-2"><p class="text-sm font-medium">${q.question}</p>${q.parts ? Object.entries(q.parts).map(([k,v]) => `<p class="text-xs text-slate-600 ml-2">(${k}) ${v}</p>`).join('') : ''}</div>`).join('');
     }
-    container.innerHTML = html || '<p class="text-sm text-slate-400">No questions generated.</p>';
+    container.innerHTML = html || '<p class="text-sm text-slate-500">No questions generated.</p>';
 
     document.getElementById('q-action-buttons').innerHTML = `
         <button onclick="copyQuestions()" class="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-900 cursor-pointer">Copy</button>
@@ -1300,7 +1301,7 @@ function renderPlans() {
     const container = document.getElementById('plans-list');
     const filtered = plansFilter ? teacherData.plans.filter(p => p.subject === plansFilter) : teacherData.plans;
     if (!filtered.length) {
-        container.innerHTML = '<div class="text-center py-4 text-sm text-slate-400">No lesson plans yet.</div>';
+        container.innerHTML = '<div class="text-center py-4 text-sm text-slate-500">No lesson plans yet.</div>';
         return;
     }
     container.innerHTML = filtered.slice().reverse().map(p => {
@@ -1313,7 +1314,7 @@ function renderPlans() {
                 <div class="text-xs text-slate-400">${p.subject || ''} | ${p.class || ''} | Week ${p.week || ''} | ${p.createdAt ? new Date(p.createdAt).toLocaleDateString() : ''}</div>
                 ${subHtml}
             </div>
-            <button onclick="event.stopPropagation();deletePlan('${p.id}')" class="shrink-0 p-1.5 bg-white border border-slate-200 rounded-lg hover:bg-red-800/10 hover:border-red-700 hover:text-red-700 text-slate-400 transition cursor-pointer" title="Delete">
+            <button onclick="event.stopPropagation();deletePlan('${p.id}')" class="shrink-0 p-1.5 bg-white border border-slate-200 rounded-lg hover:bg-red-100 hover:border-red-500 hover:text-red-600 text-slate-500 transition cursor-pointer" title="Delete">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
             </button>
         </div>`;
@@ -1336,12 +1337,12 @@ function renderNotes() {
     const container = document.getElementById('notes-list');
     const filtered = notesFilter ? teacherData.notes.filter(n => n.subject === notesFilter) : teacherData.notes;
     if (!filtered.length) {
-        container.innerHTML = '<div class="text-center py-4 text-sm text-slate-400">No lesson notes yet.</div>';
+        container.innerHTML = '<div class="text-center py-4 text-sm text-slate-500">No lesson notes yet.</div>';
         return;
     }
     container.innerHTML = filtered.slice().reverse().map(n => {
         const subs = n.subtopics || [];
-        const subHtml = subs.length ? `<div class="flex flex-wrap gap-1 mt-1.5">${subs.slice(0, 3).map(s => `<span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full border border-slate-150">${s}</span>`).join('')}${subs.length > 3 ? `<span class="text-[10px] text-slate-400">+${subs.length - 3} more</span>` : ''}</div>` : '';
+        const subHtml = subs.length ? `<div class="flex flex-wrap gap-1 mt-1.5">${subs.slice(0, 3).map(s => `<span class="text-[10px] bg-slate-200 text-slate-700 px-2 py-0.5 rounded-full border border-slate-300">${s}</span>`).join('')}${subs.length > 3 ? `<span class="text-[10px] text-slate-400">+${subs.length - 3} more</span>` : ''}</div>` : '';
         return `
         <div class="flex items-start gap-2 p-3 bg-slate-50 border border-slate-200 rounded-lg cursor-pointer hover:border-blue-600 transition" onclick="viewNote('${n.id}')">
             <div class="flex-1 min-w-0">
@@ -1349,7 +1350,7 @@ function renderNotes() {
                 <div class="text-xs text-slate-400">${n.subject || ''} | ${n.class || ''} | ${n.createdAt ? new Date(n.createdAt).toLocaleDateString() : ''}</div>
                 ${subHtml}
             </div>
-            <button onclick="event.stopPropagation();deleteNote('${n.id}')" class="shrink-0 p-1.5 bg-white border border-slate-200 rounded-lg hover:bg-red-800/10 hover:border-red-700 hover:text-red-700 text-slate-400 transition cursor-pointer" title="Delete">
+            <button onclick="event.stopPropagation();deleteNote('${n.id}')" class="shrink-0 p-1.5 bg-white border border-slate-200 rounded-lg hover:bg-red-100 hover:border-red-500 hover:text-red-600 text-slate-500 transition cursor-pointer" title="Delete">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
             </button>
         </div>`;
@@ -1372,7 +1373,7 @@ function renderQuestionSets() {
     const container = document.getElementById('q-sets-list');
     const filtered = qsFilter ? teacherData.questionSets.filter(q => q.subject === qsFilter) : teacherData.questionSets;
     if (!filtered.length) {
-        container.innerHTML = '<div class="text-center py-4 text-sm text-slate-400">No question sets saved yet.</div>';
+        container.innerHTML = '<div class="text-center py-4 text-sm text-slate-500">No question sets saved yet.</div>';
         return;
     }
     container.innerHTML = filtered.slice().reverse().map(q => `
@@ -1398,27 +1399,27 @@ function viewQuestionSet(id) {
 function renderExams() {
     const container = document.getElementById('cbt-exams-list');
     if (!teacherData.exams.length) {
-        container.innerHTML = '<div class="text-center py-8 text-sm text-slate-400 col-span-2">No exams created yet.</div>';
+        container.innerHTML = '<div class="text-center py-8 text-sm text-slate-500 col-span-2">No exams created yet.</div>';
         return;
     }
     container.innerHTML = teacherData.exams.slice().reverse().map(e => {
         const examLink = window.location.origin + '/student/exam/' + e.id;
         const marks = e.defaultMarks || 5;
-        return `<div class="p-4 bg-white border border-slate-200 rounded-xl">
-            <div class="flex justify-between items-start">
-                <div>
-                    <h5 class="font-semibold text-slate-900">${e.title || 'Exam'}</h5>
-                    <p class="text-xs text-slate-500">${e.subject || ''} | ${e.questions?.length || 0} questions | ${e.duration || 0} min | ${marks} mark(s) per Q</p>
+        return `<div class="border border-slate-300 rounded-xl overflow-hidden shadow-sm">
+            <div class="px-4 py-3 flex items-center justify-between gap-2 ${e.isPublished ? 'bg-green-600' : 'bg-gray-600'}">
+                <div class="min-w-0">
+                    <h5 class="font-bold text-sm text-white truncate">${e.title || 'Exam'}</h5>
+                    <p class="text-xs text-white/80">${e.subject || ''} | ${e.questions?.length || 0} questions | ${e.duration || 0} min | ${marks} mark(s) per Q</p>
                 </div>
-                <span class="px-2 py-0.5 rounded text-xs font-semibold ${e.isPublished ? 'bg-blue-50 text-blue-600' : 'bg-slate-800/10 text-slate-800'}">${e.isPublished ? 'Live' : 'Draft'}</span>
+                <span class="px-2.5 py-1 rounded text-[10px] font-bold uppercase whitespace-nowrap shrink-0 ${e.isPublished ? 'bg-green-800 text-white' : 'bg-gray-800 text-white'}">${e.isPublished ? 'Live' : 'Draft'}</span>
             </div>
-            <div class="mt-3 flex flex-wrap gap-1.5">
-                <button onclick="publishExam('${e.id}')" class="px-2 py-1 bg-blue-600 text-white text-[10px] font-bold rounded hover:bg-blue-700 cursor-pointer">${e.isPublished ? 'Unpublish' : 'Publish'}</button>
-                <button onclick="copyExamLink('${examLink}')" class="px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded hover:bg-slate-900 cursor-pointer">Copy Link</button>
-                <button onclick="openExamSettings('${e.id}')" class="px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded hover:bg-slate-900 cursor-pointer">Settings</button>
-                <button onclick="window.open('/api/download/exam/${e.id}/pdf','_blank')" class="px-2 py-1 bg-red-800 text-white text-[10px] font-bold rounded hover:bg-red-900 cursor-pointer">PDF</button>
-                <button onclick="window.open('/api/download/exam/${e.id}/docx','_blank')" class="px-2 py-1 bg-blue-600 text-white text-[10px] font-bold rounded hover:bg-blue-700 cursor-pointer">DOCX</button>
-                <button onclick="deleteExam('${e.id}')" class="px-2 py-1 bg-red-800 text-white text-[10px] font-bold rounded hover:bg-red-900 cursor-pointer">Delete</button>
+            <div class="p-3 bg-white flex flex-wrap gap-1.5">
+                <button onclick="publishExam('${e.id}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">${e.isPublished ? 'Unpublish' : 'Publish'}</button>
+                <button onclick="copyExamLink('${examLink}')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">Copy Link</button>
+                <button onclick="openExamSettings('${e.id}')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">Settings</button>
+                <button onclick="window.open('/api/download/exam/${e.id}/pdf','_blank')" class="px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">PDF</button>
+                <button onclick="window.open('/api/download/exam/${e.id}/docx','_blank')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">DOCX</button>
+                <button onclick="deleteExam('${e.id}')" class="px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">Delete</button>
             </div>
         </div>`;
     }).join('');
@@ -1448,7 +1449,7 @@ async function deleteExam(id) {
 function renderResults() {
     const container = document.getElementById('results-list');
     if (!teacherData.results.length) {
-        container.innerHTML = '<div class="text-center py-8 text-sm text-slate-400">No results yet.</div>';
+        container.innerHTML = '<div class="text-center py-8 text-sm text-slate-500">No results yet.</div>';
         return;
     }
 
@@ -1472,7 +1473,7 @@ function renderResults() {
 
     const examIds = Object.keys(examMap);
     if (!examIds.length) {
-        container.innerHTML = '<div class="text-center py-8 text-sm text-slate-400">No results yet.</div>';
+        container.innerHTML = '<div class="text-center py-8 text-sm text-slate-500">No results yet.</div>';
         return;
     }
 
@@ -1503,8 +1504,8 @@ function renderResults() {
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="font-semibold text-sm text-slate-900">${r.studentName || 'Student'}</span>
                         <span class="text-[10px] px-1.5 py-0.5 rounded font-bold ${isPassed ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}">${isPassed ? 'Pass' : 'Fail'}</span>
-                        <span class="text-[10px] px-1.5 py-0.5 rounded font-bold ${gradeColors[grade] || 'bg-slate-100 text-slate-600'}">Grade ${grade}</span>
-                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-medium">${r.subject || ''}</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded font-bold ${gradeColors[grade] || 'bg-slate-200 text-slate-700'}">Grade ${grade}</span>
+                        <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-medium">${r.subject || ''}</span>
                     </div>
                     <div class="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-slate-400 mt-0.5">
                         <span>Score: <strong class="text-slate-600">${r.score || 0}/${r.totalPossibleMarks || r.totalQuestions || 0}</strong></span>
