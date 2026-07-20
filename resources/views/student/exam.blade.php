@@ -43,7 +43,7 @@
         </div>
       </div>
       <div class="flex items-center gap-1.5 sm:gap-2 shrink-0" id="header-controls">
-        <button id="fullscreen-btn" onclick="toggleFullscreen()" class="p-2 text-slate-500 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition" title="Toggle Fullscreen Mode">
+        <button id="fullscreen-btn" onclick="toggleFullscreen()" class="p-2 text-slate-700 hover:text-slate-900 bg-slate-200 hover:bg-slate-300 rounded-xl transition" title="Toggle Fullscreen Mode">
           <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
         </button>
         <div id="timer-display" class="flex items-center gap-1.5 sm:gap-2 bg-rose-50 text-rose-700 px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-xl sm:rounded-2xl border border-rose-100 font-mono text-xs sm:text-sm font-black">
@@ -64,7 +64,7 @@
             <div class="flex items-center justify-between flex-wrap gap-2">
               <span id="q-counter" class="text-xs bg-indigo-50 text-indigo-700 py-1.5 px-3.5 rounded-full font-bold border border-indigo-100">Question 1 of {{ count($exam->questions) }}</span>
               <div class="flex items-center gap-2">
-                <button id="flag-btn" onclick="toggleFlag()" class="p-2 rounded-xl border transition bg-white text-slate-400 border-slate-200 hover:text-slate-700 hover:bg-slate-50" title="Flag Question for Review">
+                <button id="flag-btn" onclick="toggleFlag()" class="p-2 rounded-xl border transition bg-white text-slate-600 border-slate-300 hover:text-slate-800 hover:bg-slate-50" title="Flag Question for Review">
                   <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>
                 </button>
                 <span id="q-marks" class="text-xs bg-emerald-50 text-emerald-700 py-1 px-3 rounded-full font-extrabold border border-emerald-100">+5 Mark</span>
@@ -309,7 +309,7 @@ function renderQuestion() {
     flagBtn.className = 'p-2 rounded-xl border transition bg-amber-50 text-amber-700 border-amber-300 hover:bg-amber-100';
     flagBtn.innerHTML = '<svg class="w-3.5 h-3.5 fill-amber-500" fill="currentColor" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>';
   } else {
-    flagBtn.className = 'p-2 rounded-xl border transition bg-white text-slate-400 border-slate-200 hover:text-slate-700 hover:bg-slate-50';
+    flagBtn.className = 'p-2 rounded-xl border transition bg-white text-slate-600 border-slate-300 hover:text-slate-800 hover:bg-slate-50';
     flagBtn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9"/></svg>';
   }
   const opts = document.getElementById('options-container');
@@ -327,7 +327,7 @@ function renderQuestion() {
     const isSelected = selected === opt.key;
     return `<button onclick="selectOption('${opt.key}')" class="opt-btn w-full flex items-center justify-between text-left p-3 sm:p-3.5 rounded-xl border font-bold text-xs sm:text-sm transition-all duration-150 cursor-pointer ${isSelected ? 'bg-indigo-50 border-indigo-400 text-indigo-900 ring-2 ring-indigo-200 shadow-sm' : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-700 shadow-xs'}">
       <div class="flex items-center gap-3 min-w-0 flex-1">
-        <span class="w-8 h-8 rounded-lg font-mono font-black flex items-center justify-center shrink-0 border text-sm leading-none transition ${isSelected ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-100 text-slate-500 border-slate-200'}">${opt.key}</span>
+        <span class="w-8 h-8 rounded-lg font-mono font-black flex items-center justify-center shrink-0 border text-sm leading-none transition ${isSelected ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-200 text-slate-700 border-slate-300'}">${opt.key}</span>
         <span class="break-words min-w-0 leading-snug">${opt.label}</span>
       </div>${isSelected ? '<div class="w-5 h-5 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] shrink-0 shadow-sm">&#10003;</div>' : ''}
     </button>`;
@@ -709,7 +709,7 @@ function showResults() {
         const isCorrectOpt = opt.key === item.correctAnswer;
         const isSelectedOpt = opt.key === item.selectedAnswer;
         let borderStyle = 'border-slate-200 bg-white';
-        let markerColor = 'bg-slate-100 text-slate-500 border-slate-200';
+        let markerColor = 'bg-slate-200 text-slate-700 border-slate-300';
         let badge = '';
         if (isCorrectOpt) { borderStyle = 'border-emerald-300 bg-emerald-50/50 ring-1 ring-emerald-200'; markerColor = 'bg-emerald-500 text-white border-emerald-500'; badge = '<span class="text-[10px] font-extrabold text-emerald-600 shrink-0 ml-auto">&#10004; Correct</span>'; }
         else if (isSelectedOpt && !isCorrectOpt) { borderStyle = 'border-rose-300 bg-rose-50/50 ring-1 ring-rose-200'; markerColor = 'bg-rose-500 text-white border-rose-500'; badge = '<span class="text-[10px] font-extrabold text-rose-600 shrink-0 ml-auto">&#10008; Your Answer</span>'; }
@@ -997,7 +997,7 @@ function handleRetake() {
     document.getElementById('submit-btn').disabled = false;
     document.getElementById('submit-btn').textContent = 'Finish & Submit';
     document.getElementById('header-controls').innerHTML = `
-      <button onclick="toggleFullscreen()" class="p-2 text-slate-500 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition" title="Toggle Fullscreen Mode">
+      <button onclick="toggleFullscreen()" class="p-2 text-slate-700 hover:text-slate-900 bg-slate-200 hover:bg-slate-300 rounded-xl transition" title="Toggle Fullscreen Mode">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/></svg>
       </button>
       <div class="flex items-center gap-2 bg-rose-50 text-rose-700 px-4 py-2 rounded-2xl border border-rose-100 font-mono text-sm font-black">

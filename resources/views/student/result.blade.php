@@ -55,7 +55,7 @@
                                         $isCorrectOpt = $optKey === $failed['correctAnswer'];
                                         $isSelectedOpt = $optKey === ($failed['selectedAnswer'] ?? '');
                                         $optClass = 'border-slate-200 bg-white';
-                                        $markerClass = 'bg-slate-100 text-slate-500 border-slate-200';
+                                        $markerClass = 'bg-slate-200 text-slate-700 border-slate-300';
                                         $badge = '';
                                         if ($isCorrectOpt) { $optClass = 'border-emerald-300 bg-emerald-50/50 ring-1 ring-emerald-200'; $markerClass = 'bg-emerald-500 text-white border-emerald-500'; $badge = '<span class="text-[10px] font-extrabold text-emerald-600 shrink-0 ml-auto">✓ Correct</span>'; }
                                         elseif ($isSelectedOpt && !$isCorrectOpt) { $optClass = 'border-rose-300 bg-rose-50/50 ring-1 ring-rose-200'; $markerClass = 'bg-rose-500 text-white border-rose-500'; $badge = '<span class="text-[10px] font-extrabold text-rose-600 shrink-0 ml-auto">✗ Your Answer</span>'; }

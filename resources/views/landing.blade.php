@@ -514,7 +514,7 @@
         <div class="bg-white rounded-3xl border border-slate-200 max-w-md w-full p-8 shadow-2xl relative space-y-6">
             <button
                 onclick="toggleAuthModal()"
-                class="absolute top-4 right-4 p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full cursor-pointer transition border-none"
+                class="absolute top-4 right-4 p-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-full cursor-pointer transition border-none"
             >
                 ✕
             </button>
@@ -550,7 +550,7 @@
                     type="button"
                     onclick="setAuthMode('signup')"
                     id="tab-signup"
-                    class="flex-1 py-1.5 rounded-xl transition cursor-pointer border-none bg-transparent text-slate-500 hover:text-slate-800"
+                    class="flex-1 py-1.5 rounded-xl transition cursor-pointer border-none bg-transparent text-slate-700 hover:text-slate-900"
                 >
                     Sign Up
                 </button>
@@ -629,7 +629,7 @@
                             type="button"
                             id="role-teacher"
                             onclick="setSignupRole('teacher')"
-                            class="py-2 px-3 border rounded-xl cursor-pointer transition bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100"
+                            class="py-2 px-3 border rounded-xl cursor-pointer transition bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100"
                         >
                             ✍ Professional Teacher
                         </button>
@@ -641,7 +641,7 @@
                     <button
                         type="button"
                         onclick="setAuthMode('forgot')"
-                        class="text-xs font-black text-slate-500 hover:text-indigo-600 transition cursor-pointer bg-transparent border-none p-0"
+                        class="text-xs font-black text-slate-700 hover:text-indigo-600 transition cursor-pointer bg-transparent border-none p-0"
                     >
                         Forgot registration password?
                     </button>
@@ -665,7 +665,7 @@
                     Validate Credentials
                 </button>
                 
-                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-150 text-[10px] text-slate-400 leading-snug font-medium font-mono text-center">
+                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-150 text-[10px] text-slate-500 leading-snug font-medium font-mono text-center">
                     <strong>Admin Login:</strong> Username: <span class="text-indigo-600 font-bold">admin</span> / Password: <span class="text-red-650 font-bold">admin</span><br>
                     <span class="text-[9px]">Or use your registered email &amp; password</span>
                 </div>
@@ -689,7 +689,7 @@
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>';
-            btn.className = 'inline-flex items-center justify-center opacity-60 text-slate-400 cursor-help p-1 rounded-md bg-slate-100';
+            btn.className = 'inline-flex items-center justify-center opacity-60 text-slate-500 cursor-help p-1 rounded-md bg-slate-200';
             btn.title = 'Speech recognition not supported';
             btn.onclick = function() {
                 const tooltip = document.createElement('div');
@@ -708,7 +708,7 @@
         const btn = document.createElement('button');
         btn.type = 'button';
         btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>';
-        btn.className = 'inline-flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 p-1 rounded-md';
+        btn.className = 'inline-flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-slate-200 text-slate-700 hover:bg-slate-300 hover:text-slate-900 p-1 rounded-md';
         btn.title = 'Use speech-to-text (microphone input)';
 
         btn.onclick = function(e) {
@@ -717,7 +717,7 @@
             if (isListening) {
                 try { recognition.stop(); } catch(e) {}
                 isListening = false;
-                btn.className = 'inline-flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 p-1 rounded-md';
+                btn.className = 'inline-flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-slate-200 text-slate-700 hover:bg-slate-300 hover:text-slate-900 p-1 rounded-md';
                 btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>';
             } else {
                 if (!recognition) {
@@ -727,7 +727,7 @@
                     recognition.lang = 'en-US';
                     recognition.onend = function() {
                         isListening = false;
-                        btn.className = 'inline-flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 p-1 rounded-md';
+                        btn.className = 'inline-flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-slate-200 text-slate-700 hover:bg-slate-300 hover:text-slate-900 p-1 rounded-md';
                         btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>';
                     };
                     recognition.onresult = function(event) {
@@ -741,7 +741,7 @@
                     recognition.onerror = function(event) {
                         console.error('Speech error:', event.error);
                         isListening = false;
-                        btn.className = 'inline-flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-700 p-1 rounded-md';
+                        btn.className = 'inline-flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-slate-200 text-slate-700 hover:bg-slate-300 hover:text-slate-900 p-1 rounded-md';
                         btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>';
                         const tooltip = document.createElement('div');
                         tooltip.className = 'absolute bottom-full mb-2 right-0 z-50 bg-slate-900 text-white text-[10px] font-bold px-2 py-1.5 rounded-lg whitespace-nowrap shadow-xl';
@@ -806,7 +806,7 @@
             forgotLink.classList.remove('hidden');
             backToLogin.classList.add('hidden');
             tabLogin.className = 'flex-1 py-1.5 rounded-xl transition cursor-pointer border-none bg-white text-slate-900 shadow-sm';
-            tabSignup.className = 'flex-1 py-1.5 rounded-xl transition cursor-pointer border-none bg-transparent text-slate-500 hover:text-slate-800';
+            tabSignup.className = 'flex-1 py-1.5 rounded-xl transition cursor-pointer border-none bg-transparent text-slate-700 hover:text-slate-900';
         } else         if (mode === 'signup') {
             modalHeading.textContent = 'Create Educator or Student Account';
             modalSubheading.textContent = 'Get your customized Nigeria and WAEC/NECO educational dashboard.';
@@ -820,7 +820,7 @@
             forgotLink.classList.add('hidden');
             backToLogin.classList.add('hidden');
             tabSignup.className = 'flex-1 py-1.5 rounded-xl transition cursor-pointer border-none bg-white text-slate-900 shadow-sm';
-            tabLogin.className = 'flex-1 py-1.5 rounded-xl transition cursor-pointer border-none bg-transparent text-slate-500 hover:text-slate-800';
+            tabLogin.className = 'flex-1 py-1.5 rounded-xl transition cursor-pointer border-none bg-transparent text-slate-700 hover:text-slate-900';
         } else if (mode === 'forgot') {
             modalHeading.textContent = 'Recover Access Credentials';
             modalSubheading.textContent = 'Enter registered email address to continue validation.';
@@ -842,10 +842,10 @@
         const roleTeacher = document.getElementById('role-teacher');
         if (role === 'student') {
             roleStudent.className = 'py-2 px-3 border rounded-xl cursor-pointer transition bg-indigo-50 border-indigo-400 text-indigo-700 font-extrabold';
-            roleTeacher.className = 'py-2 px-3 border rounded-xl cursor-pointer transition bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100';
+            roleTeacher.className = 'py-2 px-3 border rounded-xl cursor-pointer transition bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100';
         } else {
             roleTeacher.className = 'py-2 px-3 border rounded-xl cursor-pointer transition bg-indigo-50 border-indigo-400 text-indigo-700 font-extrabold';
-            roleStudent.className = 'py-2 px-3 border rounded-xl cursor-pointer transition bg-slate-50 border-slate-200 text-slate-500 hover:bg-slate-100';
+            roleStudent.className = 'py-2 px-3 border rounded-xl cursor-pointer transition bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100';
         }
     }
 
