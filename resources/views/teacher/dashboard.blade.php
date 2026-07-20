@@ -209,7 +209,7 @@
                                         <input type="text" id="plan-teacher" value="{{ Session::get('user.name') }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-600">
                                     </div>
                                 </div>
-                                <button type="submit" id="plan-submit-btn" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm rounded-lg transition cursor-pointer">Generate Lesson Plan</button>
+                                <button type="submit" id="plan-submit-btn" class="w-full py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-sm rounded-lg transition cursor-pointer">Generate Lesson Plan</button>
                             </form>
                         </div>
                         <div>
@@ -357,14 +357,14 @@
                                         <label for="q-theory" class="text-sm text-slate-700">Include Theory / Essay / Structured Questions</label>
                                     </div>
                                 </div>
-                                <button type="submit" id="q-submit-btn" class="w-full py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-bold text-sm rounded-lg transition cursor-pointer">Generate Questions</button>
+                                <button type="submit" id="q-submit-btn" class="w-full py-2.5 bg-blue-700 hover:bg-blue-800 text-white font-bold text-sm rounded-lg transition cursor-pointer">Generate Questions</button>
                                 <div id="q-error" class="hidden mt-2 p-3 bg-red-800/10 border border-red-700/20 text-red-700 text-xs rounded-lg"></div>
                             </form>
                             <div id="q-save-section" class="hidden p-3 bg-blue-50 border border-blue-200 rounded-lg">
                                 <p class="text-sm text-blue-700 font-medium" id="q-save-msg"></p>
                                 <div class="flex gap-2 mt-2">
                                     <button onclick="saveQuestions()" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer">Save to Pool</button>
-                                    <button onclick="convertToCBT()" class="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-900 cursor-pointer">Convert to CBT</button>
+                                    <button onclick="convertToCBT()" class="px-3 py-1.5 bg-blue-700 text-white text-xs font-bold rounded-lg hover:bg-blue-800 cursor-pointer">Convert to CBT</button>
                                 </div>
                             </div>
                         </div>
@@ -711,7 +711,7 @@
                         </div>
                         <div class="px-6 py-4 border-t border-slate-200 flex justify-end gap-2">
                             <button onclick="closeExamSettings()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Cancel</button>
-                            <button id="exam-settings-save-btn" onclick="saveExamSettings()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-bold rounded-lg transition cursor-pointer">Save Settings</button>
+                            <button id="exam-settings-save-btn" onclick="saveExamSettings()" class="px-4 py-2 bg-blue-700 hover:bg-blue-800 text-white text-sm font-bold rounded-lg transition cursor-pointer">Save Settings</button>
                         </div>
                     </div>
                 </div>
@@ -936,9 +936,9 @@ function displayLessonPlan(plan) {
         <button onclick="downloadPlan('pdf')" class="px-3 py-1.5 bg-red-800 text-white text-xs font-bold rounded-lg hover:bg-red-900 cursor-pointer no-print">PDF</button>
         <button onclick="downloadPlan('docx')" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer no-print">DOCX</button>
         <button onclick="printPlan()" class="px-3 py-1.5 bg-gray-800 text-white text-xs font-bold rounded-lg hover:bg-gray-900 cursor-pointer no-print">Print</button>
-        <button onclick="copyPlanContent()" class="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-900 cursor-pointer no-print">Copy</button>
+        <button onclick="copyPlanContent()" class="px-3 py-1.5 bg-blue-700 text-white text-xs font-bold rounded-lg hover:bg-blue-800 cursor-pointer no-print">Copy</button>
         <button onclick="sharePlan()" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer no-print">Share</button>
-        <button onclick="readAloud('plan-content')" class="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-900 cursor-pointer no-print">Read Aloud</button>
+        <button onclick="readAloud('plan-content')" class="px-3 py-1.5 bg-blue-700 text-white text-xs font-bold rounded-lg hover:bg-blue-800 cursor-pointer no-print">Read Aloud</button>
         <button onclick="deletePlan()" class="px-3 py-1.5 bg-red-900 text-white text-xs font-bold rounded-lg hover:bg-red-950 cursor-pointer no-print">Delete</button>
     `;
 }
@@ -1046,11 +1046,11 @@ function displayLessonNote(note) {
         <button onclick="downloadNote('pdf')" class="px-3 py-1.5 bg-red-800 text-white text-xs font-bold rounded-lg hover:bg-red-900 cursor-pointer">PDF</button>
         <button onclick="downloadNote('docx')" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer">DOCX</button>
         <button onclick="printNote()" class="px-3 py-1.5 bg-gray-800 text-white text-xs font-bold rounded-lg hover:bg-gray-900 cursor-pointer">Print</button>
-        <button onclick="copyNoteContent()" class="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-900 cursor-pointer">Copy</button>
+        <button onclick="copyNoteContent()" class="px-3 py-1.5 bg-blue-700 text-white text-xs font-bold rounded-lg hover:bg-blue-800 cursor-pointer">Copy</button>
         <button onclick="copyNoteLink()" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer" title="Copy note link"><svg class="w-3.5 h-3.5 inline-block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg></button>
         <button onclick="deleteNote()" class="px-3 py-1.5 bg-red-900 text-white text-xs font-bold rounded-lg hover:bg-red-950 cursor-pointer">Delete</button>
         <button onclick="shareNote()" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer">Share</button>
-        <button onclick="readAloud('note-content')" class="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-900 cursor-pointer">Read Aloud</button>
+        <button onclick="readAloud('note-content')" class="px-3 py-1.5 bg-blue-700 text-white text-xs font-bold rounded-lg hover:bg-blue-800 cursor-pointer">Read Aloud</button>
         <button onclick="generateQuestionsFromNote()" class="px-3 py-1.5 bg-red-800 text-white text-xs font-bold rounded-lg hover:bg-red-900 cursor-pointer">Generate Q from Note</button>
     `;
 }
@@ -1209,10 +1209,10 @@ function displayQuestions(qs) {
     container.innerHTML = html || '<p class="text-sm text-slate-500">No questions generated.</p>';
 
     document.getElementById('q-action-buttons').innerHTML = `
-        <button onclick="copyQuestions()" class="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-900 cursor-pointer">Copy</button>
+        <button onclick="copyQuestions()" class="px-3 py-1.5 bg-blue-700 text-white text-xs font-bold rounded-lg hover:bg-blue-800 cursor-pointer">Copy</button>
         <button onclick="shareQuestions()" class="px-3 py-1.5 bg-blue-600 text-white text-xs font-bold rounded-lg hover:bg-blue-700 cursor-pointer">Share</button>
         <button onclick="printQuestions()" class="px-3 py-1.5 bg-gray-800 text-white text-xs font-bold rounded-lg hover:bg-gray-900 cursor-pointer">Print</button>
-        <button onclick="readAloud('q-content')" class="px-3 py-1.5 bg-slate-800 text-white text-xs font-bold rounded-lg hover:bg-slate-900 cursor-pointer">Read Aloud</button>
+        <button onclick="readAloud('q-content')" class="px-3 py-1.5 bg-blue-700 text-white text-xs font-bold rounded-lg hover:bg-blue-800 cursor-pointer">Read Aloud</button>
     `;
 }
 
@@ -1406,20 +1406,20 @@ function renderExams() {
         const examLink = window.location.origin + '/student/exam/' + e.id;
         const marks = e.defaultMarks || 5;
         return `<div class="border border-slate-300 rounded-xl overflow-hidden shadow-sm">
-            <div class="px-4 py-3 flex items-center justify-between gap-2 ${e.isPublished ? 'bg-green-600' : 'bg-gray-600'}">
+            <div class="px-4 py-3 flex items-center justify-between gap-2 ${e.isPublished ? 'bg-blue-700' : 'bg-red-700'}">
                 <div class="min-w-0">
                     <h5 class="font-bold text-sm text-white truncate">${e.title || 'Exam'}</h5>
                     <p class="text-xs text-white/80">${e.subject || ''} | ${e.questions?.length || 0} questions | ${e.duration || 0} min | ${marks} mark(s) per Q</p>
                 </div>
-                <span class="px-2.5 py-1 rounded text-[10px] font-bold uppercase whitespace-nowrap shrink-0 ${e.isPublished ? 'bg-green-800 text-white' : 'bg-gray-800 text-white'}">${e.isPublished ? 'Live' : 'Draft'}</span>
+                <span class="px-2.5 py-1 rounded text-[10px] font-bold uppercase whitespace-nowrap shrink-0 ${e.isPublished ? 'bg-blue-900 text-white' : 'bg-red-900 text-white'}">${e.isPublished ? 'Live' : 'Draft'}</span>
             </div>
             <div class="p-3 bg-white flex flex-wrap gap-1.5">
                 <button onclick="publishExam('${e.id}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">${e.isPublished ? 'Unpublish' : 'Publish'}</button>
-                <button onclick="copyExamLink('${examLink}')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">Copy Link</button>
-                <button onclick="openExamSettings('${e.id}')" class="px-3 py-1.5 bg-slate-700 hover:bg-slate-800 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">Settings</button>
-                <button onclick="window.open('/api/download/exam/${e.id}/pdf','_blank')" class="px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">PDF</button>
+                <button onclick="copyExamLink('${examLink}')" class="px-3 py-1.5 bg-blue-800 hover:bg-blue-900 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">Copy Link</button>
+                <button onclick="openExamSettings('${e.id}')" class="px-3 py-1.5 bg-blue-800 hover:bg-blue-900 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">Settings</button>
+                <button onclick="window.open('/api/download/exam/${e.id}/pdf','_blank')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">PDF</button>
                 <button onclick="window.open('/api/download/exam/${e.id}/docx','_blank')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">DOCX</button>
-                <button onclick="deleteExam('${e.id}')" class="px-3 py-1.5 bg-red-700 hover:bg-red-800 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">Delete</button>
+                <button onclick="deleteExam('${e.id}')" class="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-[11px] font-bold rounded-lg cursor-pointer shadow-sm">Delete</button>
             </div>
         </div>`;
     }).join('');
@@ -1703,7 +1703,7 @@ function showCsvPreview(data) {
 
     document.getElementById('csv-import-btn').disabled = data.valid_rows === 0;
     document.getElementById('csv-import-btn').className = data.valid_rows === 0
-        ? 'px-6 py-2 bg-slate-300 text-white text-sm font-bold rounded-lg cursor-not-allowed'
+        ? 'px-6 py-2 bg-slate-400 text-slate-700 text-sm font-bold rounded-lg cursor-not-allowed'
         : 'px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold rounded-lg cursor-pointer transition';
 }
 
