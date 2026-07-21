@@ -716,14 +716,42 @@
                     </div>
                 </div>
 
+                {{-- === RESULT VIEW MODAL === --}}
+                <div id="result-modal" class="hidden fixed inset-0 z-50 bg-black/50 overflow-y-auto" style="padding-top:env(safe-area-inset-top, 0px);padding-bottom:env(safe-area-inset-bottom, 0px)">
+                    <div class="min-h-full flex items-start sm:items-center justify-center p-2 sm:p-4">
+                        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-auto my-auto" onclick="event.stopPropagation()">
+                            <div class="sticky top-0 z-10 bg-white rounded-t-2xl border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+                                <div class="min-w-0">
+                                    <h3 class="text-base sm:text-lg font-bold text-slate-900 truncate" id="result-modal-title">Student Result</h3>
+                                    <p class="text-[11px] sm:text-xs text-slate-500" id="result-modal-subtitle"></p>
+                                </div>
+                                <button onclick="closeResultModal()" class="p-2 hover:bg-slate-100 rounded-lg transition cursor-pointer shrink-0 ml-2">
+                                    <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                </button>
+                            </div>
+                            <div class="px-3 sm:px-6 py-3 sm:py-6 max-h-[70vh] overflow-y-auto" id="result-modal-body">
+                                <div class="text-center py-8 text-sm text-slate-500">Loading...</div>
+                            </div>
+                            <div class="sticky bottom-0 bg-white rounded-b-2xl border-t border-slate-200 px-4 sm:px-6 py-3 flex justify-end gap-2" id="result-modal-footer">
+                                <button onclick="closeResultModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Close</button>
+                                <button id="result-modal-download-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition cursor-pointer hidden">Download Script</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- === RESULTS TAB === --}}
                 <div id="tab-results" class="tab-panel p-5 hidden">
                     <div class="space-y-4">
-                        <div>
-                            <h3 class="text-lg font-bold text-slate-900">Results Dashboard</h3>
-                            <p class="text-sm text-slate-500">View and download student results grouped by exam set</p>
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <div>
+                                <h3 class="text-lg font-bold text-slate-900">Results Dashboard</h3>
+                                <p class="text-sm text-slate-500">View and download student results grouped by exam set</p>
+                            </div>
+                            <div class="flex items-center gap-2 text-xs text-slate-500" id="results-pagination"></div>
                         </div>
                         <div id="results-list" class="space-y-2"></div>
+                        <div id="results-pagination-bottom" class="flex items-center justify-center gap-2 pt-2"></div>
                     </div>
                 </div>
 
@@ -1002,29 +1030,31 @@ document.getElementById('lesson-note-form')?.addEventListener('submit', async fu
 function displayLessonNote(note) {
     document.getElementById('note-preview').classList.remove('hidden');
     const container = document.getElementById('note-content');
-    const examples = note.examples || [];
-    const activities = note.classroomActivities || [];
+    const noteContent = note.content || note.detailedNote || note.body || note.noteContent || note.htmlContent || note.lessonContent || note.lesson_content || note.definition || '';
+    const sections = note.sections || [];
     const evaluationRaw = note.evaluationQuestions || note.evaluation || [];
     const evaluation = Array.isArray(evaluationRaw) ? evaluationRaw : [evaluationRaw];
-    const definitions = note.definitions || [];
-    const practicalApps = note.practicalApplications || [];
-    const illustrations = note.illustrations || [];
-    const advDisadv = note.advantagesDisadvantages || {};
     const keyPoints = note.keyPoints || note.key_points || [];
-    const noteContent = note.content || note.detailedNote || note.body || note.noteContent || note.htmlContent || note.lessonContent || note.lesson_content || note.definition || '';
 
-    let examplesHtml = examples.map(ex => `<div class="p-3 bg-slate-50 border-l-4 border-blue-600 rounded mb-2"><strong class="text-sm">${ex.title || 'Example'}:</strong><p class="text-xs mt-1">${ex.description || ''}</p></div>`).join('');
-    let definitionsHtml = definitions.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Definitions of Key Terms</h3><table class="w-full text-sm border-collapse">${definitions.map(d => `<tr class="border-b border-slate-200"><td class="py-2 pr-3 font-semibold text-blue-600 w-1/3">${d.term || ''}</td><td class="py-2 text-slate-600">${d.definition || ''}</td></tr>`).join('')}</table></div>` : '';
-    let practicalHtml = practicalApps.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Practical Applications</h3><ul class="text-sm space-y-1 list-disc pl-5 text-slate-600">${practicalApps.map(a => `<li>${a}</li>`).join('')}</ul></div>` : '';
-    let illustrationsHtml = illustrations.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Illustrations / Diagrams</h3>${illustrations.map(i => `<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg mb-2 text-sm text-slate-600 font-mono text-xs">${i}</div>`).join('')}</div>` : '';
-    let advHtml = '';
-    if (advDisadv.advantages && advDisadv.advantages.length) {
-        advHtml += `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Advantages</h3><ul class="text-sm space-y-1 list-disc pl-5 text-blue-600">${advDisadv.advantages.map(a => `<li>${a}</li>`).join('')}</ul></div>`;
+    let extraHtml = '';
+
+    sections.forEach(sec => {
+        if (sec.heading && sec.content) {
+            extraHtml += `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">${sec.heading}</h3><div class="text-sm">${sec.content}</div></div>`;
+        }
+    });
+
+    if (evaluation.length) {
+        extraHtml += `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Evaluation Questions</h3><ol class="text-sm pl-4 space-y-1">${evaluation.map(eq => `<li>${eq}</li>`).join('')}</ol></div>`;
     }
-    if (advDisadv.disadvantages && advDisadv.disadvantages.length) {
-        advHtml += `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Disadvantages</h3><ul class="text-sm space-y-1 list-disc pl-5 text-red-700">${advDisadv.disadvantages.map(d => `<li>${d}</li>`).join('')}</ul></div>`;
+
+    if (note.assignment) {
+        extraHtml += `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Assignment</h3><div class="text-sm">${note.assignment}</div></div>`;
     }
-    let keyPointsHtml = keyPoints.length ? `<div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl"><h3 class="text-sm font-bold text-blue-700 mb-2">Key Points to Remember</h3><ul class="text-sm space-y-1 list-disc pl-5 text-blue-600">${keyPoints.map(k => `<li>${k}</li>`).join('')}</ul></div>` : '';
+
+    if (keyPoints.length) {
+        extraHtml += `<div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl"><h3 class="text-sm font-bold text-blue-700 mb-2">Key Points to Remember</h3><ul class="text-sm space-y-1 list-disc pl-5 text-blue-600">${keyPoints.map(k => `<li>${k}</li>`).join('')}</ul></div>`;
+    }
 
     container.innerHTML = `
         <div class="text-center border-b-2 border-blue-600 pb-3 mb-4">
@@ -1032,16 +1062,7 @@ function displayLessonNote(note) {
             <p class="text-xs text-slate-500">${note.subject || ''} | ${note.class || ''} | ${note.term || ''} | Week ${note.week || ''} | ${note.periods || ''}</p>
         </div>
         ${noteContent}
-        ${definitionsHtml}
-        ${examplesHtml ? `<h3 class="text-base font-bold text-slate-800 mt-4 mb-2">Examples</h3>${examplesHtml}` : ''}
-        ${illustrationsHtml}
-        ${practicalHtml}
-        ${advHtml}
-        ${activities.length ? `<h3 class="text-base font-bold text-slate-800 mt-4 mb-2">Classroom Activities</h3>${activities.map(a => `<div class="mb-2"><strong class="text-sm">${a.title}:</strong><p class="text-xs mt-1">${a.description}</p></div>`).join('')}` : ''}
-        ${evaluation.length ? `<h3 class="text-base font-bold text-slate-800 mt-4 mb-2">Evaluation Questions</h3><ol class="text-sm pl-4 space-y-1">${evaluation.map(eq => `<li>${eq}</li>`).join('')}</ol>` : ''}
-        ${note.summary ? `<h3 class="text-base font-bold text-slate-800 mt-4 mb-2">Summary</h3><p class="text-sm">${note.summary}</p>` : ''}
-        ${note.assignment ? `<h3 class="text-base font-bold text-slate-800 mt-4 mb-2">Assignment</h3><div class="text-sm whitespace-pre-wrap">${note.assignment}</div>` : ''}
-        ${keyPointsHtml}
+        ${extraHtml}
     `;
 
     document.getElementById('note-action-buttons').innerHTML = `
@@ -1452,10 +1473,16 @@ async function deleteExam(id) {
     } catch(e) {}
 }
 
+// ====== RESULTS PAGINATION STATE ======
+let resultsPage = 1;
+const RESULTS_PAGE_SIZE = 50;
+
 function renderResults() {
     const container = document.getElementById('results-list');
     if (!teacherData.results.length) {
         container.innerHTML = '<div class="text-center py-8 text-sm text-slate-500">No results yet.</div>';
+        document.getElementById('results-pagination').innerHTML = '';
+        document.getElementById('results-pagination-bottom').innerHTML = '';
         return;
     }
 
@@ -1471,7 +1498,8 @@ function renderResults() {
                 subject: r.subject || '',
                 level: exam ? (exam.level || '') : '',
                 createdAt: exam ? (exam.createdAt || '') : '',
-                results: []
+                results: [],
+                _accordionId: 'accordion-' + examId.replace(/[^a-zA-Z0-9-_]/g, '_')
             };
         }
         examMap[examId].results.push(r);
@@ -1480,16 +1508,38 @@ function renderResults() {
     const examIds = Object.keys(examMap);
     if (!examIds.length) {
         container.innerHTML = '<div class="text-center py-8 text-sm text-slate-500">No results yet.</div>';
+        document.getElementById('results-pagination').innerHTML = '';
+        document.getElementById('results-pagination-bottom').innerHTML = '';
         return;
     }
 
-    container.innerHTML = examIds.map(examId => {
+    // Paginate exam groups
+    const totalPages = Math.ceil(examIds.length / RESULTS_PAGE_SIZE);
+    if (resultsPage > totalPages) resultsPage = totalPages;
+    if (resultsPage < 1) resultsPage = 1;
+    const pageStart = (resultsPage - 1) * RESULTS_PAGE_SIZE;
+    const pageExamIds = examIds.slice(pageStart, pageStart + RESULTS_PAGE_SIZE);
+
+    // Render pagination controls
+    function renderPagination(containerId) {
+        const el = document.getElementById(containerId);
+        if (totalPages <= 1) { el.innerHTML = ''; return; }
+        let html = '';
+        if (resultsPage > 1) html += `<button onclick="resultsPage=${resultsPage - 1};renderResults()" class="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-xs cursor-pointer">&laquo; Prev</button>`;
+        html += `<span class="text-xs text-slate-500">Page ${resultsPage} of ${totalPages} (${examIds.length} exam groups)</span>`;
+        if (resultsPage < totalPages) html += `<button onclick="resultsPage=${resultsPage + 1};renderResults()" class="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-xs cursor-pointer">Next &raquo;</button>`;
+        el.innerHTML = html;
+    }
+    renderPagination('results-pagination');
+    renderPagination('results-pagination-bottom');
+
+    container.innerHTML = pageExamIds.map(examId => {
         const group = examMap[examId];
+        const accordionId = group._accordionId;
         const results = group.results;
         const count = results.length;
         const avgPercentage = count > 0 ? Math.round(results.reduce((sum, r) => sum + (r.percentage || 0), 0) / count) : 0;
         const bestScore = results.length > 0 ? Math.max(...results.map(r => r.percentage || 0)) : 0;
-        const worstScore = results.length > 0 ? Math.min(...results.map(r => r.percentage || 0)) : 0;
         const passedCount = results.filter(r => (r.percentage || 0) >= 50).length;
         const totalStudents = results.length;
 
@@ -1500,10 +1550,8 @@ function renderResults() {
             const timeSpent = r.timeSpent || 0;
             const timeStr = timeSpent < 60 ? timeSpent + 's' : Math.floor(timeSpent / 60) + 'm ' + (timeSpent % 60) + 's';
             const grade = pct >= 75 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 40 ? 'D' : 'F';
-            const examObj = teacherData.exams.find(e => e.id === r.examId);
-            const examLevel = examObj ? (examObj.level || '') : '';
-
             const gradeColors = { 'A': 'bg-emerald-100 text-emerald-700', 'B': 'bg-blue-100 text-blue-700', 'C': 'bg-amber-100 text-amber-700', 'D': 'bg-orange-100 text-orange-700', 'F': 'bg-red-100 text-red-700' };
+            const safeId = (r.id || '').replace(/[^a-zA-Z0-9-_]/g, '_');
 
             return `<div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white border border-slate-100 rounded-lg hover:border-slate-200 hover:shadow-sm transition-all gap-2">
                 <div class="flex-1 min-w-0">
@@ -1523,6 +1571,10 @@ function renderResults() {
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${isPassed ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-red-800/10 text-red-700 border border-red-700/20'}">${pct}%</span>
+                    <button onclick="viewResult('${r.id}')" class="px-3 py-1.5 bg-blue-600 text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border-2 border-white" title="View Result">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        <span>View</span>
+                    </button>
                     <button onclick="downloadGradedScript('${r.examId}', '${r.id}')" class="px-3 py-1.5 bg-red-600 text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border-2 border-white" title="Download Graded Script PDF">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         <span>Script</span>
@@ -1532,7 +1584,7 @@ function renderResults() {
         }).join('');
 
         return `<div class="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-            <button onclick="this.nextElementSibling.classList.toggle('hidden');this.querySelector('.chevron').classList.toggle('rotate-180')" class="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition cursor-pointer">
+            <button onclick="toggleAccordion('${accordionId}')" class="w-full flex items-center justify-between p-4 hover:bg-slate-50 transition cursor-pointer">
                 <div class="flex items-center gap-3 flex-1 min-w-0">
                     <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-slate-800 to-blue-600 flex items-center justify-center text-white font-bold text-sm shrink-0">${(group.subject || '?').charAt(0).toUpperCase()}</div>
                     <div class="min-w-0">
@@ -1545,10 +1597,10 @@ function renderResults() {
                         <span class="px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-600 font-semibold whitespace-nowrap">Best: ${bestScore}%</span>
                         <span class="px-1.5 py-0.5 rounded bg-amber-50 text-amber-600 font-semibold whitespace-nowrap">Avg: ${avgPercentage}%</span>
                     </div>
-                    <svg class="w-4 h-4 text-slate-400 chevron transition transform duration-200 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                    <svg class="w-4 h-4 text-slate-400 chevron transition transform duration-200 shrink-0" id="${accordionId}-chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                 </div>
             </button>
-            <div class="hidden border-t border-slate-100">
+            <div id="${accordionId}-body" class="hidden border-t border-slate-100">
                 <div class="p-3 space-y-2 bg-slate-50/50">
                     ${studentsHtml}
                 </div>
@@ -1557,9 +1609,154 @@ function renderResults() {
     }).join('');
 }
 
+function toggleAccordion(accordionId) {
+    const body = document.getElementById(accordionId + '-body');
+    const chevron = document.getElementById(accordionId + '-chevron');
+    if (body) body.classList.toggle('hidden');
+    if (chevron) chevron.classList.toggle('rotate-180');
+}
+
 function downloadGradedScript(examId, resultId) {
     const url = '/api/download/graded-script/' + examId + '/' + resultId;
     window.open(url, '_blank');
+}
+
+function viewResult(resultId) {
+    const modal = document.getElementById('result-modal');
+    const body = document.getElementById('result-modal-body');
+    const title = document.getElementById('result-modal-title');
+    const subtitle = document.getElementById('result-modal-subtitle');
+    const downloadBtn = document.getElementById('result-modal-download-btn');
+
+    body.innerHTML = '<div class="text-center py-8 text-sm text-slate-500"><div class="animate-spin inline-block w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full mb-2"></div><br>Loading result...</div>';
+    title.textContent = 'Loading...';
+    subtitle.textContent = '';
+    downloadBtn.classList.add('hidden');
+    modal.classList.remove('hidden');
+
+    fetch('/api/results/' + encodeURIComponent(resultId))
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success || !data.result) {
+                body.innerHTML = '<div class="text-center py-8"><p class="text-sm font-bold text-rose-600">Result not found.</p><p class="text-xs text-slate-500 mt-1">The result may have been deleted or you may not have permission to view it.</p></div>';
+                title.textContent = 'Error';
+                return;
+            }
+            const r = data.result;
+            const exam = data.exam;
+            const pct = r.percentage || 0;
+            const isPassed = pct >= 50;
+            const grade = pct >= 75 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 40 ? 'D' : 'F';
+
+            title.textContent = r.studentName || 'Student Result';
+            subtitle.textContent = (r.examTitle || '') + ' | ' + (r.subject || '') + ' | ' + grade;
+
+            // Build result display
+            let html = '';
+
+            // Score banner
+            html += `<div class="p-4 sm:p-6 rounded-2xl mb-4 text-white ${isPassed ? 'bg-gradient-to-br from-emerald-600 to-emerald-800' : 'bg-gradient-to-br from-rose-600 to-rose-800'}">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <p class="text-[10px] uppercase tracking-wider opacity-80 font-bold">${r.subject || ''}</p>
+                        <h4 class="text-lg font-black">${r.examTitle || ''}</h4>
+                        <p class="text-xs opacity-80">${r.studentName || ''} ${r.studentId ? '&middot; ID: ' + r.studentId : ''}</p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-3xl font-black">${pct}%</p>
+                        <p class="text-xs font-bold uppercase ${isPassed ? 'text-emerald-200' : 'text-rose-200'}">${isPassed ? 'Passed' : 'Failed'} &middot; Grade ${grade}</p>
+                    </div>
+                </div>
+            </div>`;
+
+            // Stats grid
+            html += `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase">Score</p>
+                    <p class="text-lg font-black text-slate-900">${r.score || 0} / ${r.totalPossibleMarks || r.totalQuestions || 0}</p>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase">Correct</p>
+                    <p class="text-lg font-black text-slate-900">${r.correctAnswers || 0} / ${r.totalQuestions || 0}</p>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase">Grade</p>
+                    <p class="text-lg font-black text-slate-900">${grade}</p>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
+                    <p class="text-[10px] text-slate-500 font-bold uppercase">Date</p>
+                    <p class="text-xs font-bold text-slate-900">${r.date ? new Date(r.date).toLocaleDateString() : 'N/A'}</p>
+                </div>
+            </div>`;
+
+            // Question review (only if exam questions and failedQuestions are available)
+            const questions = exam ? (exam.questions || []) : [];
+            const failed = r.failedQuestions || [];
+            if (failed.length > 0 || questions.length > 0) {
+                html += `<h4 class="text-sm font-bold text-slate-800 mb-3">Answer Review</h4>`;
+                const reviewItems = failed.length > 0 ? failed : questions.map((q, i) => ({
+                    question: q.question || '',
+                    optionA: q.optionA || q.options?.A || '',
+                    optionB: q.optionB || q.options?.B || '',
+                    optionC: q.optionC || q.options?.C || '',
+                    optionD: q.optionD || q.options?.D || '',
+                    selectedAnswer: null,
+                    correctAnswer: q.correctAnswer || q.answer || '',
+                    isCorrect: false,
+                    explanation: q.explanation || '',
+                    marks: q.marks || 5,
+                }));
+
+                reviewItems.forEach((item, idx) => {
+                    const isCorrect = item.selectedAnswer === item.correctAnswer;
+                    const isNotAnswered = !item.selectedAnswer;
+                    let badgeColor, badgeText;
+                    if (isCorrect) { badgeColor = 'bg-emerald-50 text-emerald-700 border-emerald-200'; badgeText = 'Correct'; }
+                    else if (isNotAnswered) { badgeColor = 'bg-amber-50 text-amber-700 border-amber-200'; badgeText = 'Not Answered'; }
+                    else { badgeColor = 'bg-rose-50 text-rose-700 border-rose-200'; badgeText = 'Wrong'; }
+
+                    html += `<div class="p-3 sm:p-4 border border-slate-200 rounded-xl mb-2">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-[10px] bg-slate-100 text-slate-600 py-0.5 px-2 rounded-full font-bold">Q${idx + 1}</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}">${badgeText}</span>
+                        </div>
+                        <p class="text-sm font-bold text-slate-800 mb-2">${item.question || ''}</p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">`;
+                    ['A','B','C','D'].forEach(k => {
+                        const optLabel = item['option' + k] || item[k] || (item.options && item.options[k]) || '';
+                        if (!optLabel) return;
+                        const isCorrectOpt = k === item.correctAnswer;
+                        const isSelectedOpt = k === (item.selectedAnswer || '');
+                        let optClass = 'border-slate-200 bg-white';
+                        let markerClass = 'bg-slate-200 text-slate-700';
+                        let badge = '';
+                        if (isCorrectOpt) { optClass = 'border-emerald-300 bg-emerald-50 ring-1 ring-emerald-200'; markerClass = 'bg-emerald-500 text-white'; badge = '<span class="text-[10px] font-bold text-emerald-600 shrink-0 ml-auto">&#10003; Correct</span>'; }
+                        else if (isSelectedOpt && !isCorrectOpt) { optClass = 'border-rose-300 bg-rose-50 ring-1 ring-rose-200'; markerClass = 'bg-rose-500 text-white'; badge = '<span class="text-[10px] font-bold text-rose-600 shrink-0 ml-auto">&#10007; Your Answer</span>'; }
+                        html += `<div class="p-2.5 border rounded-lg text-xs font-semibold flex items-center gap-2 ${optClass}"><span class="w-6 h-6 rounded-lg flex items-center justify-center font-bold shrink-0 text-[10px] ${markerClass}">${k}</span><span class="break-words min-w-0 flex-1">${optLabel}</span>${badge}</div>`;
+                    });
+                    html += `</div>`;
+                    if (item.explanation) {
+                        html += `<div class="mt-2 p-2.5 bg-indigo-50 border border-indigo-100 rounded-lg flex items-start gap-2"><svg class="w-3.5 h-3.5 text-indigo-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><p class="text-xs text-slate-700"><strong class="text-indigo-700">Explanation:</strong> ${item.explanation}</p></div>`;
+                    }
+                    html += `</div>`;
+                });
+            }
+
+            body.innerHTML = html;
+
+            // Show download button
+            downloadBtn.classList.remove('hidden');
+            downloadBtn.onclick = function() { downloadGradedScript(r.examId, r.id); };
+        })
+        .catch(err => {
+            body.innerHTML = '<div class="text-center py-8"><p class="text-sm font-bold text-rose-600">Failed to load result.</p><p class="text-xs text-slate-500 mt-1">' + err.message + '</p></div>';
+            title.textContent = 'Error';
+        });
+}
+
+function closeResultModal() {
+    document.getElementById('result-modal').classList.add('hidden');
+    document.getElementById('result-modal-body').innerHTML = '';
 }
 
 // ====== CSV IMPORT ======

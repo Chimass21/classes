@@ -757,10 +757,10 @@ function renderResults() {
                                 <p class="text-base font-black text-slate-900">${r.percentage}%</p>
                                 <p class="text-[10px] font-bold ${r.percentage >= 50 ? 'text-indigo-600' : 'text-rose-500'}">${r.percentage >= 50 ? 'Passed' : 'Retake'}</p>
                             </div>
-                            <a href="/student/exam/${r.examId}/result/${r.id}" class="px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-xs border-none">
+                            <button onclick="window.open('/api/download/graded-script/${r.examId}/${r.id}', '_blank')" class="px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl transition font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-xs border-none">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                                 Script
-                            </a>
+                            </button>
                         </div>
                     </div>
                 `).join('')}
@@ -899,28 +899,22 @@ document.getElementById('student-note-form')?.addEventListener('submit', async f
 
 function renderStudentNote(note) {
     const container = document.getElementById('student-note-result');
-    const examples = note.examples || [];
-    const activities = note.classroomActivities || [];
     const evaluationRaw = note.evaluationQuestions || note.evaluation || [];
     const evaluation = Array.isArray(evaluationRaw) ? evaluationRaw : [evaluationRaw];
     const definitions = note.definitions || [];
-    const practicalApps = note.practicalApplications || [];
-    const illustrations = note.illustrations || [];
-    const advDisadv = note.advantagesDisadvantages || {};
     const keyPoints = note.keyPoints || note.key_points || [];
+    const sections = note.sections || [];
     const noteContent = note.content || note.detailedNote || note.body || note.noteContent || note.htmlContent || note.lessonContent || note.lesson_content || note.definition || '';
 
     let definitionsHtml = definitions.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Definitions of Key Terms</h3><table class="w-full text-sm border-collapse">${definitions.map(d => `<tr class="border-b border-slate-200"><td class="py-2 pr-3 font-semibold text-indigo-700 w-1/3">${escapeHtml(d.term || '')}</td><td class="py-2 text-slate-600">${escapeHtml(d.definition || '')}</td></tr>`).join('')}</table></div>` : '';
-    let practicalHtml = practicalApps.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Practical Applications</h3><ul class="text-sm space-y-1 list-disc pl-5 text-slate-600">${practicalApps.map(a => `<li>${escapeHtml(a)}</li>`).join('')}</ul></div>` : '';
-    let illustrationsHtml = illustrations.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Illustrations / Diagrams</h3>${illustrations.map(i => `<div class="p-3 bg-slate-50 border border-slate-200 rounded-lg mb-2 text-sm text-slate-600 font-mono text-xs">${escapeHtml(i)}</div>`).join('')}</div>` : '';
-    let advHtml = '';
-    if (advDisadv.advantages && advDisadv.advantages.length) {
-        advHtml += `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Advantages</h3><ul class="text-sm space-y-1 list-disc pl-5 text-green-700">${advDisadv.advantages.map(a => `<li>${escapeHtml(a)}</li>`).join('')}</ul></div>`;
-    }
-    if (advDisadv.disadvantages && advDisadv.disadvantages.length) {
-        advHtml += `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Disadvantages</h3><ul class="text-sm space-y-1 list-disc pl-5 text-red-700">${advDisadv.disadvantages.map(d => `<li>${escapeHtml(d)}</li>`).join('')}</ul></div>`;
-    }
     let keyPointsHtml = keyPoints.length ? `<div class="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-xl"><h3 class="text-sm font-bold text-indigo-800 mb-2">Key Points to Remember</h3><ul class="text-sm space-y-1 list-disc pl-5 text-indigo-700">${keyPoints.map(k => `<li>${escapeHtml(k)}</li>`).join('')}</ul></div>` : '';
+
+    let extraHtml = '';
+    sections.forEach(sec => {
+        if (sec.heading && sec.content) {
+            extraHtml += `<div class="mt-6"><h3 class="text-base font-bold text-slate-800 mb-3">${escapeHtml(sec.heading)}</h3><div class="text-sm">${sec.content}</div></div>`;
+        }
+    });
 
     container.innerHTML = `
         <div class="bg-white border border-slate-150 rounded-3xl p-6 sm:p-8 space-y-6">
@@ -931,13 +925,8 @@ function renderStudentNote(note) {
             </div>
             ${noteContent}
             ${definitionsHtml}
-            ${examples.length ? `<div class="mt-6"><h3 class="text-base font-bold text-slate-800 mb-3">Examples</h3>${examples.map(ex => `<div class="p-4 bg-slate-50 border-l-4 border-indigo-400 rounded-xl mb-2"><strong class="text-sm text-slate-900">${escapeHtml(ex.title || 'Example')}</strong><p class="text-xs mt-1 text-slate-600">${escapeHtml(ex.description || '')}</p></div>`).join('')}</div>` : ''}
-            ${illustrationsHtml}
-            ${practicalHtml}
-            ${advHtml}
-            ${activities.length ? `<div class="mt-6"><h3 class="text-base font-bold text-slate-800 mb-3">Classroom Activities</h3>${activities.map(a => `<div class="mb-3"><strong class="text-sm text-slate-900">${escapeHtml(a.title || 'Activity')}:</strong><p class="text-xs mt-1 text-slate-600">${escapeHtml(a.description || '')}</p></div>`).join('')}</div>` : ''}
+            ${extraHtml}
             ${evaluation.length ? `<div class="mt-6"><h3 class="text-base font-bold text-slate-800 mb-3">Evaluation Questions</h3><ol class="text-sm pl-5 space-y-1 text-slate-700 list-decimal">${evaluation.map(eq => `<li>${escapeHtml(eq)}</li>`).join('')}</ol></div>` : ''}
-            ${note.summary ? `<div class="mt-6 p-4 bg-indigo-50 rounded-2xl border border-indigo-100"><h3 class="text-sm font-bold text-indigo-800 mb-2">Summary</h3><p class="text-xs text-indigo-700">${escapeHtml(note.summary)}</p></div>` : ''}
             ${note.assignment ? `<div class="mt-6"><h3 class="text-base font-bold text-slate-800 mb-2">Assignment</h3><div class="text-sm whitespace-pre-wrap text-slate-700 p-4 bg-slate-50 rounded-2xl border">${escapeHtml(note.assignment)}</div></div>` : ''}
             ${keyPointsHtml}
         </div>

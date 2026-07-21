@@ -242,9 +242,10 @@ class AIController extends Controller
             // Final fallback: try simpler prompt without json mode
             try {
                 $simplePrompt = "Write a detailed lesson note about \"{$data['topic']}\" in {$data['subject']} for {$data['class']}. "
-                    . "Include topic, introduction, content with headings, definitions, examples, summary, and key points. "
-                    . "Use Nigeria-centric examples. Return ONLY valid JSON with this exact structure: "
-                    . '{"topic":"...","subtopics":["..."],"learningObjectives":["..."],"introduction":"...","content":"FULL DETAILED HTML with <h3>/<h4>/<p>/<ul> headings and paragraphs — 2-3 pages","definitions":[{"term":"...","definition":"..."}],"examples":[{"title":"...","description":"..."}],"practicalApplications":["..."],"illustrations":["..."],"advantagesDisadvantages":{"advantages":["..."],"disadvantages":["..."]},"classroomActivities":[{"title":"...","description":"..."}],"evaluationQuestions":["..."],"summary":"...","assignment":"...","keyPoints":["..."]}';
+                    . "Analyze the topic first, then choose headings that are naturally relevant. Do NOT force sections that don't belong. "
+                    . "Include topic, introduction, and main HTML content as the body. Add definitions, examples, evaluation questions, key points ONLY if they add value. "
+                    . "Use Nigeria-centric examples. Return ONLY valid JSON: "
+                    . '{"topic":"...","introduction":"...","content":"FULL HTML — <h3>/<h4> headings chosen for this topic (2-3 pages)","sections":[{"heading":"...","content":"..."}],"evaluationQuestions":["..."],"keyPoints":["..."]}';
                 $fallbackResponse = $this->ai->generate($simplePrompt, false, 8192, 0.7);
                 if (!empty(trim($fallbackResponse))) {
                     $note = json_decode($fallbackResponse, true);
@@ -688,6 +689,12 @@ class AIController extends Controller
         $evalCount = $minSteps;
         $stepCountInstruction = "Generate {$minSteps}-{$maxSteps} behavioural objectives, {$minSteps}-{$maxSteps} corresponding lesson steps, and {$minSteps}-{$maxSteps} evaluation questions. The exact number depends on how many distinct sub-topics naturally arise from \"{$topic}\". Each sub-topic becomes one objective → one step → one evaluation question. Aim for at least 4 steps; use up to {$maxSteps} if the topic merits it.";
 
+        $isMath = $this->categorizeSubject($subject) === 'math';
+
+        if ($isMath) {
+            return $this->buildMathLessonPlanPrompt($subject, $class, $term, $week, $topic, $schoolName, $teacherName, $duration, $ageRange, $weekScheme, $subtopicsInstruction, $stepCountInstruction, $minSteps, $maxSteps);
+        }
+
         return <<<PROMPT
 You are a Nigerian curriculum expert and professional lesson plan writer for the Nigerian (NERDC/UBEC) curriculum.
 
@@ -746,6 +753,96 @@ RULES:
 PROMPT;
     }
 
+    private function buildMathLessonPlanPrompt($subject, $class, $term, $week, $topic, $schoolName, $teacherName, $duration, $ageRange, $weekScheme, $subtopicsInstruction, $stepCountInstruction, $minSteps, $maxSteps): string
+    {
+        return <<<PROMPT
+You are an experienced Nigerian Mathematics teacher and curriculum expert. Design a DETAILED MATHEMATICS LESSON PLAN for "{$topic}" in {$subject} ({$class}, {$term}, Week {$week}).
+
+CRITICAL — MATHEMATICS IS LEARNED THROUGH DOING. Structure every part of this lesson plan around SOLVING MATHEMATICAL PROBLEMS.
+
+TOPIC (do not deviate): {$topic}
+
+CONTEXT:
+- Subject: {$subject}
+- Class: {$class} (Age range: {$ageRange})
+- Term: {$term}
+- Week: {$week}
+- School: {$schoolName}
+- Teacher: {$teacherName}
+- Duration: {$duration}
+{$weekScheme}
+{$subtopicsInstruction}
+
+LESSON PLAN STRUCTURE FOR MATHEMATICS:
+
+Each lesson step should follow this pattern:
+1. **Teacher introduces a concept or formula** (1-2 minutes — keep it brief)
+2. **Teacher works through solved examples on the board** (5-10 minutes per example — show EVERY step)
+3. **Guided practice**: Students attempt similar problems with teacher assistance
+4. **Independent class work**: Students solve problems on their own
+5. **Review answers** and address common mistakes
+
+BEHAVIOURAL OBJECTIVES must be action-oriented and measurable (e.g., "solve quadratic equations using the formula method", "factorise algebraic expressions", "calculate the area of a circle").
+
+{$stepCountInstruction}
+
+Return ONLY valid JSON with this exact structure:
+{
+  "behaviouralObjectives": ["By the end of the lesson, students should be able to solve/factorise/calculate/sketch ..."],
+  "instructionalMaterials": ["Whiteboard/Chalkboard", "Markers/Chalk", "Textbook", "Worked example handouts", "Graph paper (if needed)", "Calculator (if allowed)", ...],
+  "previousKnowledge": "State the prerequisite mathematical knowledge required for this topic (e.g., multiplication tables, basic algebra, previous formulae). Keep it concise.",
+  "lessonSteps": [
+    {
+      "step": 1,
+      "teacherActivities": "Teacher introduces the concept/formula briefly (2-3 minutes). Then works through Example 1 on the board showing every step. Describes the method clearly.",
+      "learnerActivities": "Students listen and copy the worked example into their notebooks. They ask questions about each step.",
+      "learningPoints": "The key mathematical technique or formula demonstrated in this step."
+    },
+    {
+      "step": 2,
+      "teacherActivities": "Teacher works through Example 2 (slightly harder) on the board. Shows alternative method if applicable. Points out common mistakes.",
+      "learnerActivities": "Students follow along, attempt the example alongside the teacher, and note the method.",
+      "learningPoints": "The application of the formula/technique to more complex problems."
+    },
+    {
+      "step": 3,
+      "teacherActivities": "Teacher gives 3-4 guided practice questions. Monitors students as they attempt them, assists struggling students.",
+      "learnerActivities": "Students attempt the questions in their exercise books. Raise hands for help. Volunteer to solve on the board.",
+      "learningPoints": "Practice applying the technique with teacher guidance."
+    },
+    {
+      "step": 4,
+      "teacherActivities": "Teacher assigns 5-8 independent class exercises ranging from easy to difficult. Walks around to check progress.",
+      "learnerActivities": "Students solve problems independently. Check their answers with neighbours.",
+      "learningPoints": "Independent application and consolidation of the skill."
+    },
+    {
+      "step": {$minSteps},
+      "teacherActivities": "Teacher reviews answers to the independent exercises on the board. Highlights common errors and gives examination tips.",
+      "learnerActivities": "Students mark their own work, correct mistakes, and note examination tips.",
+      "learningPoints": "Self-assessment and error correction."
+    }
+  ],
+  "evaluation": "1. [Easy question testing basic understanding]\\n2. [Moderate question testing application]\\n3. [Hard question testing problem-solving]\\n4. [Word problem applying to real-life context]\\n...",
+  "assignment": "5-10 homework problems covering the topic, progressing from easy to difficult. Include at least one word problem.",
+  "summary": "Briefly restate the key formula/technique and when to use it (2-3 sentences).",
+  "conclusion": "State what the next Mathematics lesson will cover and how it builds on this topic (1-2 sentences)."
+}
+
+MATHEMATICAL NOTATION — CRITICAL FORMATTING RULES:
+{$this->mathFormattingInstructions()}
+
+RULES:
+- Every step MUST involve solving mathematical problems — minimize lecturing
+- Examples must progress from simple to difficult
+- Each worked example must show EVERY step — no skipping
+- Include Nigerian contexts (₦aira, market prices, local measurements) in word problems
+- Allocate at least 60% of class time to students solving problems (guided + independent)
+- Evaluation questions must test calculation ability, not theory recall
+- Assignment must be substantial problem-solving practice
+PROMPT;
+    }
+
     protected function buildLessonNotePrompt($subject, $class, $term, $week, $topic, $periods, $difficulty, $ageRange, $scheme, $userSubtopics = ''): string
     {
         $weekScheme = '';
@@ -761,60 +858,287 @@ PROMPT;
             $subtopicInstruction = "\n\nYOU MUST COVER THESE SPECIFIC SUB-TOPICS IN ORDER:\n" . $userSubtopics;
         }
 
+        $subjectCategory = $this->categorizeSubject($subject);
+
+        if ($subjectCategory === 'math') {
+            return $this->buildMathLessonNotePrompt($subject, $class, $term, $week, $topic, $periods, $difficulty, $ageRange, $scheme, $userSubtopics);
+        }
+
+        $subjectGuidance = match($subjectCategory) {
+            'stem' => "This is a SCIENCE subject. Include: relevant formulae, worked examples (step-by-step), calculations, derivations, laws/principles, experiments/practical activities, labelled [DIAGRAM: description] placeholders, and real-world applications where appropriate. Use step-by-step problem-solving for calculations. Prioritize clarity in explaining concepts before introducing formulae.
+
+FORMATTING REQUIREMENTS FOR EQUATIONS AND FORMULAE:
+- Use <sup> for exponents and powers: m/s<sup>2</sup>, N/m<sup>2</sup>, 10<sup>6</sup>
+- Use <sub> for chemical formulae: H<sub>2</sub>O, CO<sub>2</sub>, H<sub>2</sub>SO<sub>4</sub>, NH<sub>3</sub>
+- Use proper Unicode symbols: × (not x), ÷ (not /), ≤, ≥, ≠, ±, ∞, √, π, θ, Δ, →, ⇌
+- Format fractions using CSS inline-block or Unicode fraction characters, never slanted slashes
+- Use → for chemical reaction arrows, ⇌ for reversible reactions
+- Show state symbols in chemical equations: (s), (l), (g), (aq)
+- Format charges and oxidation states with <sup>: Ca<sup>2+</sup>, SO<sub>4</sub><sup>2-</sup>
+- Use proper Greek letters: θ, ω, α, μ, λ, ρ
+- Format physical units clearly: ms<sup>-1</sup>, kg, N, J, W, Pa
+- Align multi-step calculations in a logical vertical layout using <pre> or <table>
+- Scientific notation: 6.02 × 10<sup>23</sup> (not E-notation)
+- Every bracket must be correctly paired and clearly visible
+- For Physics: display equations exactly as in standard textbooks, show derivations step by step
+- For Chemistry: balance all chemical equations, format ionic equations with proper charges",
+            'humanities' => "This is a HUMANITIES/SOCIAL SCIENCE subject. Focus on: clear explanations of concepts, definitions, classifications, historical developments, causes and effects, significance, key figures, quotations (where relevant), and connections to Nigerian society and contemporary issues. Use real-life Nigerian examples and case studies.",
+            'commercial' => "This is a COMMERCIAL/BUSINESS subject. Include: key terms with definitions, principles and concepts, calculations where relevant (e.g., ratios, interest, profit margins), practical business examples using Nigerian contexts (₦aira, Nigerian businesses), formats and templates (e.g., ledger accounts, invoices, receipts), and real-world applications in the Nigerian economy.",
+            'tech_voc' => "This is a TECHNOLOGY/VOCATIONAL subject. Include: step-by-step processes, safety precautions (where relevant), tools and materials needed, practical applications, labelled [DIAGRAM: description] placeholders for equipment/processes, maintenance procedures, and Nigerian vocational contexts.",
+            default => "Organize content based on the natural structure of the topic. Let the topic determine what headings and sections are appropriate."
+        };
+
         return <<<PROMPT
-You are a Nigerian curriculum expert. Write a DETAILED LESSON NOTE about "{$topic}" for {$subject} ({$class}, {$term}, Week {$week}). Difficulty: {$difficulty}.
+You are a Nigerian curriculum expert and experienced classroom teacher. Write a DETAILED LESSON NOTE about "{$topic}" for {$subject} ({$class}, {$term}, Week {$week}). Difficulty: {$difficulty}.
+
+BEFORE YOU WRITE, ANALYZE THE TOPIC:
+1. What is the nature of "{$topic}"? (concept, process, classification, theory, formula-based, historical event, practical skill, literary analysis, etc.)
+2. What class level is this? ({$class} — {$ageRange}) — match vocabulary and complexity precisely.
+3. What headings would an experienced Nigerian teacher naturally use when teaching THIS topic to THIS class?
+4. What supporting elements (definitions, examples, diagrams, formulae, calculations, exercises, activities) will help students understand THIS topic?
+5. What sections would NOT be relevant and should be OMITTED?
+
+STRUCTURE RULES (CRITICAL):
+- Choose headings that are NATURALLY RELEVANT to "{$topic}" ONLY
+- DO NOT force any heading that does not belong. Examples of OMISSIONS:
+  * If the topic has no "advantages/disadvantages", DO NOT include them
+  * If the topic does not need a "summary", OMIT it
+  * If "safety precautions" are not relevant, LEAVE THEM OUT
+  * If "applications" do not naturally arise, SKIP them
+  * If "comparison tables" do not add clarity, DO NOT use them
+  * If "classroom activities" do not fit, DO NOT force them
+  * If "practical applications" are not relevant, OMIT them
+- NEVER include filler sections to match a template
+- Every section you include must add genuine educational value
+
+{$subjectGuidance}
 
 {$weekScheme}
 {$subtopicInstruction}
 
-Return ONLY valid JSON (no markdown, no code fences). Use this exact structure:
+Now write the lesson note. Return ONLY valid JSON. ALL fields below are OPTIONAL except "topic", "introduction", and "content" — only include fields that are relevant to this topic:
+
 {
   "topic": "{$topic}",
-  "subtopics": ["All relevant subtopics under {$topic}", "one per array item"],
-  "learningObjectives": ["5 specific learning objectives starting with 'By the end of the lesson, students should be able to:'"],
-  "introduction": "3-5 sentence engaging intro connecting to prior knowledge, Nigeria context",
-  "content": "DETAILED HTML — 2-3 A4 pages when printed. Structure with <h3> and <h4> headings. Include ALL of these sections in order inside the content field:
-   1. Introduction to {$topic}
-   2. Definitions of key terms (use <ul> or <table>)
-   3. Main body: detailed explanation of each subtopic — this is the longest section
-   4. Illustrations/diagrams (describe with <table> or structured text)
-   5. Practical applications in Nigeria (₦aira, Nigerian cities, local contexts)
-   6. Advantages and disadvantages (where relevant)
-   7. Key points to remember (<ul> with 5-8 items)
-   8. Conclusion
-   Use <p>, <ul>/<ol>, <table> throughout.",
-  "definitions": [
-    {"term": "Key term 1", "definition": "Clear definition in context of {$topic}"}
+  "subtopics": ["Relevant subtopics — only if the topic naturally breaks into subtopics"],
+  "learningObjectives": ["By the end of the lesson, students should be able to: ..." — only if objectives add value],
+  "introduction": "3-5 sentence engaging introduction connecting to prior knowledge with Nigeria context",
+  "content": "FULL HTML — MAIN BODY of the lesson (~2-3 A4 pages). Choose <h3> for main section headings and <h4> for subsections that are APPROPRIATE for this topic. Possible headings (use only what fits): Definitions, Types/Kinds, Classification, Properties, Characteristics, Structure, Functions, Causes, Effects, Symptoms, Prevention, Control, Processes, Steps, Principles, Laws, Formulae, Worked Examples, Solved Problems, Experiments, Observations, Uses, Importance, Benefits, Drawbacks, Diagrams, Tables. Use <p>, <ul>, <ol>, <table>, <pre> as needed. For diagrams: include [DIAGRAM: clear description]. For calculations: show step-by-step solutions. Use Nigeria-centric examples throughout.",
+  "sections": [
+    {
+      "heading": "Section heading (only if this section needs distinct visual treatment)",
+      "content": "HTML content for this section"
+    }
   ],
-  "examples": [
-    {"title": "Example 1", "description": "Detailed worked example or illustration. 2-3 sentences."}
+  "evaluationQuestions": ["...", "..." — only if relevant to this topic],
+  "assignment": "Take-home assignment — only if meaningful",
+  "keyPoints": ["1-2 sentence key takeaways" — only if they add value]
+}
+
+ABSOLUTELY FORBIDDEN:
+- No filler content — every sentence must teach something
+- No fixed template structure — this note must feel custom-written for "{$topic}"
+- No repeated phrasing across different topics — each lesson note is unique
+- No heading that is not genuinely relevant to this topic
+
+IMPORTANT RULES:
+- Every sentence MUST be about "{$topic}"
+- Follow NERDC/UBEC Nigerian curriculum standards
+- Use Nigeria-centric examples (₦aira, Nigerian cities, local culture, contexts)
+- Match vocabulary complexity to {$class} level ({$ageRange})
+- Difficulty "{$difficulty}": Simple=foundational, Standard=curriculum depth, Deep=advanced (including WAEC/NECO/JAMB-level content)
+- If a diagram would improve understanding, include [DIAGRAM: clear description of what to draw] in the content
+- No two unrelated topics should have identical structure
+PROMPT;
+    }
+
+    private function buildMathLessonNotePrompt($subject, $class, $term, $week, $topic, $periods, $difficulty, $ageRange, $scheme, $userSubtopics = ''): string
+    {
+        $weekScheme = '';
+        foreach ($scheme as $s) {
+            if (($s['week'] ?? 0) == $week) {
+                $weekScheme = 'Scheme sub-topics: ' . implode(', ', $s['subtopics'] ?? []);
+                break;
+            }
+        }
+
+        $subtopicInstruction = '';
+        if (!empty($userSubtopics)) {
+            $subtopicInstruction = "\n\nCOVER THESE SUB-TOPICS:\n" . $userSubtopics;
+        }
+
+        return <<<PROMPT
+You are an experienced Nigerian Mathematics teacher and curriculum expert. Write a DETAILED MATHEMATICS LESSON NOTE about "{$topic}" for {$subject} ({$class}, {$term}, Week {$week}). Difficulty: {$difficulty}.
+
+CRITICAL — MATHEMATICS IS A PRACTICAL SUBJECT. This lesson note must focus on SOLVING PROBLEMS, not writing long explanations. Follow these rules strictly:
+
+CONTENT BALANCE (MANDATORY):
+- At least 70-90% of the lesson must be worked examples, calculations, and practice exercises
+- No more than 10-30% should be descriptive text or explanations
+- Keep all explanations short, clear, and straight to the point
+
+STRUCTURE:
+1. BRIEF DEFINITION OR EXPLANATION (only if necessary — keep it to 2-4 sentences max)
+2. FORMULAE / RULES / THEOREMS (present clearly, with notation explanations)
+3. WORKED EXAMPLES (this is the MAIN part of the lesson):
+   - Start with simple examples, progress to more difficult ones
+   - Show EVERY step clearly — do not skip calculations
+   - Explain WHY each step is taken where necessary
+   - Include alternative methods of solving where appropriate
+   - Use <pre> or <code> blocks for step-by-step working
+4. PRACTICE EXERCISES (questions for students WITHOUT answers)
+5. COMMON MISTAKES AND EXAMINATION TIPS (short, bullet-point format)
+6. SHORTCUTS / MENTAL MATH TRICKS (where applicable)
+
+Example format for worked examples — each example should be structured like this:
+<div class="example">
+<h4>Example 1: [Title]</h4>
+<p><strong>Solution:</strong></p>
+<pre>
+Step 1: [show working]
+Step 2: [show working]
+...
+Final Answer: [answer]
+</pre>
+<p><em>Explanation:</em> [brief note on why this method works, 1-2 sentences max]</p>
+</div>
+
+For the CONTENT field, use these HTML headings as appropriate:
+- <h3>Formulae</h3>
+- <h3>Worked Examples</h3>
+- <h3>Practice Exercises</h3>
+- <h3>Common Mistakes</h3>
+- <h3>Examination Tips</h3>
+- <h3>Shortcuts</h3>
+
+{$weekScheme}
+{$subtopicInstruction}
+
+MATHEMATICAL NOTATION — CRITICAL FORMATTING RULES:
+{$this->mathFormattingInstructions()}
+
+Return ONLY valid JSON:
+{
+  "topic": "{$topic}",
+  "subtopics": ["Relevant subtopics"],
+  "learningObjectives": ["By the end of the lesson, students should be able to: ..."],
+  "introduction": "VERY BRIEF — 1-2 sentences connecting to prior knowledge or stating the importance of this topic in Mathematics",
+  "content": "FULL HTML — MAIN BODY (~2-3 A4 pages). 70-90% of this must be worked examples, step-by-step solutions, and practice exercises. Use <h3> for section headings, <pre> or <code> for mathematical workings, <table> for comparison/formulae. Each worked example must show all steps clearly. Include practice exercises after each section without solutions. FORMAT ALL MATHEMATICAL EXPRESSIONS using proper notation as specified above.",
+  "sections": [
+    {
+      "heading": "Additional section heading if needed",
+      "content": "HTML content"
+    }
   ],
-  "practicalApplications": ["Real-life application 1 of {$topic} in Nigeria", "Application 2"],
-  "illustrations": ["Description of diagram, chart, or illustration for {$topic}"],
-  "advantagesDisadvantages": {
-    "advantages": ["Advantage 1", "Advantage 2"],
-    "disadvantages": ["Disadvantage 1", "Disadvantage 2"]
-  },
-  "classroomActivities": [
-    {"title": "Activity 1", "description": "Description of classroom activity"}
-  ],
-  "evaluationQuestions": ["5 evaluation questions about {$topic}"],
-  "summary": "3-4 sentence comprehensive summary of the lesson",
-  "assignment": "3-4 specific homework tasks for students",
-  "keyPoints": ["5-8 key takeaways from the lesson"]
+  "evaluationQuestions": ["Practice questions covering all difficulty levels"],
+  "assignment": "Take-home problems to solve",
+  "keyPoints": ["Key formulae, rules, or techniques to remember"]
 }
 
 RULES:
-- Every sentence MUST be about "{$topic}"
-- Follow NERDC/UBEC Nigerian curriculum standards
-- Cover ALL subtopics under {$topic} for {$class} level ({$ageRange})
-- The content field should be ~2-3 A4 pages when printed
-- Use Nigeria-centric examples (₦aira, Nigerian cities, local culture)
-- For calculation topics: include 3-4 fully solved examples. For non-calculation topics: include 2-3 illustrative examples
-- Match language to {$class} level — simpler for primary, advanced for secondary
-- Match difficulty "{$difficulty}": Simple=foundational, Standard=curriculum depth, Deep=advanced
-- No placeholders — every field must be fully written
+- Every example must be FULLY SOLVED with all steps shown — never skip steps
+- Use Nigerian contexts for word problems (₦aira, Nigerian markets, local measurements)
+- Match difficulty to {$class} level ({$ageRange})
+- Difficulty "{$difficulty}": Simple=basic numeracy, Standard=curriculum level, Deep=WAEC/NECO/JAMB exam standard
+- Include at least 5-8 fully worked examples for standard topics, more for complex topics
+- After each section of worked examples, include 3-5 practice questions WITHOUT solutions
+- Keep ALL explanations brief — teach through examples, not paragraphs
+- For {$class}: ensure age-appropriate numbers and contexts
 PROMPT;
+    }
+
+    private function mathFormattingInstructions(): string
+    {
+        return <<<'INSTRUCTIONS'
+MATHEMATICAL NOTATION FORMATTING — You MUST follow these rules for ALL expressions, equations, formulae, and calculations:
+
+FRACTIONS:
+- NEVER use slanted slashes for fractions like 3/4 or (2x+1)/(x-3)
+- Instead, use inline-block CSS fraction format:
+  <span style="display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 2px;font-size:0.9em">
+    <span style="border-bottom:2px solid #333;padding:0 6px 2px">3</span>
+    <span style="padding:2px 6px 0">4</span>
+  </span>
+- Or for simpler fractions in text, use the Unicode fraction characters: ½ ⅓ ⅔ ¼ ¾ ⅛ etc.
+- For algebraic fractions, use the CSS fraction format described above.
+
+SUPERSCHRIPTS AND SUBSCRIPTS (MANDATORY):
+- Use <sup> for powers and exponents: x<sup>2</sup>, 2<sup>3</sup>, e<sup>x</sup>, a<sup>n</sup>
+- Use <sub> for indices and chemical formulae: log<sub>2</sub>x, H<sub>2</sub>O, CO<sub>2</sub>, H<sub>2</sub>SO<sub>4</sub>, NH<sub>3</sub>, Na<sub>2</sub>CO<sub>3</sub>, C<sub>2</sub>H<sub>5</sub>OH
+- For compound superscripts like x², use <sup>2</sup> inside the HTML
+
+MATHEMATICAL SYMBOLS (use Unicode or HTML entities):
+- × for multiplication (not x): 5 × 3
+- ÷ for division (not /): 12 ÷ 4
+- ≤ for less than or equal to: x ≤ 5
+- ≥ for greater than or equal to: y ≥ 3
+- ≠ for not equal to: x ≠ 0
+- ± for plus-minus: x = ±√4
+- ∞ for infinity: x → ∞
+- √ for square root: √16, √(x+1), use &radic; or the Unicode √
+- π for pi: πr²
+- θ, α, β, Δ, Σ for standard Greek letters
+- → and ⇌ for reaction arrows (Chemistry)
+- ° for degrees: 90°, 180°, 360°
+- ∠ for angles
+- ∥ for parallel
+- ⊥ for perpendicular
+
+BRACKETS AND GROUPING:
+- Always use clear, correctly matched brackets: ( ), [ ], { }
+- For nested expressions, alternate bracket types: { [ ( ) ] }
+- Never write confusing nested brackets like ((((x+1)))) — use different bracket types
+- Ensure every opening bracket has a matching closing bracket
+
+ALIGNMENT OF WORKED SOLUTIONS:
+- Use <table> or <pre> with clear spacing for multi-step calculations
+- Align equals signs vertically in consecutive steps
+- Number each step: Step 1, Step 2, Step 3, etc.
+- Keep expressions on separate lines rather than chaining with = on one long line
+- Indent continuation lines to show logical grouping
+
+CHEMICAL EQUATIONS (for Chemistry):
+- Use subscripts for all chemical formulae: H<sub>2</sub>SO<sub>4</sub>, CaCO<sub>3</sub>
+- Use → for reaction arrows, ⇌ for reversible reactions
+- Show state symbols: (s), (l), (g), (aq)
+- Balance all equations with proper coefficients
+- Use <sup> for charges and oxidation states: Ca<sup>2+</sup>, SO<sub>4</sub><sup>2-</sup>, Fe<sup>3+</sup>
+- Format ionic equations with proper charges
+
+PHYSICS EQUATIONS (for Physics):
+- Display equations exactly as in standard textbooks
+- Use proper Greek letters: θ, ω, α, μ, λ, ρ, etc.
+- Format units properly: ms<sup>-1</sup>, ms<sup>-2</sup>, N, J, W, kg, m, s
+- Distinguish variables (italic concept) from units (roman concept)
+- Show derivations step-by-step with clear algebraic manipulation
+
+SCIENTIFIC NOTATION:
+- Use × 10<sup>n</sup> format (not E-notation): 6.02 × 10<sup>23</sup>
+- Format large numbers with commas: 1,000,000
+
+GENERAL RULES:
+- Verify every bracket is correctly paired before output
+- Every expression must be clear on both mobile and desktop screens
+- Never produce confusing expressions due to incorrect spacing or misplaced symbols
+- Use <code> or <pre> for multi-line algebraic working
+- The final output should look like a professionally typeset textbook
+INSTRUCTIONS;
+    }
+
+    private function categorizeSubject(string $subject): string
+    {
+        $math = ['Mathematics', 'Further Mathematics'];
+        $stem = ['Physics', 'Chemistry', 'Biology', 'Basic Science', 'Intermediate Science', 'Physical and Health Education (PHE)', 'Physical Education'];
+        $humanities = ['English Language', 'Literature', 'Literature in English', 'History', 'Government', 'Civic Education', 'Social Studies', 'Christian Religious Studies', 'Islamic Studies', 'Nigerian History', 'Music', 'Art & Design', 'Cultural and Creative Arts (CCA)', 'Craft and Art', 'French', 'Yoruba', 'Igbo', 'Hausa', 'Phonics', 'Verbal Reasoning'];
+        $commercial = ['Commerce', 'Accounting', 'Economics'];
+        $tech_voc = ['Basic Technology', 'ICT', 'Coding', 'Computer Studies', 'Home Economics', 'Agricultural Science', 'Vocational Studies', 'Artificial Intelligence'];
+
+        if (in_array($subject, $math)) return 'math';
+        if (in_array($subject, $stem)) return 'stem';
+        if (in_array($subject, $humanities)) return 'humanities';
+        if (in_array($subject, $commercial)) return 'commercial';
+        if (in_array($subject, $tech_voc)) return 'tech_voc';
+        return 'general';
     }
 
     protected function buildQuestionsPrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic = '', $difficulty = 'Standard'): string
@@ -824,6 +1148,12 @@ PROMPT;
 
         if ($lessonNoteContent) {
             return $this->buildQuestionsFromNotePrompt($subject, $topic, $askCount, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic);
+        }
+
+        $isMath = $this->categorizeSubject($subject) === 'math';
+
+        if ($isMath) {
+            return $this->buildMathQuestionsPrompt($subject, $topic, $askCount, $class, $term, $week, $includeTheory, $subTopic, $difficulty);
         }
 
         $theoryPart = $includeTheory ? '
@@ -870,10 +1200,72 @@ Return ONLY valid JSON:
 PROMPT;
     }
 
+    private function buildMathQuestionsPrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $subTopic = '', $difficulty = 'Standard'): string
+    {
+        $theoryPart = $includeTheory ? '
+  "shortAnswer": [
+    {"question": "Short-answer question requiring calculation", "answer": "Numerical answer"}
+  ],
+  "structuredQuestions": [
+    {"question": "Multi-part problem", "parts": {"a": "Part a", "b": "Part b", "c": "Part c"}}
+  ]' : '';
+
+        $subtopicLine = $subTopic ? "\nSUB-TOPIC: \"{$subTopic}\". Focus questions on this sub-topic within \"{$topic}\"." : '';
+
+        return <<<PROMPT
+You are a Nigerian Mathematics examination expert. Generate a MATHEMATICS QUESTION POOL about "{$topic}" in {$subject} for {$class} level ({$term}). Difficulty: {$difficulty}.
+
+CRITICAL — MATHEMATICS QUESTIONS MUST TEST CALCULATION AND PROBLEM-SOLVING ABILITY, NOT THEORY RECALL. Avoid questions that ask for definitions, explanations, or lists. Focus on computational questions.
+
+{$subtopicLine}
+
+Generate {$count} objective (multiple-choice) questions{$theoryPart}. Distribute them as:
+
+QUESTION DISTRIBUTION:
+- 60% Computational questions (solve, calculate, evaluate, simplify, find)
+- 20% Word problems (real-life scenarios using Nigerian contexts — ₦aira, market, measurements)
+- 10% Application questions (apply formula to given data)
+- 10% Conceptual understanding (short calculations testing understanding of concepts)
+
+DIFFICULTY BREAKDOWN:
+- 30% Easy (direct application of formula, simple substitution)
+- 50% Moderate (require multiple steps, combining concepts)
+- 20% Difficult (problem-solving, examination-standard, multi-step word problems)
+
+QUESTION TYPES must include:
+- Simplify/Evaluate expressions
+- Solve equations/inequalities
+- Calculate numerical values
+- Find unknown quantities
+- Interpret graphs/charts
+- Apply formulae
+- Word problems with Nigerian context (e.g., "A trader bought 50 bags of rice at ₦..." or "Calculate the area of a rectangular farm in Kaduna...")
+
+AVOID:
+- "What is the definition of..." — this is Mathematics, not theory
+- "List the properties of..." — unless specifically relevant
+- "State the..." — minimize these
+- Non-mathematical questions
+
+Notation: Use proper mathematical symbols in questions and options — × (not x), ÷ (not /), use <sup> for powers, use √ for square roots, use π for pi, etc. Format fractions with CSS or Unicode.
+
+Each MCQ: 4 UNIQUE options (A/B/C/D), exactly ONE correct answer. Numerical options should include plausible wrong answers (common calculation errors, wrong formula application). For "none of the above" or "all of the above" use sparingly.
+
+Return ONLY valid JSON:
+{"objectives":[{"id":1,"question":"Calculate ...","A":"opt","B":"opt","C":"opt","D":"opt","answer":"A"}]{$theoryPart}}
+PROMPT;
+    }
+
     protected function buildQuestionsFromNotePrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic = ''): string
     {
         // Ask for extra questions so filtering still yields the requested count
         $askCount = min((int) ceil($count * 1.25), 200);
+
+        $isMath = $this->categorizeSubject($subject) === 'math';
+
+        if ($isMath) {
+            return $this->buildMathQuestionsFromNotePrompt($subject, $topic, $askCount, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic);
+        }
 
         $theoryPart = $includeTheory ? '
   "theoryQuestions": [
@@ -965,6 +1357,62 @@ Return ONLY valid JSON in this exact format (no text before or after):
     }
   ]{$theoryPart}
 }
+PROMPT;
+    }
+
+    private function buildMathQuestionsFromNotePrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic = ''): string
+    {
+        $theoryPart = $includeTheory ? '
+  "shortAnswer": [
+    {"question": "Short-answer question requiring calculation", "answer": "Numerical answer"}
+  ],
+  "structuredQuestions": [
+    {"question": "Multi-part problem", "parts": {"a": "Part a", "b": "Part b", "c": "Part c"}}
+  ]' : '';
+
+        $extract = $this->extractNoteText($lessonNoteContent);
+
+        $maxLength = 8000;
+        if (strlen($extract) > $maxLength) {
+            $truncated = mb_substr($extract, 0, $maxLength);
+            $lastBreak = mb_strrpos($truncated, "\n\n");
+            if ($lastBreak !== false && $lastBreak > $maxLength * 0.7) {
+                $extract = mb_substr($extract, 0, $lastBreak);
+            } else {
+                $extract = $truncated;
+            }
+            $extract .= "\n\n[Note: Lesson note truncated to fit within context limits.]";
+        }
+
+        return <<<PROMPT
+You are a Nigerian Mathematics examination expert. Generate {$count} MATHEMATICS QUESTIONS based STRICTLY on the lesson note below for {$subject} ({$class}, {$term}, Week {$week}).
+
+CRITICAL — These are MATHEMATICS questions. They must test CALCULATION, not theory. Focus on:
+- Computational problems (solve, calculate, simplify, evaluate, find)
+- Word problems using Nigerian contexts (₦aira, local measurements, markets)
+- Application of formulae and methods shown in the lesson note
+- Problems requiring logical reasoning and step-by-step working
+
+QUESTION DISTRIBUTION:
+- 60% Direct computational questions (testing the exact methods in the lesson note)
+- 20% Word problems applying the methods to real-life situations
+- 10% Multi-step problems requiring combined techniques
+- 10% Conceptual multiple-choice (short calculations that test understanding)
+
+DIFFICULTY:
+- 30% Easy (direct substitution, one-step)
+- 50% Moderate (2-3 steps, requiring method application)
+- 20% Difficult (multi-step problem-solving, examination standard)
+
+LESSON NOTE CONTENT:
+{$extract}
+
+Notation: Use proper mathematical symbols in questions and options — × (not x), ÷ (not /), use <sup> for powers, use √ for square roots, use π for pi, etc.
+
+Each MCQ: 4 UNIQUE options (A/B/C/D), exactly ONE correct answer. Plausible wrong options based on common calculation errors.
+
+Return ONLY valid JSON:
+{"objectives":[{"id":1,"question":"Calculate ...","A":"opt","B":"opt","C":"opt","D":"opt","answer":"A"}]{$theoryPart}}
 PROMPT;
     }
 
@@ -1806,11 +2254,11 @@ PROMPT;
                  . "PREVIOUS ATTEMPT REJECTED — REASON: The lesson note did not focus on the requested topic.\n\n"
                  . "CRITICAL INSTRUCTIONS:\n"
                  . "- The topic is \"{$topic}\". Write ONLY about \"{$topic}\".\n"
-                 . "- Follow the exact JSON structure requested in the original prompt.\n"
+                 . "- Analyze the topic and choose headings that are naturally relevant. Do NOT force any section.\n"
                  . "- Every sentence must be about \"{$topic}\".\n"
-                 . "- Cover definitions, types, causes, effects, examples, and applications of \"{$topic}\".\n"
                  . "- Use Nigeria-centric examples (₦aira, Nigerian cities, local culture).\n"
-                 . "- Return ONLY valid JSON with no text before or after.\n";
+                 . "- Return ONLY valid JSON with this flexible structure:\n"
+                 . '  {"topic":"...","introduction":"...","content":"FULL HTML with <h3>/<h4> headings","sections":[{"heading":"...","content":"..."}],"evaluationQuestions":["..."],"keyPoints":["..."]}' . "\n";
         }
 
         return "You are a Nigerian examination expert for {$subject} ({$class}).\n\n"

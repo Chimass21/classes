@@ -110,6 +110,7 @@ Route::prefix('api')->group(function () {
     Route::post('/exams/{examId}/autosave', [ExamController::class, 'apiAutoSave']);
     Route::post('/exams/{examId}/autosave/load', [ExamController::class, 'apiLoadAutoSave']);
     Route::get('/results', [ResultController::class, 'apiIndex']);
+    Route::get('/results/{resultId}', [ResultController::class, 'apiShow']);
     Route::get('/results/student/{studentId}', [ResultController::class, 'apiStudentResults']);
     Route::get('/notifications/user/{userId}', [HomeController::class, 'apiUserNotifications']);
     Route::post('/notifications/{id}/read', [HomeController::class, 'apiReadNotification']);

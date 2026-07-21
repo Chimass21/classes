@@ -348,19 +348,11 @@ class DownloadController extends Controller
         $week = $note['week'] ?? '';
         $content = $note['content'] ?? '';
         $detailedNote = $note['detailedNote'] ?? '';
-        $examples = $note['examples'] ?? [];
         $evaluation = $note['evaluationQuestions'] ?? [];
         $assignment = $note['assignment'] ?? '';
         $definitions = $note['definitions'] ?? [];
-        $practicalApps = $note['practicalApplications'] ?? [];
-        $illustrations = $note['illustrations'] ?? [];
-        $advDisadv = $note['advantagesDisadvantages'] ?? [];
         $keyPoints = $note['keyPoints'] ?? [];
-
-        $examplesHtml = '';
-        foreach ($examples as $ex) {
-            $examplesHtml .= '<div class="example"><strong>' . ($ex['title'] ?? 'Example') . ':</strong> ' . ($ex['description'] ?? '') . '</div>';
-        }
+        $sections = $note['sections'] ?? [];
 
         $evalHtml = '';
         foreach ($evaluation as $eq) {
@@ -376,37 +368,11 @@ class DownloadController extends Controller
             $definitionsHtml .= '</table>';
         }
 
-        $illustrationsHtml = '';
-        if (!empty($illustrations)) {
-            $illustrationsHtml .= '<h3>Illustrations / Diagrams</h3>';
-            foreach ($illustrations as $ill) {
-                $illustrationsHtml .= '<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;padding:10px;margin-bottom:8px;font-family:monospace;font-size:10pt">' . e($ill) . '</div>';
+        $sectionsHtml = '';
+        foreach ($sections as $sec) {
+            if (!empty($sec['heading']) && !empty($sec['content'])) {
+                $sectionsHtml .= '<h3>' . e($sec['heading']) . '</h3><div>' . $sec['content'] . '</div>';
             }
-        }
-
-        $practicalHtml = '';
-        if (!empty($practicalApps)) {
-            $practicalHtml .= '<h3>Practical Applications</h3><ul>';
-            foreach ($practicalApps as $app) {
-                $practicalHtml .= '<li>' . e($app) . '</li>';
-            }
-            $practicalHtml .= '</ul>';
-        }
-
-        $advHtml = '';
-        if (!empty($advDisadv['advantages'])) {
-            $advHtml .= '<h3>Advantages</h3><ul style="color:#15803d">';
-            foreach ($advDisadv['advantages'] as $adv) {
-                $advHtml .= '<li>' . e($adv) . '</li>';
-            }
-            $advHtml .= '</ul>';
-        }
-        if (!empty($advDisadv['disadvantages'])) {
-            $advHtml .= '<h3>Disadvantages</h3><ul style="color:#b91c1c">';
-            foreach ($advDisadv['disadvantages'] as $dis) {
-                $advHtml .= '<li>' . e($dis) . '</li>';
-            }
-            $advHtml .= '</ul>';
         }
 
         $keyPointsHtml = '';
@@ -426,10 +392,7 @@ class DownloadController extends Controller
             <div class="content">
                 ' . $content . '
                 ' . $definitionsHtml . '
-                ' . ($examplesHtml ? '<h3>Examples</h3>' . $examplesHtml : '') . '
-                ' . $illustrationsHtml . '
-                ' . $practicalHtml . '
-                ' . $advHtml . '
+                ' . $sectionsHtml . '
                 ' . ($evalHtml ? '<h3>Evaluation Questions</h3><ol>' . $evalHtml . '</ol>' : '') . '
                 ' . ($assignment ? '<h3>Assignment</h3><p>' . nl2br(e($assignment)) . '</p>' : '') . '
                 ' . $keyPointsHtml . '
