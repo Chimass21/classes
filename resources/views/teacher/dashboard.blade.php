@@ -1004,12 +1004,14 @@ function displayLessonNote(note) {
     const container = document.getElementById('note-content');
     const examples = note.examples || [];
     const activities = note.classroomActivities || [];
-    const evaluation = note.evaluationQuestions || [];
+    const evaluationRaw = note.evaluationQuestions || note.evaluation || [];
+    const evaluation = Array.isArray(evaluationRaw) ? evaluationRaw : [evaluationRaw];
     const definitions = note.definitions || [];
     const practicalApps = note.practicalApplications || [];
     const illustrations = note.illustrations || [];
     const advDisadv = note.advantagesDisadvantages || {};
-    const keyPoints = note.keyPoints || [];
+    const keyPoints = note.keyPoints || note.key_points || [];
+    const noteContent = note.content || note.detailedNote || note.body || note.noteContent || note.htmlContent || note.lessonContent || note.lesson_content || note.definition || '';
 
     let examplesHtml = examples.map(ex => `<div class="p-3 bg-slate-50 border-l-4 border-blue-600 rounded mb-2"><strong class="text-sm">${ex.title || 'Example'}:</strong><p class="text-xs mt-1">${ex.description || ''}</p></div>`).join('');
     let definitionsHtml = definitions.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Definitions of Key Terms</h3><table class="w-full text-sm border-collapse">${definitions.map(d => `<tr class="border-b border-slate-200"><td class="py-2 pr-3 font-semibold text-blue-600 w-1/3">${d.term || ''}</td><td class="py-2 text-slate-600">${d.definition || ''}</td></tr>`).join('')}</table></div>` : '';
@@ -1029,7 +1031,7 @@ function displayLessonNote(note) {
             <h1 class="text-xl font-bold text-blue-600">${note.topic || ''}</h1>
             <p class="text-xs text-slate-500">${note.subject || ''} | ${note.class || ''} | ${note.term || ''} | Week ${note.week || ''} | ${note.periods || ''}</p>
         </div>
-        ${note.content || ''}
+        ${noteContent}
         ${definitionsHtml}
         ${examplesHtml ? `<h3 class="text-base font-bold text-slate-800 mt-4 mb-2">Examples</h3>${examplesHtml}` : ''}
         ${illustrationsHtml}

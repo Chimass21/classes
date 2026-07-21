@@ -880,7 +880,7 @@ document.getElementById('student-note-form')?.addEventListener('submit', async f
         const body = { subject: subj, topic, class: cls, subTopic: document.getElementById('student-note-subtopic').value, difficulty };
         if (subtopics) body.subtopics = subtopics;
         const res = await fetch('/api/ai/lesson-note', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify(body)
         });
         const data = await res.json();
@@ -901,12 +901,14 @@ function renderStudentNote(note) {
     const container = document.getElementById('student-note-result');
     const examples = note.examples || [];
     const activities = note.classroomActivities || [];
-    const evaluation = note.evaluationQuestions || [];
+    const evaluationRaw = note.evaluationQuestions || note.evaluation || [];
+    const evaluation = Array.isArray(evaluationRaw) ? evaluationRaw : [evaluationRaw];
     const definitions = note.definitions || [];
     const practicalApps = note.practicalApplications || [];
     const illustrations = note.illustrations || [];
     const advDisadv = note.advantagesDisadvantages || {};
-    const keyPoints = note.keyPoints || [];
+    const keyPoints = note.keyPoints || note.key_points || [];
+    const noteContent = note.content || note.detailedNote || note.body || note.noteContent || note.htmlContent || note.lessonContent || note.lesson_content || note.definition || '';
 
     let definitionsHtml = definitions.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Definitions of Key Terms</h3><table class="w-full text-sm border-collapse">${definitions.map(d => `<tr class="border-b border-slate-200"><td class="py-2 pr-3 font-semibold text-indigo-700 w-1/3">${escapeHtml(d.term || '')}</td><td class="py-2 text-slate-600">${escapeHtml(d.definition || '')}</td></tr>`).join('')}</table></div>` : '';
     let practicalHtml = practicalApps.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Practical Applications</h3><ul class="text-sm space-y-1 list-disc pl-5 text-slate-600">${practicalApps.map(a => `<li>${escapeHtml(a)}</li>`).join('')}</ul></div>` : '';
@@ -927,7 +929,7 @@ function renderStudentNote(note) {
                 <h2 class="text-xl font-black text-slate-900 mt-2">${escapeHtml(note.topic)}</h2>
                 <p class="text-xs text-slate-400 mt-1">${escapeHtml(note.class || '')}${note.class ? ' | ' : ''}${escapeHtml(note.term || '')}${note.term ? ' | ' : ''}Week ${note.week || ''}</p>
             </div>
-            ${note.content || ''}
+            ${noteContent}
             ${definitionsHtml}
             ${examples.length ? `<div class="mt-6"><h3 class="text-base font-bold text-slate-800 mb-3">Examples</h3>${examples.map(ex => `<div class="p-4 bg-slate-50 border-l-4 border-indigo-400 rounded-xl mb-2"><strong class="text-sm text-slate-900">${escapeHtml(ex.title || 'Example')}</strong><p class="text-xs mt-1 text-slate-600">${escapeHtml(ex.description || '')}</p></div>`).join('')}</div>` : ''}
             ${illustrationsHtml}
@@ -1048,7 +1050,7 @@ document.getElementById('practice-form')?.addEventListener('submit', async funct
     try {
         const timeLimit = parseInt(document.getElementById('practice-time').value) || 0;
         const res = await fetch('/api/ai/generate-questions', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            method: 'POST', headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
             body: JSON.stringify({ subject: subj, topic, subTopic: document.getElementById('practice-subtopic').value, class: document.getElementById('practice-class').value, count, difficulty: 'Medium' })
         });
         const data = await res.json();

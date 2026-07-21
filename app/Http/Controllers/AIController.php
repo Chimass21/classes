@@ -170,105 +170,100 @@ class AIController extends Controller
             $scheme = CurriculumData::getSchemeOfWork($data['subject'], $data['class'], $data['term']);
             $userSubtopics = $data['subtopics'] ?? '';
 
-            $prompt = $this->buildLessonNotePrompt(
-                $data['subject'], $data['class'], $data['term'], $data['week'],
-                $data['topic'], $periods, $difficulty, $ageRange, $scheme, $userSubtopics
-            );
-
-            Log::info('AI Lesson Note Request', [
-                'subject' => $data['subject'],
-                'class' => $data['class'],
-                'topic' => $data['topic'],
-                'difficulty' => $difficulty,
-                'prompt_length' => strlen($prompt),
-            ]);
-
-            $response = $this->ai->generate($prompt, true);
-
-            Log::info('AI Lesson Note Response', [
-                'response_length' => strlen($response),
-                'response_preview' => substr($response, 0, 500),
-            ]);
-
-            if ($this->isRefusal($response)) {
-                Log::warning('AI refused lesson note request', ['topic' => $data['topic']]);
-                return response()->json([
-                    'success' => false,
-                    'error' => 'The AI model declined to generate content for this topic. Please rephrase your topic or try a different subject.',
-                ], 422);
-            }
-
-            $note = json_decode($response, true);
-
-            if (!is_array($note) || empty($note)) {
-                $cleaned = $this->extractJson($response);
-                if ($cleaned !== null) {
-                    $note = $cleaned;
-                }
-            }
-
-            if (!is_array($note) || empty($note)) {
-                $responsePreview = substr($response, 0, 2000);
-                Log::warning('AI returned non-JSON response for lesson note', [
-                    'response_length' => strlen($response),
-                    'response_start' => $responsePreview,
-                ]);
-                $errorMsg = 'Failed to generate a valid lesson note. ';
-                if (empty(trim($response))) {
-                    $errorMsg .= 'The AI service returned an empty response. Please check your API configuration and try again.';
-                } elseif (strlen($response) > 15000) {
-                    $errorMsg .= 'The AI response was too large. Try a more specific topic.';
+            // Try up to 2 times: first with full prompt, then with stricter retry
+            for ($attempt = 0; $attempt <= self::MAX_RETRIES; $attempt++) {
+                if ($attempt === 0) {
+                    $prompt = $this->buildLessonNotePrompt(
+                        $data['subject'], $data['class'], $data['term'], $data['week'],
+                        $data['topic'], $periods, $difficulty, $ageRange, $scheme, $userSubtopics
+                    );
                 } else {
-                    $errorMsg .= 'The AI response was not in the expected format. Please try again.';
+                    $prompt = $this->buildStrictRetryPrompt($prompt, $data['subject'], $data['topic'], $data['class'], 'lesson_note');
                 }
-                return response()->json([
-                    'success' => false,
-                    'error' => $errorMsg,
-                ], 422);
-            }
 
-            if (!$this->isRelevantToTopic($note, 'lesson_note', $data['subject'], $data['topic'], $data['class'])) {
-                Log::warning('Lesson note rejected - not relevant to topic', [
+                Log::info("AI Lesson Note Request (attempt {$attempt})", [
+                    'subject' => $data['subject'],
+                    'class' => $data['class'],
+                    'topic' => $data['topic'],
+                    'prompt_length' => strlen($prompt),
+                ]);
+
+                $response = $this->ai->generate($prompt, true);
+
+                Log::info("AI Lesson Note Response (attempt {$attempt})", [
+                    'response_length' => strlen($response),
+                    'response_preview' => substr($response, 0, 500),
+                ]);
+
+                if ($this->isRefusal($response)) {
+                    Log::warning('AI refused lesson note request', ['topic' => $data['topic']]);
+                    if ($attempt < self::MAX_RETRIES) continue;
+                    return response()->json([
+                        'success' => false,
+                        'error' => 'The AI model declined to generate content for this topic. Please rephrase your topic or try a different subject.',
+                    ], 422);
+                }
+
+                $note = json_decode($response, true);
+                if (!is_array($note) || empty($note)) {
+                    $cleaned = $this->extractJson($response);
+                    if ($cleaned !== null) {
+                        $note = $cleaned;
+                    }
+                }
+
+                if (!is_array($note) || empty($note)) {
+                    Log::warning("AI returned non-JSON for lesson note (attempt {$attempt})");
+                    if ($attempt < self::MAX_RETRIES) continue;
+                    $errorMsg = 'Failed to generate a valid lesson note. ';
+                    if (empty(trim($response))) {
+                        $errorMsg .= 'The AI service returned an empty response. Please check your API configuration and try again.';
+                    } elseif (strlen($response) > 20000) {
+                        $errorMsg .= 'The AI response was too large. Try a more specific topic.';
+                    } else {
+                        $errorMsg .= 'The AI response was not in the expected format. Please try again.';
+                    }
+                    return response()->json([
+                        'success' => false,
+                        'error' => $errorMsg,
+                    ], 422);
+                }
+
+                if ($this->isRelevantToTopic($note, 'lesson_note', $data['subject'], $data['topic'], $data['class'])) {
+                    return $this->storeAndReturnLessonNote($note, $data, $user, $periods, $difficulty, $ageRange);
+                }
+
+                Log::warning("Lesson note rejected - not relevant to topic (attempt {$attempt})", [
                     'subject' => $data['subject'],
                     'topic' => $data['topic'],
                 ]);
+            }
 
-                if (self::MAX_RETRIES > 0) {
-                    $retryPrompt = $this->buildStrictRetryPrompt($prompt, $data['subject'], $data['topic'], $data['class'], 'lesson_note');
-                    $retryResponse = $this->ai->generate($retryPrompt, true);
-
-                    Log::info('AI Lesson Note Retry Response', [
-                        'response_length' => strlen($retryResponse),
-                        'response_preview' => substr($retryResponse, 0, 500),
-                    ]);
-
-                    if ($this->isRefusal($retryResponse)) {
-                        return response()->json([
-                            'success' => false,
-                            'error' => 'The AI model declined to generate content for this topic. Please rephrase your topic.',
-                        ], 422);
-                    }
-
-                    $note = json_decode($retryResponse, true);
+            // Final fallback: try simpler prompt without json mode
+            try {
+                $simplePrompt = "Write a detailed lesson note about \"{$data['topic']}\" in {$data['subject']} for {$data['class']}. "
+                    . "Include topic, introduction, content with headings, definitions, examples, summary, and key points. "
+                    . "Use Nigeria-centric examples. Return ONLY valid JSON with this exact structure: "
+                    . '{"topic":"...","subtopics":["..."],"learningObjectives":["..."],"introduction":"...","content":"FULL DETAILED HTML with <h3>/<h4>/<p>/<ul> headings and paragraphs — 2-3 pages","definitions":[{"term":"...","definition":"..."}],"examples":[{"title":"...","description":"..."}],"practicalApplications":["..."],"illustrations":["..."],"advantagesDisadvantages":{"advantages":["..."],"disadvantages":["..."]},"classroomActivities":[{"title":"...","description":"..."}],"evaluationQuestions":["..."],"summary":"...","assignment":"...","keyPoints":["..."]}';
+                $fallbackResponse = $this->ai->generate($simplePrompt, false, 8192, 0.7);
+                if (!empty(trim($fallbackResponse))) {
+                    $note = json_decode($fallbackResponse, true);
                     if (!is_array($note) || empty($note)) {
-                        $cleaned = $this->extractJson($retryResponse);
-                        if ($cleaned !== null) {
-                            $note = $cleaned;
-                        }
+                        $cleaned = $this->extractJson($fallbackResponse);
+                        if ($cleaned !== null) $note = $cleaned;
                     }
-
-                    if (is_array($note) && !empty($note) && $this->isRelevantToTopic($note, 'lesson_note', $data['subject'], $data['topic'], $data['class'])) {
+                    if (is_array($note) && !empty($note)) {
                         return $this->storeAndReturnLessonNote($note, $data, $user, $periods, $difficulty, $ageRange);
                     }
                 }
-
-                return response()->json([
-                    'success' => false,
-                    'error' => 'The generated lesson note did not focus on the requested topic. Please try again with a more specific topic.',
-                ], 422);
+            } catch (\Exception $e) {
+                Log::warning('Lesson note fallback also failed', ['error' => $e->getMessage()]);
             }
 
-            return $this->storeAndReturnLessonNote($note, $data, $user, $periods, $difficulty, $ageRange);
+            return response()->json([
+                'success' => false,
+                'error' => 'The generated lesson note did not focus on the requested topic. Please try again with a more specific topic.',
+            ], 422);
 
         } catch (\Exception $e) {
             Log::error('Lesson note generation failed', [
@@ -437,11 +432,12 @@ class AIController extends Controller
                 $responseData['structuredQuestions'] = $questions['structuredQuestions'];
             }
 
+            $actualCount = count($questionItems);
             return response()->json([
                 'success' => true,
                 'questions' => $responseData,
                 'count' => $data['count'],
-                'message' => $data['count'] . ' questions generated successfully.',
+                'message' => $actualCount . ' out of ' . $data['count'] . ' questions generated successfully.',
             ]);
 
         } catch (\Exception $e) {
@@ -779,22 +775,22 @@ Return ONLY valid JSON (no markdown, no code fences). Use this exact structure:
   "topic": "{$topic}",
   "subtopics": ["All relevant subtopics under {$topic}", "one per array item"],
   "learningObjectives": ["5 specific learning objectives starting with 'By the end of the lesson, students should be able to:'"],
-  "introduction": "4-6 sentence engaging intro connecting to prior knowledge, Nigeria context",
-  "content": "FULL DETAILED HTML — 4 A4 pages when printed. Structure with <h3> and <h4> headings. Include ALL of these sections in order inside the content field:
+  "introduction": "3-5 sentence engaging intro connecting to prior knowledge, Nigeria context",
+  "content": "DETAILED HTML — 2-3 A4 pages when printed. Structure with <h3> and <h4> headings. Include ALL of these sections in order inside the content field:
    1. Introduction to {$topic}
    2. Definitions of key terms (use <ul> or <table>)
-   3. Main body: detailed explanation of EACH subtopic — this is the longest section (2-3 A4 pages)
+   3. Main body: detailed explanation of each subtopic — this is the longest section
    4. Illustrations/diagrams (describe with <table> or structured text)
    5. Practical applications in Nigeria (₦aira, Nigerian cities, local contexts)
    6. Advantages and disadvantages (where relevant)
    7. Key points to remember (<ul> with 5-8 items)
    8. Conclusion
-   Use <p>, <ul>/<ol>, <table> throughout. EVERY sentence about {$topic}.",
+   Use <p>, <ul>/<ol>, <table> throughout.",
   "definitions": [
     {"term": "Key term 1", "definition": "Clear definition in context of {$topic}"}
   ],
   "examples": [
-    {"title": "Example 1", "description": "Detailed worked example or illustration. 4-6 sentences."}
+    {"title": "Example 1", "description": "Detailed worked example or illustration. 2-3 sentences."}
   ],
   "practicalApplications": ["Real-life application 1 of {$topic} in Nigeria", "Application 2"],
   "illustrations": ["Description of diagram, chart, or illustration for {$topic}"],
@@ -806,30 +802,31 @@ Return ONLY valid JSON (no markdown, no code fences). Use this exact structure:
     {"title": "Activity 1", "description": "Description of classroom activity"}
   ],
   "evaluationQuestions": ["5 evaluation questions about {$topic}"],
-  "summary": "4-6 sentence comprehensive summary of the lesson",
-  "assignment": "4-5 specific homework tasks for students",
+  "summary": "3-4 sentence comprehensive summary of the lesson",
+  "assignment": "3-4 specific homework tasks for students",
   "keyPoints": ["5-8 key takeaways from the lesson"]
 }
 
-STRICT RULES:
+RULES:
 - Every sentence MUST be about "{$topic}"
 - Follow NERDC/UBEC Nigerian curriculum standards
 - Cover ALL subtopics under {$topic} for {$class} level ({$ageRange})
-- The content field MUST be ~4 A4 pages when printed — thorough, detailed, complete
+- The content field should be ~2-3 A4 pages when printed
 - Use Nigeria-centric examples (₦aira, Nigerian cities, local culture)
-- For calculation topics: include 5 fully solved examples. For non-calculation topics: include 3-4 illustrative examples
+- For calculation topics: include 3-4 fully solved examples. For non-calculation topics: include 2-3 illustrative examples
 - Match language to {$class} level — simpler for primary, advanced for secondary
 - Match difficulty "{$difficulty}": Simple=foundational, Standard=curriculum depth, Deep=advanced
-- Suitable for both classroom teaching and self-study
 - No placeholders — every field must be fully written
-- Complete enough for a teacher to use directly in class
 PROMPT;
     }
 
     protected function buildQuestionsPrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic = '', $difficulty = 'Standard'): string
     {
+        // Ask for extra questions so filtering still yields the requested count
+        $askCount = min((int) ceil($count * 1.25), 200);
+
         if ($lessonNoteContent) {
-            return $this->buildQuestionsFromNotePrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic);
+            return $this->buildQuestionsFromNotePrompt($subject, $topic, $askCount, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic);
         }
 
         $theoryPart = $includeTheory ? '
@@ -847,7 +844,7 @@ PROMPT;
         $difficultyLine = $difficulty && $difficulty !== 'Standard' ? " DIFFICULTY: {$difficulty}." : '';
 
         return <<<PROMPT
-You are a Nigerian examination expert. Generate {$count} objective (multiple-choice) questions{$theoryPart} about "{$topic}" in {$subject} for {$class} level ({$term}).{$difficultyLine}
+You are a Nigerian examination expert. Generate {$askCount} objective (multiple-choice) questions{$theoryPart} about "{$topic}" in {$subject} for {$class} level ({$term}).{$difficultyLine}
 {$subtopicLine}
 
 SUBJECT: {$subject} — Every question MUST be about {$subject} content.
@@ -876,6 +873,9 @@ PROMPT;
 
     protected function buildQuestionsFromNotePrompt($subject, $topic, $count, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic = ''): string
     {
+        // Ask for extra questions so filtering still yields the requested count
+        $askCount = min((int) ceil($count * 1.25), 200);
+
         $theoryPart = $includeTheory ? '
   "theoryQuestions": [
     {"question": "Theory question 1", "answer": "Model answer"}
@@ -910,7 +910,7 @@ PROMPT;
         ]);
 
         return <<<PROMPT
-You are a Nigerian examination expert. Your task is to generate {$count} objective (multiple-choice) questions based STRICTLY on the lesson note provided below for {$subject} ({$class}, {$term}, Week {$week}).
+You are a Nigerian examination expert. Your task is to generate {$askCount} objective (multiple-choice) questions based STRICTLY on the lesson note provided below for {$subject} ({$class}, {$term}, Week {$week}).
 
 SUBJECT: {$subject}
 TOPIC: {$topic}
@@ -946,7 +946,7 @@ QUESTION STYLE GUIDELINES:
 - Ensure wrong options are also derived from the lesson note content (not made up from outside knowledge)
 
 SELF-VERIFICATION:
-After writing all {$count} questions, verify EVERY SINGLE ONE:
+After writing all {$askCount} questions, verify EVERY SINGLE ONE:
 - Can this question be answered using ONLY the lesson note above? If NO, rewrite or delete it.
 - Does this question test a concept actually present in the lesson note? If NO, rewrite or delete it.
 - Are all 4 options based on the lesson note content? If NO, fix them.
@@ -996,9 +996,15 @@ PROMPT;
             $parts[] = "LEARNING OBJECTIVES:\n" . $objectives;
         }
 
-        if (!empty($data['introduction'])) $parts[] = "INTRODUCTION:\n" . html_entity_decode(strip_tags($data['introduction']), ENT_QUOTES | ENT_HTML5);
+        if (!empty($data['introduction'])) {
+            $intro = is_array($data['introduction']) ? json_encode($data['introduction']) : $data['introduction'];
+            $parts[] = "INTRODUCTION:\n" . html_entity_decode(strip_tags($intro), ENT_QUOTES | ENT_HTML5);
+        }
 
-        if (!empty($data['content'])) $parts[] = "CONTENT:\n" . html_entity_decode(strip_tags($data['content']), ENT_QUOTES | ENT_HTML5);
+        if (!empty($data['content'])) {
+            $cont = is_array($data['content']) ? json_encode($data['content']) : $data['content'];
+            $parts[] = "CONTENT:\n" . html_entity_decode(strip_tags($cont), ENT_QUOTES | ENT_HTML5);
+        }
 
         if (!empty($data['subtopics'])) {
             $subtopics = is_array($data['subtopics']) ? implode("\n- ", $data['subtopics']) : $data['subtopics'];
@@ -1035,9 +1041,15 @@ PROMPT;
             $parts[] = "KEY POINTS:\n" . $points;
         }
 
-        if (!empty($data['summary'])) $parts[] = "SUMMARY:\n" . html_entity_decode(strip_tags($data['summary']), ENT_QUOTES | ENT_HTML5);
+        if (!empty($data['summary'])) {
+            $summary = is_array($data['summary']) ? json_encode($data['summary']) : $data['summary'];
+            $parts[] = "SUMMARY:\n" . html_entity_decode(strip_tags($summary), ENT_QUOTES | ENT_HTML5);
+        }
 
-        if (!empty($data['detailedNote'])) $parts[] = "DETAILED NOTE:\n" . html_entity_decode(strip_tags($data['detailedNote']), ENT_QUOTES | ENT_HTML5);
+        if (!empty($data['detailedNote'])) {
+            $dn = is_array($data['detailedNote']) ? json_encode($data['detailedNote']) : $data['detailedNote'];
+            $parts[] = "DETAILED NOTE:\n" . html_entity_decode(strip_tags($dn), ENT_QUOTES | ENT_HTML5);
+        }
 
         $text = implode("\n\n", $parts);
 
@@ -1093,6 +1105,58 @@ PROMPT;
 
     protected function storeAndReturnLessonNote(array $note, array $data, $user, string $periods, string $difficulty, string $ageRange)
     {
+        // Unwrap lesson_note wrapper key (some AIs nest content inside it)
+        if (!empty($note['lesson_note']) && is_array($note['lesson_note'])) {
+            $inner = $note['lesson_note'];
+            foreach (['content','lesson_content','topic','learningObjectives','learning_objectives','definitions','examples','summary','keyPoints','key_points','evaluation','evaluationQuestions','introduction','subtopics','practicalApplications','illustrations','advantagesDisadvantages','classroomActivities','assignment'] as $k) {
+                if (isset($inner[$k]) && !isset($note[$k])) {
+                    $note[$k] = $inner[$k];
+                }
+            }
+        }
+
+        // Normalize content key — try multiple possible keys the AI might use
+        $contentKeys = ['content', 'detailedNote', 'body', 'noteContent', 'htmlContent', 'lessonContent', 'mainContent', 'fullContent', 'definition'];
+        if (empty($note['content'] ?? '')) {
+            // content as object → convert to HTML string
+            if (!empty($note['content']) && is_array($note['content'])) {
+                $note['content'] = $this->noteContentObjectToHtml($note['content']);
+            } else {
+                foreach ($contentKeys as $key) {
+                    if (!empty($note[$key] ?? '')) {
+                        if (is_array($note[$key])) {
+                            $note['content'] = $this->noteContentObjectToHtml($note[$key]);
+                        } else {
+                            $note['content'] = $note[$key];
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        // lesson_content array → convert to HTML
+        if (empty($note['content'] ?? '') && !empty($note['lesson_content']) && is_array($note['lesson_content'])) {
+            $note['content'] = $this->noteContentObjectToHtml($note['lesson_content']);
+        }
+        // If content is an object, convert to HTML
+        if (!empty($note['content']) && is_array($note['content'])) {
+            $note['content'] = $this->noteContentObjectToHtml($note['content']);
+        }
+
+        // Normalize field name inconsistencies
+        if (!empty($note['key_points']) && empty($note['keyPoints'])) {
+            $note['keyPoints'] = $note['key_points'];
+        }
+        if (!empty($note['learning_objectives']) && empty($note['learningObjectives'])) {
+            $note['learningObjectives'] = $note['learning_objectives'];
+        }
+        if (!empty($note['evaluation']) && empty($note['evaluationQuestions'])) {
+            $note['evaluationQuestions'] = is_array($note['evaluation']) ? $note['evaluation'] : [$note['evaluation']];
+        }
+        if (!empty($note['objectives']) && empty($note['learningObjectives'])) {
+            $note['learningObjectives'] = $note['objectives'];
+        }
+
         $note['subject'] = $data['subject'];
         $note['class'] = $data['class'];
         $note['term'] = $data['term'];
@@ -1122,6 +1186,48 @@ PROMPT;
             'noteId' => $noteId,
             'message' => 'Lesson note generated successfully.',
         ]);
+    }
+
+    /**
+     * Convert a nested content object/array from the AI into an HTML string.
+     */
+    private function noteContentObjectToHtml(array $content): string
+    {
+        $parts = [];
+        foreach ($content as $key => $val) {
+            if (is_string($val)) {
+                $parts[] = "<p>{$val}</p>";
+            } elseif (is_array($val)) {
+                $heading = $val['heading'] ?? $val['title'] ?? $val['subtopic'] ?? $key;
+                $body = $val['body'] ?? $val['explanation'] ?? $val['description'] ?? $val['content'] ?? '';
+                $points = $val['points'] ?? $val['sub_headings'] ?? $val['solution_steps'] ?? [];
+                $example = $val['example'] ?? $val['final_answer'] ?? '';
+
+                if (!empty($heading)) {
+                    $parts[] = "<h4>" . htmlspecialchars(is_string($heading) ? $heading : $key, ENT_QUOTES, 'UTF-8') . "</h4>";
+                }
+                if (!empty($body)) {
+                    $parts[] = "<p>" . htmlspecialchars(is_string($body) ? $body : '', ENT_QUOTES, 'UTF-8') . "</p>";
+                }
+                if (!empty($example)) {
+                    $parts[] = "<p><strong>Example:</strong> " . htmlspecialchars(is_string($example) ? $example : '', ENT_QUOTES, 'UTF-8') . "</p>";
+                }
+                if (is_array($points)) {
+                    foreach ($points as $pt) {
+                        if (is_string($pt)) {
+                            $parts[] = "<li>" . htmlspecialchars($pt, ENT_QUOTES, 'UTF-8') . "</li>";
+                        } elseif (is_array($pt)) {
+                            $ptHeading = $pt['title'] ?? $pt['heading'] ?? '';
+                            $ptDesc = $pt['description'] ?? $pt['body'] ?? '';
+                            if ($ptHeading) {
+                                $parts[] = "<li><strong>" . htmlspecialchars($ptHeading, ENT_QUOTES, 'UTF-8') . ":</strong> " . htmlspecialchars($ptDesc, ENT_QUOTES, 'UTF-8') . "</li>";
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return implode("\n", $parts);
     }
 
     public function deleteLessonNote($noteId)
@@ -1184,11 +1290,12 @@ PROMPT;
                     if (is_array($items) && !empty($items) && isset($items[0])) {
                         $items = $this->normalizeQuestionFields($items);
                         $items = $this->shuffleAnswers($items);
+                        $actual = count($items);
                         return response()->json([
                             'success' => true,
                             'questions' => ['objectives' => $items],
                             'count' => $count,
-                            'message' => $count . ' questions generated.',
+                            'message' => $actual . ' out of ' . $count . ' questions generated.',
                         ]);
                     }
                 }
@@ -1208,11 +1315,12 @@ PROMPT;
             if (is_array($items) && !empty($items)) {
                 $items = $this->normalizeQuestionFields($items);
                 $items = $this->shuffleAnswers($items);
+                $actual = count($items);
                 return response()->json([
                     'success' => true,
                     'questions' => ['objectives' => $items],
                     'count' => $data['count'],
-                    'message' => $data['count'] . ' questions generated.',
+                    'message' => $actual . ' out of ' . $data['count'] . ' questions generated.',
                     'fallback' => true,
                 ]);
             }
@@ -1237,21 +1345,21 @@ PROMPT;
         $subject = $data['subject'];
         $topic = $data['topic'];
         $class = $data['class'] ?? 'SS1';
-        $requiredCount = min($data['count'] ?? 10, 50);
-        $minAcceptable = max(1, (int) ceil($requiredCount * 0.5));
-        $currentItems = $questionItems;
+        $targetCount = $data['count'] ?? 10;
+        $minAcceptable = max(1, (int) ceil($targetCount * 0.95));
+        $currentItems = $this->normalizeQuestionFields($questionItems);
 
         for ($attempt = 0; $attempt <= self::MAX_RETRIES; $attempt++) {
             if ($attempt > 0) {
                 try {
-                    $retryPrompt = $this->buildStrictRetryPrompt($prompt, $subject, $topic, $class, 'questions', $data['count'] ?? 20);
+                    $retryPrompt = $this->buildStrictRetryPrompt($prompt, $subject, $topic, $class, 'questions', $targetCount);
                     if (!empty($validationErrors)) {
                         $retryPrompt .= "\n\nPREVIOUS ISSUES:\n" . implode("\n", array_slice($validationErrors, 0, 5));
                     }
                     $retryResponse = $this->ai->generate($retryPrompt, true, 16384, 0.4);
 
                     if ($this->isRefusal($retryResponse)) {
-                        return $this->filterValidQuestions($currentItems, $topic, $subject, $hasLessonNote, $minAcceptable);
+                        break;
                     }
 
                     $retryData = json_decode($retryResponse, true);
@@ -1262,28 +1370,67 @@ PROMPT;
                         }
                     }
                     if (is_array($retryData) && !empty($retryData)) {
-                        $currentItems = $retryData['objectives'] ?? $retryData;
+                        $newItems = $retryData['objectives'] ?? $retryData;
+                        $newItems = $this->normalizeQuestionFields($newItems);
+                        $newItems = $this->filterValidQuestions($newItems, $topic, $subject, $hasLessonNote, 1);
+                        if ($newItems !== null) {
+                            $currentItems = array_merge($currentItems, $newItems);
+                        }
                     }
                 } catch (\Exception $e) {
                     Log::warning('Question retry attempt failed', ['error' => $e->getMessage()]);
                 }
             }
 
-            // Filter out invalid questions instead of rejecting the whole set
             $valid = $this->filterValidQuestions($currentItems, $topic, $subject, $hasLessonNote, $minAcceptable);
+            if ($valid !== null && count($valid) >= $targetCount) {
+                return array_slice($valid, 0, $targetCount);
+            }
+
             if ($valid !== null) {
-                return $valid;
+                $currentItems = $valid;
             }
 
             $validationErrors = $this->validateQuestionPool($currentItems, $topic, $subject, $hasLessonNote);
-            Log::warning("Question pool validation failed (attempt {$attempt})", [
-                'errors' => array_slice($validationErrors ?? [], 0, 10),
-                'total' => count($currentItems),
+            Log::warning("Question pool validation (attempt {$attempt})", [
+                'errors' => array_slice($validationErrors ?? [], 0, 5),
+                'valid_count' => $valid ? count($valid) : 0,
+                'target' => $targetCount,
             ]);
         }
 
-        // Last resort: return whatever passes validation
-        return $this->filterValidQuestions($currentItems, $topic, $subject, $hasLessonNote, 1);
+        // If we still don't have enough, try to generate remaining questions
+        $currentItems = $this->normalizeQuestionFields($currentItems);
+        $currentItems = $this->filterValidQuestions($currentItems, $topic, $subject, $hasLessonNote, 1) ?? [];
+        if (count($currentItems) < $targetCount && count($currentItems) > 0) {
+            $remaining = $targetCount - count($currentItems);
+            try {
+                $fillPrompt = "You are a Nigerian exam expert for {$subject} ({$class}). Generate {$remaining} more multiple-choice questions about \"{$topic}\" in {$subject}. "
+                    . "Return ONLY a JSON array: [{\"id\":1,\"question\":\"stem\",\"A\":\"opt\",\"B\":\"opt\",\"C\":\"opt\",\"D\":\"opt\",\"answer\":\"A\"}]";
+                $fillResponse = $this->ai->generate($fillPrompt, false, 8192, 0.6);
+                if (!empty(trim($fillResponse))) {
+                    $fillData = json_decode($fillResponse, true);
+                    if (!is_array($fillData) || empty($fillData)) {
+                        $cleaned = $this->extractJson($fillResponse);
+                        if ($cleaned !== null) $fillData = $cleaned;
+                    }
+                    if (is_array($fillData) && !empty($fillData)) {
+                        $fillItems = $fillData['objectives'] ?? $fillData;
+                        if (is_array($fillItems) && isset($fillItems[0])) {
+                            $fillItems = $this->normalizeQuestionFields($fillItems);
+                            $fillItems = $this->filterValidQuestions($fillItems, $topic, $subject, $hasLessonNote, 1) ?? [];
+                            $currentItems = array_merge($currentItems, $fillItems);
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Question fill generation failed', ['error' => $e->getMessage()]);
+            }
+        }
+
+        $currentItems = $this->normalizeQuestionFields($currentItems);
+        $currentItems = $this->filterValidQuestions($currentItems, $topic, $subject, $hasLessonNote, 1) ?? [];
+        return count($currentItems) > 0 ? array_slice($currentItems, 0, $targetCount) : null;
     }
 
     /**
@@ -1542,18 +1689,21 @@ PROMPT;
         $allText = '';
 
         if ($type === 'lesson_plan') {
+            $toStr = fn($v) => is_string($v) ? $v : (is_array($v) ? json_encode($v) : '');
             $allText = implode(' ', $content['behaviouralObjectives'] ?? []) . ' ' .
-                       ($content['previousKnowledge'] ?? '') . ' ' .
-                       (is_array($content['instructionalMaterials'] ?? null) ? implode(' ', $content['instructionalMaterials']) : ($content['instructionalMaterials'] ?? '')) . ' ' .
-                       implode(' ', array_map(fn($s) => ($s['teacherActivities'] ?? '') . ' ' . ($s['learnerActivities'] ?? '') . ' ' . ($s['learningPoints'] ?? ''), $content['lessonSteps'] ?? [])) . ' ' .
-                       ($content['evaluation'] ?? '') . ' ' .
-                       ($content['summary'] ?? '');
+                       $toStr($content['previousKnowledge'] ?? '') . ' ' .
+                       (is_array($content['instructionalMaterials'] ?? null) ? implode(' ', $content['instructionalMaterials']) : $toStr($content['instructionalMaterials'] ?? '')) . ' ' .
+                       implode(' ', array_map(fn($s) => $toStr($s['teacherActivities'] ?? '') . ' ' . $toStr($s['learnerActivities'] ?? '') . ' ' . $toStr($s['learningPoints'] ?? ''), $content['lessonSteps'] ?? [])) . ' ' .
+                       $toStr($content['evaluation'] ?? '') . ' ' .
+                       $toStr($content['summary'] ?? '');
         } elseif ($type === 'lesson_note') {
-            $allText = ($content['content'] ?? '') . ' ' .
-                       ($content['introduction'] ?? '') . ' ' .
-                       ($content['summary'] ?? '') . ' ' .
-                       ($content['detailedNote'] ?? '') . ' ' .
-                       implode(' ', is_array($content['subtopics'] ?? []) ? $content['subtopics'] : []);
+            $noteSubtopics = $content['subtopics'] ?? [];
+            $toStr = fn($v) => is_string($v) ? $v : (is_array($v) ? json_encode($v) : '');
+            $allText = $toStr($content['content'] ?? '') . ' ' .
+                       $toStr($content['introduction'] ?? '') . ' ' .
+                       $toStr($content['summary'] ?? '') . ' ' .
+                       $toStr($content['detailedNote'] ?? '') . ' ' .
+                       (is_array($noteSubtopics) ? implode(' ', $noteSubtopics) : '');
         } elseif ($type === 'questions') {
             $items = $content['objectives'] ?? $content;
             if (is_array($items)) {
@@ -1595,11 +1745,11 @@ PROMPT;
         $pass = true;
         $reasons = [];
 
-        if ($topicScore < 0.3) {
+        if ($topicScore < 0.2) {
             $pass = false;
             $reasons[] = "topicScore={$topicScore}";
         }
-        if (!$subjectFound && $topicScore < 0.6) {
+        if (!$subjectFound && $topicScore < 0.5) {
             $pass = false;
             $reasons[] = 'subjectMissing';
         }
