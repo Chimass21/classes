@@ -385,34 +385,31 @@ class AIController extends Controller
             // Normalize field names from various AI output formats
             $questionItems = $this->normalizeQuestionFields($questionItems);
 
-            // Skip topic relevance check when generating from a lesson note
-            // (questions are based on note content, not topic keyword matching)
-            if (empty($lessonNoteContent)) {
-                $topicKeywords = array_filter(explode(' ', strtolower(trim($data['topic']))), fn($w) => strlen($w) > 2);
-                if (empty($topicKeywords)) { $topicKeywords = [strtolower(trim($data['topic']))]; }
-                $offTopicCount = 0;
-                foreach ($questionItems as $q) {
+            // Topic relevance check — ensure question stems reference the topic
+            $topicKeywords = array_filter(explode(' ', strtolower(trim($data['topic']))), fn($w) => strlen($w) > 2);
+            if (empty($topicKeywords)) { $topicKeywords = [strtolower(trim($data['topic']))]; }
+            $offTopicCount = 0;
+            foreach ($questionItems as $q) {
+                $qText = strtolower($q['question'] ?? '');
+                $matches = 0;
+                foreach ($topicKeywords as $kw) {
+                    if (str_contains($qText, $kw)) { $matches++; }
+                }
+                if ($matches === 0) { $offTopicCount++; }
+            }
+            if ($offTopicCount > 0) {
+                Log::warning("{$offTopicCount} off-topic questions detected — prepending topic to stems", [
+                    'topic' => $data['topic'],
+                    'total' => count($questionItems),
+                ]);
+                foreach ($questionItems as $i => $q) {
                     $qText = strtolower($q['question'] ?? '');
                     $matches = 0;
                     foreach ($topicKeywords as $kw) {
                         if (str_contains($qText, $kw)) { $matches++; }
                     }
-                    if ($matches === 0) { $offTopicCount++; }
-                }
-                if ($offTopicCount > 0) {
-                    Log::warning("{$offTopicCount} off-topic questions detected — prepending topic to stems", [
-                        'topic' => $data['topic'],
-                        'total' => count($questionItems),
-                    ]);
-                    foreach ($questionItems as $i => $q) {
-                        $qText = strtolower($q['question'] ?? '');
-                        $matches = 0;
-                        foreach ($topicKeywords as $kw) {
-                            if (str_contains($qText, $kw)) { $matches++; }
-                        }
-                        if ($matches === 0) {
-                            $questionItems[$i]['question'] = 'In the context of ' . $data['topic'] . ', ' . lcfirst(ltrim($q['question'] ?? '', '?.,;:!'));
-                        }
+                    if ($matches === 0) {
+                        $questionItems[$i]['question'] = 'In the context of ' . $data['topic'] . ', ' . lcfirst(ltrim($q['question'] ?? '', '?.,;:!'));
                     }
                 }
             }
@@ -1372,7 +1369,7 @@ PROMPT;
                     if (is_array($retryData) && !empty($retryData)) {
                         $newItems = $retryData['objectives'] ?? $retryData;
                         $newItems = $this->normalizeQuestionFields($newItems);
-                        $newItems = $this->filterValidQuestions($newItems, $topic, $subject, $hasLessonNote, 1);
+                        $newItems = $this->filterValidQuestions($newItems, $topic, $subject, false, 1);
                         if ($newItems !== null) {
                             $currentItems = array_merge($currentItems, $newItems);
                         }
@@ -1382,7 +1379,7 @@ PROMPT;
                 }
             }
 
-            $valid = $this->filterValidQuestions($currentItems, $topic, $subject, $hasLessonNote, $minAcceptable);
+            $valid = $this->filterValidQuestions($currentItems, $topic, $subject, false, $minAcceptable);
             if ($valid !== null && count($valid) >= $targetCount) {
                 return array_slice($valid, 0, $targetCount);
             }
@@ -1391,7 +1388,7 @@ PROMPT;
                 $currentItems = $valid;
             }
 
-            $validationErrors = $this->validateQuestionPool($currentItems, $topic, $subject, $hasLessonNote);
+            $validationErrors = $this->validateQuestionPool($currentItems, $topic, $subject, false);
             Log::warning("Question pool validation (attempt {$attempt})", [
                 'errors' => array_slice($validationErrors ?? [], 0, 5),
                 'valid_count' => $valid ? count($valid) : 0,
@@ -1401,12 +1398,16 @@ PROMPT;
 
         // If we still don't have enough, try to generate remaining questions
         $currentItems = $this->normalizeQuestionFields($currentItems);
-        $currentItems = $this->filterValidQuestions($currentItems, $topic, $subject, $hasLessonNote, 1) ?? [];
+        $currentItems = $this->filterValidQuestions($currentItems, $topic, $subject, false, 1) ?? [];
         if (count($currentItems) < $targetCount && count($currentItems) > 0) {
             $remaining = $targetCount - count($currentItems);
             try {
-                $fillPrompt = "You are a Nigerian exam expert for {$subject} ({$class}). Generate {$remaining} more multiple-choice questions about \"{$topic}\" in {$subject}. "
-                    . "Return ONLY a JSON array: [{\"id\":1,\"question\":\"stem\",\"A\":\"opt\",\"B\":\"opt\",\"C\":\"opt\",\"D\":\"opt\",\"answer\":\"A\"}]";
+                $fillPrompt = "You are a Nigerian exam expert for {$subject} ({$class}). SUBJECT: {$subject}. TOPIC: \"{$topic}\". "
+                    . "Generate {$remaining} multiple-choice questions that DIRECTLY TEST KNOWLEDGE OF \"{$topic}\" in {$subject} for {$class} level. "
+                    . "Every question stem MUST contain the word \"{$topic}\" or a direct reference to a subtopic within {$topic}. "
+                    . "Vary question styles: definitions, fill-the-blank (___), scenarios, classifications, comparisons, calculations (if applicable), and negatives (EXCEPT). "
+                    . "4 UNIQUE options (A/B/C/D), exactly ONE correct answer. "
+                    . "Return ONLY a JSON array: [{\"id\":1,\"question\":\"stem that references {$topic}\",\"A\":\"opt\",\"B\":\"opt\",\"C\":\"opt\",\"D\":\"opt\",\"answer\":\"A\"}]";
                 $fillResponse = $this->ai->generate($fillPrompt, false, 8192, 0.6);
                 if (!empty(trim($fillResponse))) {
                     $fillData = json_decode($fillResponse, true);
@@ -1418,7 +1419,7 @@ PROMPT;
                         $fillItems = $fillData['objectives'] ?? $fillData;
                         if (is_array($fillItems) && isset($fillItems[0])) {
                             $fillItems = $this->normalizeQuestionFields($fillItems);
-                            $fillItems = $this->filterValidQuestions($fillItems, $topic, $subject, $hasLessonNote, 1) ?? [];
+                            $fillItems = $this->filterValidQuestions($fillItems, $topic, $subject, false, 1) ?? [];
                             $currentItems = array_merge($currentItems, $fillItems);
                         }
                     }
@@ -1429,7 +1430,7 @@ PROMPT;
         }
 
         $currentItems = $this->normalizeQuestionFields($currentItems);
-        $currentItems = $this->filterValidQuestions($currentItems, $topic, $subject, $hasLessonNote, 1) ?? [];
+        $currentItems = $this->filterValidQuestions($currentItems, $topic, $subject, false, 1) ?? [];
         return count($currentItems) > 0 ? array_slice($currentItems, 0, $targetCount) : null;
     }
 
@@ -1446,6 +1447,7 @@ PROMPT;
         if (empty($topicWords)) {
             $topicWords = [$topicLower];
         }
+        $topicWordCount = count($topicWords);
 
         foreach ($questions as $q) {
             if (!is_array($q)) continue;
@@ -1469,15 +1471,16 @@ PROMPT;
             $answer = strtoupper(trim($q['answer'] ?? ''));
             if (!in_array($answer, ['A', 'B', 'C', 'D'], true)) continue;
 
-            // Topic relevance (soft unless skipTopicCheck)
-            if (!$skipTopicCheck) {
-                $allText = strtolower($questionText . ' ' . implode(' ', $options));
-                $hasKeyword = false;
-                foreach ($topicWords as $word) {
-                    if (str_contains($allText, $word)) { $hasKeyword = true; break; }
-                }
-                if (!$hasKeyword) continue;
+            // Topic relevance — require keyword in question STEM (not just options)
+            $qTextLower = strtolower($questionText);
+            $keywordHits = 0;
+            foreach ($topicWords as $word) {
+                if (str_contains($qTextLower, $word)) { $keywordHits++; }
             }
+            // Require at least one keyword hit in question STEM for single-word topics,
+            // or at least half the words for multi-word topics
+            $requiredHits = $topicWordCount === 1 ? 1 : max(1, (int) ceil($topicWordCount / 2));
+            if ($keywordHits < $requiredHits) continue;
 
             $valid[] = $q;
         }
@@ -1554,32 +1557,18 @@ PROMPT;
                 $errors[] = "Question {$qNum} has duplicate options: " . implode(', ', $repeated);
             }
 
-            // Check topic relevance — at least one keyword should appear
-            // in the question OR options (not just stem); helps avoid
-            // rejecting valid questions that use synonyms or rephrasing.
+            // Check topic relevance — require keyword in question STEM
             if (!$skipTopicCheck) {
                 $qTextLower = strtolower($questionText);
-                $optionsLower = strtolower(implode(' ', [$q['A'] ?? '', $q['B'] ?? '', $q['C'] ?? '', $q['D'] ?? '']));
-                $allText = $qTextLower . ' ' . $optionsLower;
                 $topicMatchCount = 0;
                 foreach ($topicWords as $word) {
                     if (str_contains($qTextLower, $word)) {
                         $topicMatchCount++;
                     }
                 }
-                // If stem has no keyword, check if at least one option does
-                $optionMatch = false;
-                if ($topicMatchCount === 0) {
-                    foreach ($topicWords as $word) {
-                        if (str_contains($optionsLower, $word)) {
-                            $optionMatch = true;
-                            break;
-                        }
-                    }
-                    if (!$optionMatch) {
-                        // Neither stem nor options contain the topic — likely off-topic
-                        $errors[] = "Question {$qNum} does not reference '{$topic}' in its stem or options";
-                    }
+                $requiredHits = count($topicWords) === 1 ? 1 : max(1, (int) ceil(count($topicWords) / 2));
+                if ($topicMatchCount < $requiredHits) {
+                    $errors[] = "Question {$qNum} does not reference '{$topic}' in its stem";
                 }
             }
         }
