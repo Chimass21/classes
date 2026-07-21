@@ -845,9 +845,11 @@ You are a Nigerian examination expert. Generate {$askCount} objective (multiple-
 {$subtopicLine}
 
 SUBJECT: {$subject} — Every question MUST be about {$subject} content.
-TOPIC: {$topic} — Every question MUST test knowledge specifically about {$topic} within {$subject}.
+TOPIC: {$topic} — Every question MUST test knowledge specifically about "{$topic}" within {$subject}.
 CLASS: {$class} — Match difficulty to {$class} per the Nigerian curriculum (NERDC/UBEC/WASSCE/NECO/JAMB).
 {$difficultyLine}
+
+CRITICAL RULE — EVERY question stem MUST contain the word "{$topic}" or a direct reference to a specific subtopic within {$topic}. If the stem doesn't mention {$topic}, the question is OFF-TOPIC and will be rejected.
 
 VARY QUESTION STYLES across the set. At most 2 WH-word starters per 10 questions. Include:
 - Directives (State/Define/List)
@@ -1266,10 +1268,12 @@ PROMPT;
 
             $subtopic = $data['subTopic'] ?? '';
             $subtopicLine = $subtopic ? " Sub-topic: \"{$subtopic}\"." : '';
-            $simplePrompt = "You are a Nigerian exam expert for {$subject} ({$class} level). Generate {$count} multiple-choice questions about \"{$topic}\" in {$subject} for {$class} level.{$subtopicLine}\n\n"
-                . "SUBJECT: {$subject}. TOPIC: {$topic}. CLASS: {$class}. Every question must be about {$subject} content related to {$topic}.\n\n"
+            $simplePrompt = "You are a Nigerian exam expert for {$subject} ({$class} level). "
+                . "CRITICAL: Generate {$count} multiple-choice questions that DIRECTLY TEST \"{$topic}\" in {$subject} for {$class} level.{$subtopicLine}\n\n"
+                . "SUBJECT: {$subject}. TOPIC: \"{$topic}\". CLASS: {$class}.\n"
+                . "EVERY question stem MUST contain the exact word \"{$topic}\" or a direct subtopic reference. Questions without {$topic} in the stem are OFF-TOPIC.\n\n"
                 . "Vary question styles — use at most 2 'What/Why/How' questions per 10. Include: definitions, completions (___), scenarios, classifications, comparisons, negatives (EXCEPT), calculations (if applicable), and true/false.\n\n"
-                . "Return ONLY a JSON array. Each item: {\"id\":number,\"question\":\"text\",\"A\":\"opt\",\"B\":\"opt\",\"C\":\"opt\",\"D\":\"opt\",\"answer\":\"A\"}.\n\n"
+                . "Return ONLY a JSON array. Each item: {\"id\":number,\"question\":\"stem that mentions {$topic}\",\"A\":\"opt\",\"B\":\"opt\",\"C\":\"opt\",\"D\":\"opt\",\"answer\":\"A\"}.\n\n"
                 . "Example: [{\"id\":1,\"question\":\"The correct definition of {$topic} is:\",\"A\":\"opt1\",\"B\":\"opt2\",\"C\":\"opt3\",\"D\":\"opt4\",\"answer\":\"A\"}]";
 
             $retryResponse = $this->ai->generate($simplePrompt, false, 8192, 0.5);
@@ -1286,14 +1290,17 @@ PROMPT;
                     $items = $retryData['objectives'] ?? $retryData;
                     if (is_array($items) && !empty($items) && isset($items[0])) {
                         $items = $this->normalizeQuestionFields($items);
-                        $items = $this->shuffleAnswers($items);
-                        $actual = count($items);
-                        return response()->json([
-                            'success' => true,
-                            'questions' => ['objectives' => $items],
-                            'count' => $count,
-                            'message' => $actual . ' out of ' . $count . ' questions generated.',
-                        ]);
+                        $items = $this->filterValidQuestions($items, $topic, $subject, false, 1) ?? [];
+                        if (count($items) > 0) {
+                            $items = $this->shuffleAnswers($items);
+                            $actual = count($items);
+                            return response()->json([
+                                'success' => true,
+                                'questions' => ['objectives' => $items],
+                                'count' => $count,
+                                'message' => $actual . ' out of ' . $count . ' questions generated.',
+                            ]);
+                        }
                     }
                 }
             }
@@ -1311,15 +1318,18 @@ PROMPT;
             $items = $fallback['objectives'] ?? $fallback;
             if (is_array($items) && !empty($items)) {
                 $items = $this->normalizeQuestionFields($items);
-                $items = $this->shuffleAnswers($items);
-                $actual = count($items);
-                return response()->json([
-                    'success' => true,
-                    'questions' => ['objectives' => $items],
-                    'count' => $data['count'],
-                    'message' => $actual . ' out of ' . $data['count'] . ' questions generated.',
-                    'fallback' => true,
-                ]);
+                $items = $this->filterValidQuestions($items, $topic, $subject, false, 1) ?? [];
+                if (count($items) > 0) {
+                    $items = $this->shuffleAnswers($items);
+                    $actual = count($items);
+                    return response()->json([
+                        'success' => true,
+                        'questions' => ['objectives' => $items],
+                        'count' => $data['count'],
+                        'message' => $actual . ' out of ' . $data['count'] . ' questions generated.',
+                        'fallback' => true,
+                    ]);
+                }
             }
         } catch (\Exception $e) {
             Log::error('ContentGenerator fallback also failed', ['error' => $e->getMessage()]);
@@ -1803,16 +1813,19 @@ PROMPT;
                  . "- Return ONLY valid JSON with no text before or after.\n";
         }
 
-        return "You are a Nigerian examination expert for {$subject} ({$class}). Generate {$count} objective questions about \"{$topic}\".\n\n"
+        return "You are a Nigerian examination expert for {$subject} ({$class}).\n\n"
+             . "CRITICAL: Generate {$count} objective questions about \"{$topic}\".\n\n"
              . "PREVIOUS ATTEMPT REJECTED — QUESTIONS WERE OFF-TOPIC.\n\n"
-             . "STRICT RULES:\n"
-             . "- SUBJECT: {$subject}. TOPIC: {$topic}. CLASS: {$class}.\n"
-             . "- Every question must be about content IN {$subject} that relates to {$topic}.\n"
-             . "- Vary styles: directives (State/Define/List), fill-the-blank, scenarios, classifications, compare/contrast, cause-effect, All-EXCEPT, calculations, true/false.\n"
+             . "STRICT RULES — FOLLOW EVERY ONE:\n"
+             . "- SUBJECT: {$subject}. TOPIC: \"{$topic}\". CLASS: {$class}.\n"
+             . "- EVERY question stem MUST contain the exact word \"{$topic}\" or one of its key subtopics.\n"
+             . "- Every question must test knowledge specifically about {$topic} in {$subject}.\n"
+             . "- If the stem doesn't mention {$topic}, the question is REJECTED.\n"
+             . "- Vary styles: directives (State/Define/List), fill-the-blank (___), scenarios, classifications, compare/contrast, cause-effect, All-EXCEPT, calculations, true/false.\n"
              . "- At most 2 WH-word starters per 10 questions.\n"
              . "- 4 UNIQUE options (A/B/C/D), exactly ONE correct answer.\n"
              . "- Write questions appropriate for a {$class} student in the Nigerian curriculum.\n"
-             . "- Return ONLY valid JSON in this format: {\"objectives\":[{\"id\":1,\"question\":\"stem\",\"A\":\"opt\",\"B\":\"opt\",\"C\":\"opt\",\"D\":\"opt\",\"answer\":\"A\"}]}\n";
+             . "- Return ONLY valid JSON in this format: {\"objectives\":[{\"id\":1,\"question\":\"stem that mentions {$topic}\",\"A\":\"opt\",\"B\":\"opt\",\"C\":\"opt\",\"D\":\"opt\",\"answer\":\"A\"}]}\n";
     }
 
     private function extractJson(string $text): ?array
