@@ -131,6 +131,12 @@
         transform: rotate(45deg) translateX(100%);
     }
     .badge-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+    @media (max-width: 1023px) {
+        #sidebar.sidebar-mobile-fixed { position: fixed; inset: 0 auto 0 0; z-index: 50; }
+    }
+    @media (min-width: 1024px) {
+        #sidebar { position: sticky; top: 0; }
+    }
 </style>
 
 <div class="min-h-screen flex flex-col lg:flex-row" style="background: linear-gradient(135deg, #f0f4ff 0%, #fdf2f8 40%, #eff6ff 100%);">
@@ -151,7 +157,7 @@
     <div id="sidebar-overlay" class="lg:hidden fixed inset-0 z-40 bg-black/20 hidden" onclick="toggleSidebar()"></div>
 
     {{-- Sidebar --}}
-    <aside id="sidebar" class="w-48 shrink-0 bg-white border-r border-purple-100/50 flex flex-col lg:min-h-screen lg:sticky lg:top-0 fixed inset-y-0 left-0 z-50 -translate-x-full lg:translate-x-0 transition-transform duration-300">
+    <aside id="sidebar" class="sidebar-mobile-fixed w-48 shrink-0 bg-white border-r border-purple-100/50 flex flex-col min-h-screen -translate-x-full lg:translate-x-0 transition-transform duration-300" style="top:0;">
         <div class="px-3 py-3 border-b border-purple-100/50 flex items-center justify-between">
             <div class="flex items-center gap-2">
                 <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 via-pink-500 to-amber-500 flex items-center justify-center text-white font-black text-xs shadow shadow-purple-500/30">CP</div>

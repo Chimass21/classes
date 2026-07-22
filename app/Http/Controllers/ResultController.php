@@ -17,12 +17,13 @@ class ResultController extends Controller
     {
         JsonDb::init();
         $db = JsonDb::get();
+        $resultId = trim($resultId);
         foreach ($db['results'] as $result) {
-            if (($result['id'] ?? '') === $resultId) {
+            if (trim($result['id'] ?? '') == $resultId) {
                 // Attach exam questions for answer review
                 $exam = null;
                 foreach ($db['exams'] as $e) {
-                    if (($e['id'] ?? '') === ($result['examId'] ?? '')) {
+                    if (trim($e['id'] ?? '') == trim($result['examId'] ?? '')) {
                         $exam = $e;
                         break;
                     }
@@ -34,7 +35,7 @@ class ResultController extends Controller
                 ]);
             }
         }
-        return response()->json(['success' => false, 'error' => 'Result not found.'], 404);
+        return response()->json(['success' => false, 'error' => 'Result not found.', 'resultId' => $resultId], 404);
     }
 
     public function apiStudentResults($studentId)

@@ -717,7 +717,7 @@
                 </div>
 
                 {{-- === RESULT VIEW MODAL === --}}
-                <div id="result-modal" class="hidden fixed inset-0 z-50 bg-black/50 overflow-y-auto" style="padding-top:env(safe-area-inset-top, 0px);padding-bottom:env(safe-area-inset-bottom, 0px)">
+                <div id="result-modal" class="hidden fixed inset-0 z-50 bg-black/50 overflow-y-auto" onclick="if(event.target===this)closeResultModal()" style="padding-top:env(safe-area-inset-top, 0px);padding-bottom:env(safe-area-inset-bottom, 0px)">
                     <div class="min-h-full flex items-start sm:items-center justify-center p-2 sm:p-4">
                         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-auto my-auto" onclick="event.stopPropagation()">
                             <div class="sticky top-0 z-10 bg-white rounded-t-2xl border-b border-slate-200 px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
@@ -1553,7 +1553,7 @@ function renderResults() {
             const gradeColors = { 'A': 'bg-emerald-100 text-emerald-700', 'B': 'bg-blue-100 text-blue-700', 'C': 'bg-amber-100 text-amber-700', 'D': 'bg-orange-100 text-orange-700', 'F': 'bg-red-100 text-red-700' };
             const safeId = (r.id || '').replace(/[^a-zA-Z0-9-_]/g, '_');
 
-            return `<div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white border border-slate-100 rounded-lg hover:border-slate-200 hover:shadow-sm transition-all gap-2">
+            return `<div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white border border-slate-100 rounded-lg hover:border-slate-200 hover:shadow-sm hover:cursor-pointer transition-all gap-2" data-view-result="${r.id}" onclick="if(!event.target.closest('button'))viewResult('${r.id}')" title="Click to view result">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="font-semibold text-sm text-slate-900">${r.studentName || 'Student'}</span>
@@ -1571,11 +1571,11 @@ function renderResults() {
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${isPassed ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-red-800/10 text-red-700 border border-red-700/20'}">${pct}%</span>
-                    <button onclick="viewResult('${r.id}')" class="px-3 py-1.5 bg-blue-600 text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border-2 border-white" title="View Result">
+                    <button data-view-result="${r.id}" onclick="event.stopPropagation();viewResult('${r.id}')" class="px-3 py-1.5 bg-blue-600 text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border-2 border-white" title="View Result">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                         <span>View</span>
                     </button>
-                    <button onclick="downloadGradedScript('${r.examId}', '${r.id}')" class="px-3 py-1.5 bg-red-600 text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border-2 border-white" title="Download Graded Script PDF">
+                    <button data-download-script="${r.id}" data-exam-id="${r.examId}" onclick="event.stopPropagation();downloadGradedScript('${r.examId}', '${r.id}')" class="px-3 py-1.5 bg-red-600 text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border-2 border-white" title="Download Graded Script PDF">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         <span>Script</span>
                     </button>
@@ -1622,23 +1622,32 @@ function downloadGradedScript(examId, resultId) {
 }
 
 function viewResult(resultId) {
+    if (!resultId) return;
     const modal = document.getElementById('result-modal');
     const body = document.getElementById('result-modal-body');
     const title = document.getElementById('result-modal-title');
     const subtitle = document.getElementById('result-modal-subtitle');
     const downloadBtn = document.getElementById('result-modal-download-btn');
 
+    if (!modal || !body || !title) return;
+
     body.innerHTML = '<div class="text-center py-8 text-sm text-slate-500"><div class="animate-spin inline-block w-6 h-6 border-2 border-blue-600 border-t-transparent rounded-full mb-2"></div><br>Loading result...</div>';
     title.textContent = 'Loading...';
     subtitle.textContent = '';
-    downloadBtn.classList.add('hidden');
+    if (downloadBtn) downloadBtn.classList.add('hidden');
     modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
 
-    fetch('/api/results/' + encodeURIComponent(resultId))
-        .then(r => r.json())
+    const url = '/api/results/' + encodeURIComponent(resultId);
+
+    fetch(url)
+        .then(r => {
+            if (!r.ok) throw new Error('Server returned ' + r.status + ' ' + r.statusText);
+            return r.json();
+        })
         .then(data => {
             if (!data.success || !data.result) {
-                body.innerHTML = '<div class="text-center py-8"><p class="text-sm font-bold text-rose-600">Result not found.</p><p class="text-xs text-slate-500 mt-1">The result may have been deleted or you may not have permission to view it.</p></div>';
+                body.innerHTML = '<div class="text-center py-8"><p class="text-sm font-bold text-rose-600">Result not found.</p><p class="text-xs text-slate-500 mt-1">The result may have been deleted or you may not have permission to view it. (ID: ' + resultId + ')</p></div>';
                 title.textContent = 'Error';
                 return;
             }
@@ -1651,10 +1660,8 @@ function viewResult(resultId) {
             title.textContent = r.studentName || 'Student Result';
             subtitle.textContent = (r.examTitle || '') + ' | ' + (r.subject || '') + ' | ' + grade;
 
-            // Build result display
             let html = '';
 
-            // Score banner
             html += `<div class="p-4 sm:p-6 rounded-2xl mb-4 text-white ${isPassed ? 'bg-gradient-to-br from-emerald-600 to-emerald-800' : 'bg-gradient-to-br from-rose-600 to-rose-800'}">
                 <div class="flex flex-wrap items-center justify-between gap-3">
                     <div>
@@ -1669,7 +1676,6 @@ function viewResult(resultId) {
                 </div>
             </div>`;
 
-            // Stats grid
             html += `<div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                 <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-center">
                     <p class="text-[10px] text-slate-500 font-bold uppercase">Score</p>
@@ -1689,7 +1695,6 @@ function viewResult(resultId) {
                 </div>
             </div>`;
 
-            // Question review (only if exam questions and failedQuestions are available)
             const questions = exam ? (exam.questions || []) : [];
             const failed = r.failedQuestions || [];
             if (failed.length > 0 || questions.length > 0) {
@@ -1744,9 +1749,10 @@ function viewResult(resultId) {
 
             body.innerHTML = html;
 
-            // Show download button
-            downloadBtn.classList.remove('hidden');
-            downloadBtn.onclick = function() { downloadGradedScript(r.examId, r.id); };
+            if (downloadBtn) {
+                downloadBtn.classList.remove('hidden');
+                downloadBtn.onclick = function() { downloadGradedScript(r.examId, r.id); };
+            }
         })
         .catch(err => {
             body.innerHTML = '<div class="text-center py-8"><p class="text-sm font-bold text-rose-600">Failed to load result.</p><p class="text-xs text-slate-500 mt-1">' + err.message + '</p></div>';
@@ -1757,6 +1763,7 @@ function viewResult(resultId) {
 function closeResultModal() {
     document.getElementById('result-modal').classList.add('hidden');
     document.getElementById('result-modal-body').innerHTML = '';
+    document.body.style.overflow = '';
 }
 
 // ====== CSV IMPORT ======
@@ -2190,6 +2197,17 @@ function switchTab(tab) {
         p.classList.toggle('hidden', p.id !== 'tab-' + tab);
     });
 }
+
+// ====== EVENT DELEGATION (ensures clicks work even with CSP or rendering issues) ======
+document.addEventListener('click', function(e) {
+    const target = e.target;
+    if (target.closest('button[data-download-script]')) return;
+    if (target.closest('button[data-view-result]')) return;
+    const viewRow = target.closest('[data-view-result]');
+    if (viewRow && !viewRow.closest('button')) {
+        viewResult(viewRow.getAttribute('data-view-result'));
+    }
+});
 
 // ====== INIT ======
 

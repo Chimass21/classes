@@ -87,7 +87,6 @@ Route::prefix('api')->group(function () {
     Route::get('/curriculum/classes', function () { return response()->json(['classes' => \App\Helpers\CurriculumData::getClasses()]); });
     Route::get('/curriculum/terms', function () { return response()->json(['terms' => \App\Helpers\CurriculumData::getTerms()]); });
     Route::get('/curriculum/weeks', function () { return response()->json(['weeks' => \App\Helpers\CurriculumData::getWeeks()]); });
-    Route::get('/results', [ResultController::class, 'apiIndex']);
     Route::get('/report-sheets', [ReportSheetController::class, 'apiIndex']);
     Route::post('/report-sheets', [ReportSheetController::class, 'store']);
     Route::post('/report-sheets/collate', [ReportSheetController::class, 'collate']);
@@ -109,9 +108,9 @@ Route::prefix('api')->group(function () {
     Route::post('/exams/{examId}/submit', [ExamController::class, 'apiSubmitExam']);
     Route::post('/exams/{examId}/autosave', [ExamController::class, 'apiAutoSave']);
     Route::post('/exams/{examId}/autosave/load', [ExamController::class, 'apiLoadAutoSave']);
-    Route::get('/results', [ResultController::class, 'apiIndex']);
-    Route::get('/results/{resultId}', [ResultController::class, 'apiShow']);
-    Route::get('/results/student/{studentId}', [ResultController::class, 'apiStudentResults']);
+    Route::get('/results', [ResultController::class, 'apiIndex'])->name('api.results.index');
+    Route::get('/results/{resultId}', [ResultController::class, 'apiShow'])->name('api.results.show');
+    Route::get('/results/student/{studentId}', [ResultController::class, 'apiStudentResults'])->name('api.results.student');
     Route::get('/notifications/user/{userId}', [HomeController::class, 'apiUserNotifications']);
     Route::post('/notifications/{id}/read', [HomeController::class, 'apiReadNotification']);
     Route::get('/lesson-notes', [HomeController::class, 'apiAllLessonNotes']);
