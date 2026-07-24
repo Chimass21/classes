@@ -184,29 +184,34 @@
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Week</label>
                                         <select id="plan-week" required class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-600"></select>
                                     </div>
-                                    <div>
+                                    <div class="relative">
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Duration</label>
                                         <input type="text" id="plan-duration" value="40 Minutes" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-600">
+                                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center voice-btn-container" data-input="plan-duration"></div>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
-                                    <div>
+                                    <div class="relative">
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Topic</label>
                                         <input type="text" id="plan-topic" required placeholder="e.g., Addition of Whole Numbers" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-600">
+                                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center voice-btn-container" data-input="plan-topic"></div>
                                     </div>
-                                    <div>
+                                    <div class="relative">
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Sub-topic (Optional)</label>
                                         <input type="text" id="plan-subtopic" placeholder="e.g., Addition of 3-digit numbers" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-600">
+                                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center voice-btn-container" data-input="plan-subtopic"></div>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
-                                    <div>
+                                    <div class="relative">
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">School Name</label>
                                         <input type="text" id="plan-school" value="ClassPortal Academy" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-600">
+                                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center voice-btn-container" data-input="plan-school"></div>
                                     </div>
-                                    <div>
+                                    <div class="relative">
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Teacher's Name</label>
                                         <input type="text" id="plan-teacher" value="{{ Session::get('user.name') }}" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-600">
+                                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center voice-btn-container" data-input="plan-teacher"></div>
                                     </div>
                                 </div>
                                 <button type="submit" id="plan-submit-btn" class="w-full py-2.5 bg-blue-600 text-white font-bold text-sm rounded-lg transition cursor-pointer">Generate Lesson Plan</button>
@@ -265,13 +270,15 @@
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
-                                    <div>
+                                    <div class="relative">
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Topic</label>
                                         <input type="text" id="note-topic" required placeholder="e.g., Linear Equations" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-600">
+                                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center voice-btn-container" data-input="note-topic"></div>
                                     </div>
-                                    <div>
+                                    <div class="relative">
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Sub-topic (Optional)</label>
                                         <input type="text" id="note-subtopic" placeholder="e.g., Solving by Substitution" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-600">
+                                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center voice-btn-container" data-input="note-subtopic"></div>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
@@ -327,19 +334,22 @@
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Week</label>
                                         <select id="q-week" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none"></select>
                                     </div>
-                                    <div>
+                                    <div class="relative">
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Count</label>
                                         <input type="number" id="q-count" required min="1" max="200" value="20" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-600">
+                                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center voice-btn-container" data-input="q-count"></div>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
-                                    <div>
+                                    <div class="relative">
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Topic</label>
                                         <input type="text" id="q-topic" required placeholder="e.g. Algebra" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-600">
+                                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center voice-btn-container" data-input="q-topic"></div>
                                     </div>
-                                    <div>
+                                    <div class="relative">
                                         <label class="text-xs font-semibold text-slate-600 block mb-1">Sub-topic (Optional)</label>
                                         <input type="text" id="q-subtopic" placeholder="e.g., Quadratic Equations" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:border-blue-600">
+                                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center voice-btn-container" data-input="q-subtopic"></div>
                                     </div>
                                 </div>
                                 <div class="grid grid-cols-2 gap-3">
@@ -1121,6 +1131,47 @@ async function generateQuestionsFromNote() {
     document.getElementById('q-subtopic').value = document.getElementById('note-subtopic').value;
     document.getElementById('q-count').value = 20;
     switchTab('questions');
+}
+
+// ====== SPEECH-TO-TEXT VOICE INPUT ======
+function createVoiceInput(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const container = document.querySelector(`[data-input="${inputId}"]`);
+    if (!container) return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>';
+        btn.className = 'inline-flex items-center justify-center opacity-60 text-slate-400 cursor-help p-1 rounded-md bg-slate-100';
+        btn.title = 'Speech not supported';
+        container.appendChild(btn);
+        return;
+    }
+    let recognition = null, listening = false;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>';
+    btn.className = 'inline-flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-slate-100 text-slate-600 hover:bg-slate-200 p-1 rounded-md';
+    btn.title = 'Use speech-to-text (microphone input)';
+    btn.onclick = function(e) {
+        e.preventDefault(); e.stopPropagation();
+        if (listening) { try { recognition.stop(); } catch(e) {} listening = false; resetBtn(); return; }
+        if (!recognition) {
+            recognition = new SR();
+            recognition.continuous = false; recognition.interimResults = false; recognition.lang = 'en-US';
+            recognition.onend = function() { listening = false; resetBtn(); };
+            recognition.onresult = function(ev) {
+                const t = ev.results[0][0].transcript;
+                if (t) { const cur = input.value.trim(); input.value = cur ? cur + ' ' + t : t; input.dispatchEvent(new Event('input')); }
+            };
+            recognition.onerror = function() { listening = false; resetBtn(); };
+        }
+        try { recognition.start(); listening = true; btn.className = 'inline-flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-rose-500 text-white animate-pulse p-1 rounded-md'; btn.innerHTML = '<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span><svg class="w-3.5 h-3.5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg></span>'; } catch(e) {}
+    };
+    function resetBtn() { btn.className = 'inline-flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-slate-100 text-slate-600 hover:bg-slate-200 p-1 rounded-md'; btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>'; }
+    container.appendChild(btn);
 }
 
 // ====== READ ALOUD ======
@@ -2208,6 +2259,11 @@ document.addEventListener('click', function(e) {
         viewResult(viewRow.getAttribute('data-view-result'));
     }
 });
+
+// ====== INITIALIZE VOICE INPUT BUTTONS ======
+['plan-duration','plan-topic','plan-subtopic','plan-school','plan-teacher',
+ 'note-topic','note-subtopic',
+ 'q-topic','q-subtopic','q-count'].forEach(createVoiceInput);
 
 // ====== INIT ======
 

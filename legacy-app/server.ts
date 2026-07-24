@@ -2042,6 +2042,9 @@ app.post("/api/ai/lesson-plan", async (req, res) => {
   const teacher = db.users.find((u) => u.id === teacherId);
 
   const isCalculationSubject = /math|physic|chemist|algebra|geometry|arithmetic|calculus|equation/i.test(subject);
+  const isPhysics = /physic/i.test(subject);
+  const isMaths = /math|algebra|geometry|arithmetic|calculus|trig|equation/i.test(subject);
+  const isChemistry = /chemist/i.test(subject);
 
   const prompt = `
 Generate a highly concise, professional lesson plan for:
@@ -2062,6 +2065,9 @@ Core Framework Requirements:
 1. STRICT ONE-PAGE A4 PORTRAIT LAYOUT CONDENSATION:
    The entire lesson plan MUST be highly compact and designed to comfortably fit on exactly one single A4 page. Write short, direct, high-density sentences. Eliminate excessive filler words.
 
+1. NO LaTeX MATH MODE DELIMITERS (CRITICAL):
+   NEVER wrap math expressions in $...$ or $$...$$ delimiters. The platform has NO MathJax/KaTeX rendering. All math formatting must use the specific commands below (\\frac{}, ^{}, _{}, \\sqrt{}, etc.) which the platform's math renderer converts automatically.
+
 2. MATH & STEP-BY-STEP ARRANGEMENT:
    Anytime calculations, formulas, or solutions to solved examples are provided, organize them step-by-step. Each solution stage or step MUST appear clearly on its own physical line (separated by standard newline \\n). Avoid clustered, squished, or messy inline formatting.
 
@@ -2077,6 +2083,9 @@ Core Framework Requirements:
 6. COMPREHENSIVE SPECIAL SYMBOLS, PHONETICS & NOTATION:
    You MUST properly use and write standard symbols relevant to the subject matter. Ensure that everything is readable and correctly formed:
    - MATHEMATICS: Use standard mathematical symbols (e.g., ±, ∑, √, ∛, ∝, ∞, ∠, ⊥, ∥, ∩, ∪, ∫, ≈, ≡, ≠, ≤, ≥, °, π, ÷, ×, −, +, =). Format algebraic equations and powers clearly. Superscripts must be formatted like x^{2}, while subscripts must be formatted like x_{1}. Never use slanted slashes for fractions; use LaTeX fractions like \\frac{a}{b}. Include trig ratios like \\sin\\theta, \\cos\\theta, \\tan\\theta.
+   - ${isMaths ? `MATHEMATICS LESSON PLAN: Include at least 2-3 fully solved worked examples with every step shown. Progress from simple to difficult. All notation must use × (not x), ÷ (not /), √, π, <sup> for powers, CSS fractions. ' : ''}
+   - ${isPhysics ? `PHYSICS LESSON PLAN: Use proper Greek letters (θ, ω, λ, μ, ρ, Ω, Δ). Format units: ms^{-1}, ms^{-2}, N, J, W, kg. Scientific notation: 6.02 × 10^{23} (not E-notation). Include formula, substitution, and step-by-step for any numerical problems. ' : ''}
+   - ${isChemistry ? `CHEMISTRY LESSON PLAN: Format all formulae with subscripts: H_{2}O, CO_{2}, H_{2}SO_{4}, NH_{3}. Use → or ⇌ for reaction arrows. Show state symbols: (s), (l), (g), (aq). Use superscripts for charges: Ca^{2+}, SO_{4}^{2-}, Na^{+}. ' : ''}
    - ENGLISH GRAMMAR & PUNCTUATION/LITERATURE: Use proper punctuations and phonetic aids including typographically correct quote marks (“...”, ‘...’), em-dash (—), en-dash (–), and ellipsis (…). Use grammatical annotations (e.g., brackets [ ] for phrases/clauses and underlines for focus elements). Always use standard accent marks where appropriate (e.g., é, è, á, ô).
    - PHONETIC SYMBOLS (IPA): When discussing pronunciation, sounds or phonetics, always use standard International Phonetic Alphabet (IPA) symbols wrapped in phonetic lines /.../ (e.g., vowels: /æ/, /ɑː/, /ɔː/, /ʊ/, /uː/, /ʌ/, /ɜː/, /ə/, /iː/, /ɪ/; diphthongs: /eɪ/, /aɪ/, /ɔɪ/, /əʊ/, /aʊ/, /ɪə/, /eə/, /ʊə/; consonants: /ʃ/, /ʒ/, /tʃ/, /dʒ/, /θ/, /ð/, /ŋ/).
    - PHYSICS SIGNS, SYMBOLS & CONSTANTS: Use standard Unicode Greek letters and physical operation signs (e.g., θ for angle, λ for wavelength, μ for coefficient of friction/magnetic permeability, ρ for density, Ω for electrical resistance, ω for angular velocity, Δ for change in a quantity, π, α, β, γ for nuclear radiations, etc.) with standardized metric units (e.g., m/s^{2}, kg·m/s, N·m, J/kg·K).
@@ -2106,8 +2115,8 @@ Please deliver the response in a JSON object conforming to this exact schema str
   "presentationSteps": [
     {
       "step": "Step 1",
-      "teachersActivities": "detailed description of what actions the teacher performs during this step during lesson development (using Arabic numerals, no asterisks)",
-      "studentsActivities": "detailed description of what pupils/students do during this step (using Arabic numerals, no asterisks)",
+      "teachersActivities": "brief description of what actions the teacher performs during this step during lesson development (using Arabic numerals, keep very short)",
+      "studentsActivities": "brief description of what pupils/students do during this step (using Arabic numerals, keep very short)",
       "classDiscussion": "active class group discussions, prompts, or debate triggers for mutual dialogue in this step",
       "learningPoints": "core learning points or cognitive concept corresponding to this step"
     }
@@ -2117,7 +2126,7 @@ Please deliver the response in a JSON object conforming to this exact schema str
   "conclusion": "Final lesson summary recap and closing instructional remarks written as sequential numbered points (no asterisks)"
 }
 
-Rule: Create exactly 4 highly compact presentation steps (maximum 1 or 2 brief sentences per cell, keep descriptions very brief and highly structured). The evaluation and assignment sections must be written as short lists with clear spacing. If ${subject} requires calculations (Mathematics, Physics, Chemistry), include 2 or 3 quick solved examples.
+Rule: Create exactly 4 highly compact presentation steps (maximum 1 or 2 brief sentences per cell, keep descriptions very brief and highly structured). The evaluation and assignment sections must be written as short lists with clear spacing. If ${subject} requires calculations (Mathematics, Physics, Chemistry), include 2 or 3 quick solved examples with proper step-by-step workings.
 Return only valid JSON. Do not write markdown tags outside the JSON representation.
 `;
 
@@ -2194,21 +2203,20 @@ app.post("/api/ai/lesson-note", async (req, res) => {
   if (isPhysics) {
     examplesRequirement = `
 1. FIRST, determine whether the topic "${topic}" in Physics genuinely involves calculations (e.g., motion, forces, energy, circuits, waves, optics with formulas) or is purely conceptual/theoretical (e.g., physics definitions, historical discoveries, classifications). Only include calculation examples if the topic actually requires numerical problem-solving.
-2. If the topic involves calculations: include exactly 5 fully solved calculation examples that are STRICTLY AND EXACTLY based on the topic "${topic}". Every single example MUST directly use the concepts, formulas, and principles of "${topic}" — do NOT generate generic or off-topic examples.
+2. INCLUDE EXACTLY 5-7 FULLY SOLVED CALCULATION EXAMPLES that are STRICTLY AND EXACTLY based on the topic "${topic}". Every single example MUST directly use the concepts, formulas, and principles of "${topic}" — do NOT generate generic or off-topic examples.
    - Arrange the examples sequentially so that they progress from easy/simple to difficult/advanced difficulty.
-   - Each example must be unique and topic-specific, containing:
-     - "Question [Number]"
-     - "Formula Used"
-     - "Step-by-step calculation process"
-     - "In-depth step-by-step explanation of physical principles/assumptions for each step"
-     - "Final Answer with proper SI/metric units (e.g., m/s^{2}, N, J, W, kg·m/s, Ω, V)"
+   - Example 1: Simple direct substitution (one formula, one step)
+   - Example 2: Moderate (requires formula selection and substitution)
+   - Example 3: Moderate-Hard (requires unit conversion + calculation)
+   - Example 4: Hard (multi-step, combining two or more formulas)
+   - Example 5: Examination standard (WAEC/NECO/JAMB style)
+   - Each example must include Formula Used, Given Data, Substitution with units, Step-by-step working, and Final Answer with correct SI units.
    - Do NOT abbreviate steps or provide simple final numbers. Provide detailed, teacher-standard text explanations for every single equation line.
-   If the topic does NOT involve calculations: include ZERO calculation examples — instead provide relevant illustrative examples or applications.
 3. PRACTICE EXERCISES SECTION:
    - Provide 3 to 5 brief practice exercises/questions directly after the solved examples for the students to test their understanding.
 `;
-    examplesHint = "Solved Physics calculation examples with Question, Formula, step-by-step Workings & Explanations, and Final Answer with correct SI units (only if topic involves calculations).";
-    examplesArrayPrompt = "Physics calculation examples with full step explanations and correct SI units (only if topic requires calculations, otherwise omit).";
+    examplesHint = "Solved Physics calculation examples with Question, Formula, step-by-step Workings & Explanations, and Final Answer with correct SI units (minimum 5 examples if topic involves calculations).";
+    examplesArrayPrompt = "Physics calculation examples with full step explanations and correct SI units (minimum 5 examples, progressing from easy to difficult).";
     evaluationArrayPrompt = "At least 5 to 10 distinct test/assessment questions (WASSCE/NECO/JAMB past-question-style) with multiple-choice options or direct questions to evaluate student understanding.";
     
     subjectSpecificPromptAddition = `
@@ -2218,30 +2226,34 @@ app.post("/api/ai/lesson-note", async (req, res) => {
   2. Learning Objectives (Student-focused behavioural objectives).
   3. Formulas: Place ALL relevant physics formulas related to the topic in a separate, dedicated section with names, variables, and SI units clearly labeled.
   4. Diagrams/Schematics: Incorporate structured ASCII drawings, grids, or clear graphical block schematics (e.g., representing forces, circuits, or vectors) where applicable.
-  5. Solved Calculation Examples (only if topic involves calculations): exactly 5 examples, progressing from easy to difficult with in-depth explanations for each step. If topic is conceptual/theoretical, provide illustrative examples instead.
+  5. MINIMUM 5 Solved Calculation Examples (all showing formula → substitution → step-by-step → answer with SI units). Progress from easy to difficult.
   6. At least 3 to 5 Practice Exercises for students.
   7. Class Activities and Assignment homework.
   8. Recapped conclusion.
-- Formatting: Format equations neatly and consistently. Superscripts must be formatted like x^{2}, while subscripts must be formatted like x_{1}. Fractions MUST display using standard LaTeX horizontal math fraction structure (e.g. \\frac{a}{b}) rather than slanted slashes (/).
+- Formatting: NEVER use $...$ or $$...$$ LaTeX delimiters. Format equations neatly and consistently. Superscripts must be formatted like x^{2}, while subscripts must be formatted like x_{1}. Fractions MUST display using standard LaTeX horizontal math fraction structure (e.g. \\frac{a}{b}) rather than slanted slashes (/). Use × for multiplication (not x), ÷ for division (not /). Use Greek letters: θ, ω, λ, μ, ρ, Ω, Δ. Scientific notation: 6.02 × 10^{23} (not E-notation).
 `;
   } else if (isMaths) {
     examplesRequirement = `
 1. FIRST, determine whether the topic "${topic}" in Mathematics genuinely involves calculations or numerical problem-solving (e.g., Algebra, Geometry, Trigonometry, Calculus, Arithmetic) or is purely conceptual/theoretical (e.g., Sets, Logic, Mathematical reasoning, History of mathematics, Statistics theory). Only include worked examples if the topic actually requires calculations.
-2. If the topic involves calculations: include exactly 5 fully solved mathematical examples that are STRICTLY AND EXACTLY based on the topic "${topic}". Every single example MUST directly apply the concepts, formulas, and methods of "${topic}" — do NOT generate generic or off-topic examples.
+2. INCLUDE EXACTLY 5-7 FULLY SOLVED MATHEMATICAL EXAMPLES that are STRICTLY AND EXACTLY based on the topic "${topic}". Every single example MUST directly apply the concepts, formulas, and methods of "${topic}" — do NOT generate generic or off-topic examples.
    - Arrange the examples sequentially so that they progress from simple/basic to advanced/complex difficulty.
-   - Each example must be unique and contain:
+   - Example 1: Simple/direct application of formula or method
+   - Example 2: Moderate (slightly more steps, careful substitution)
+   - Example 3: Moderate-Hard (word problem in Nigerian context)
+   - Example 4: Hard (multi-step, combines techniques)
+   - Example 5: Examination standard (WAEC/NECO/JAMB style)
+   - Each example must contain:
      - "Question [Number]"
      - "Formula Used (where applicable)"
      - "Step-by-step working process (complete calculations on separate lines)"
      - "Final Answer"
-     - "**Common Student Mistakes to Avoid**: Highlight typical conceptual/computational errors, sign slips, or formula misapplications that students should watch out for on this specific question."
+     - "Common Student Mistakes to Avoid": Highlight typical conceptual/computational errors, sign slips, or formula misapplications that students should watch out for on this specific question.
    - Never skip steps or use ellipses. Write out all intermediate calculations clearly.
-   If the topic does NOT involve calculations: include ZERO calculation examples — instead provide illustrative examples or applications.
 3. PRACTICE QUESTIONS:
    - Include 4 to 5 rigorous practice questions immediately after the solved examples for students to try on their own.
 `;
-    examplesHint = "Solved Maths examples with step-by-step workings, Formula, Final Answer, Common Student Mistakes to Avoid, and Practice Questions (only if topic involves calculations).";
-    examplesArrayPrompt = "Detailed mathematical solved examples with formulas, working steps, final answers, and common student mistakes to avoid (only if topic requires calculations).";
+    examplesHint = "Solved Maths examples with step-by-step workings, Formula, Final Answer, Common Student Mistakes to Avoid, and Practice Questions (minimum 5 examples).";
+    examplesArrayPrompt = "Detailed mathematical solved examples with formulas, working steps, final answers, and common student mistakes to avoid (minimum 5 examples, easy to difficult).";
     evaluationArrayPrompt = "At least 5 to 10 distinct, exam-style evaluation/assessment questions with multiple-choice options or direct questions.";
 
     subjectSpecificPromptAddition = `
@@ -2251,19 +2263,19 @@ app.post("/api/ai/lesson-note", async (req, res) => {
   2. Definitions of core mathematical terms and Key Concepts.
   3. Formulas: Include all relevant equations/rules in a separate, dedicated section.
   4. Diagrams/Graphs: Include dynamic ASCII-based graphs, grids, coordinate systems, or geometric representations (e.g., of angles, triangles, coordinates, or lines) where applicable.
-  5. Solved Mathematical Examples (only if topic involves calculations): exactly 5 examples, progressing from easy to difficult, complete with working steps and Common Student Mistakes to Avoid. If topic is conceptual, provide illustrative examples instead.
-  6. A list of Practice Questions following the examples.
+  5. MINIMUM 5 Solved Mathematical Examples, progressing from easy to difficult, complete with working steps and Common Student Mistakes to Avoid.
+  6. A list of Practice Questions following the examples (at least 5).
   7. Class Activities (discussion prompts or quiz tasks).
   8. Assigned homework.
-  9- Recapped conclusion.
-- Formatting: Format equations neatly and consistently. Superscripts must be x^{2}, while subscripts must be x_{1}. Fractions MUST display in LaTeX fraction structure: \\frac{numerator}{denominator} (e.g. \\frac{2}{3}). Slanted slashes (/) are strictly forbidden for fractions.
+  9. Recapped conclusion.
+- Formatting: NEVER use $...$ or $$...$$ LaTeX delimiters. Format equations neatly and consistently. Superscripts must be x^{2}, while subscripts must be x_{1}. Fractions MUST display in LaTeX fraction structure: \\frac{numerator}{denominator} (e.g. \\frac{2}{3}). Slanted slashes (/) are strictly forbidden for fractions. Use × (not x), ÷ (not /), √ for square roots, π for pi.
 `;
   } else if (isChemistry) {
     examplesRequirement = `
 1. DETERMINATION OF CALCULATIVE VS. THEORY TOPIC:
    Determine whether "${topic}" involves chemical calculations (e.g., mole concept, concentrations, gas laws, electrolysis, stoichiometry, chemical equilibrium, titration, thermodynamics, solubility, pH/acid-base calculations) or is purely theory-based.
-2. SOLVED CALCULATION EXAMPLES (FOR CALCULATIVE TOPICS — maximum 5):
-   - If calculations are involved, you MUST generate exactly 5 highly detailed solved calculation examples that are STRICTLY AND EXACTLY based on the topic "${topic}". Every single example MUST directly use the chemical concepts, formulas, and reactions of "${topic}" — do NOT generate generic or off-topic examples.
+2. SOLVED CALCULATION EXAMPLES (FOR CALCULATIVE TOPICS — minimum 5):
+   - INCLUDE EXACTLY 5-7 FULLY SOLVED CALCULATION EXAMPLES that are STRICTLY AND EXACTLY based on the topic "${topic}". Every single example MUST directly use the chemical concepts, formulas, and reactions of "${topic}" — do NOT generate generic or off-topic examples.
    - Each example must be unique and contain:
      - "Question [Number]"
      - "Formula Used"
@@ -2271,10 +2283,9 @@ app.post("/api/ai/lesson-note", async (req, res) => {
      - "Units clearly indicated for all intermediate quantities and final numbers"
      - "Step-by-step working process"
      - "Final Answer with proper Chemistry units (e.g., g/mol, mol/dm^{3}, cm^{3}, K)"
-3. DETAILED APPLIED EXAMPLES (FOR THEORETICAL TOPICS — at least 5):
+3. DETAILED APPLIED EXAMPLES (FOR THEORETICAL TOPICS — minimum 5):
    - If the topic is purely theory-based, you MUST provide at least five (5) rich, highly detailed applied examples, case studies, state comparisons, state symbols, and structural applications that are STRICTLY AND EXACTLY based on the topic "${topic}". Every single example MUST directly relate to "${topic}" — do NOT generate generic or off-topic examples.
-   - If the topic does NOT involve calculations, include ZERO calculation examples — only provide theoretical/applied examples.
-   - Balanced Chemical Equations: All reaction equations must be balanced beautifully with subscript state symbols (e.g., (aq), (s), (g), (l)) and reaction arrows (→ or ⇌). Use superscripts for charges (Na^{+}, SO_{4}^{2-}).
+   - Balanced Chemical Equations: All reaction equations must be balanced beautifully with proper subscripts (e.g., H_{2}O, CO_{2}), superscripts for charges (Na^{+}, SO_{4}^{2-}), state symbols (e.g., (aq), (s), (g), (l)) and reaction arrows (→ or ⇌).
 `;
     examplesHint = "5 chemistry calculation examples with formula, substitution, units, and workings, OR 5 highly detailed theoretical applied examples.";
     examplesArrayPrompt = "5 unique Chemistry calculation examples with substitutions, formulas, and units, or 5 extremely detailed theoretical applied examples.";
@@ -2287,11 +2298,11 @@ app.post("/api/ai/lesson-note", async (req, res) => {
   2. Balanced Chemical Equations: Write all reactions beautifully with proper subscripts (e.g., H_{2}O, CO_{2}), reactant state symbols (aq, s, g, l), and arrows (→ or ⇌). Use superscripts for ionic charges (Na^{+}, SO_{4}^{2-}).
   3. Key Concepts and detailed textbook-level prose explanations of chemical properties, trends, structures, or mechanisms.
   4. Formulas Section: List all relevant mathematical formulas for Chemistry in a separate, dedicated block, clarifying constants (e.g., Avogadro's number, gas constants) and their metric units.
-  5. Numerical or Applied Examples: Exactly 5 solved calculation examples for computational topics, or 5 detailed theoretical applied examples.
+  5. MINIMUM 5 Solved calculation examples for computational topics, or 5 detailed theoretical applied examples.
   6. ASCII experimental drawings: Illustrate setups (e.g. fractional distillation, gas collection, electrolysis, titration) using structured text or ASCII art/grids where appropriate.
   7. Class Activities and Homework Assignment questions.
-  8- Recapped conclusion.
-- Formatting: Form equations and units neatly. Avoid slanted slashes (/) for fractions or compound units; use horizontal LaTeX fractions like \\frac{g}{dm^{3}} or write out unit terms nicely (e.g., cm^{3}, mol/dm^{3}).
+  8. Recapped conclusion.
+- Formatting: NEVER use $...$ or $$...$$ LaTeX delimiters. Form equations and units neatly. Avoid slanted slashes (/) for fractions or compound units; use horizontal LaTeX fractions like \\frac{g}{dm^{3}} or write out unit terms nicely (e.g., cm^{3}, mol/dm^{3}). Use × for multiplication (not x). Use → and ⇌ for reaction arrows.
 `;
   } else {
     examplesRequirement = `
@@ -2379,8 +2390,8 @@ Deliver the contents in a JSON schema structure:
   "presentationSteps": [
     {
       "step": "Step 1",
-      "teachersActivities": "detailed description of what actions the teacher performs during this step during lesson development (using Arabic numerals, no asterisks)",
-      "studentsActivities": "detailed description of what pupils/students do during this step (using Arabic numerals, no asterisks)",
+      "teachersActivities": "brief description of what actions the teacher performs during this step during lesson development (using Arabic numerals, keep very short)",
+      "studentsActivities": "brief description of what pupils/students do during this step (using Arabic numerals, keep very short)",
       "classDiscussion": "active class group discussions, prompts, or debate triggers for mutual dialogue in this step",
       "learningPoints": "core learning points or cognitive concept corresponding to this step"
     }
@@ -2458,6 +2469,49 @@ app.post("/api/ai/generate-questions", async (req, res) => {
                        topic.trim().toLowerCase() === "all the topics" ||
                        topic.trim().toLowerCase() === "any";
 
+  const isMath = /math|algebra|geometry|arithmetic|calculus|trig|equation/i.test(subject);
+  const isPhysics = /physic/i.test(subject);
+  const isChemistry = /chemist/i.test(subject);
+
+  let subjectSpecificRules = "";
+  if (isMath) {
+    subjectSpecificRules = `
+CRITICAL — MATHEMATICS QUESTION REQUIREMENTS:
+- Nearly 100% of questions must be CALCULATION-BASED requiring mathematical working
+- Do NOT include definition, list, state, or theory recall questions
+- Every question must require at least 2-3 steps of calculation
+- Cover beginner, intermediate, and advanced levels
+- Include algebra, geometry, trigonometry, statistics, probability, mensuration problems
+- Use proper notation: × (not x), ÷ (not /), <sup> for powers, √ for square roots, π for pi
+- Format fractions with \\frac{}{} LaTeX — NEVER slanted slashes
+- NEVER use $...$ or $$...$$ LaTeX delimiters around math expressions
+`;
+  } else if (isPhysics) {
+    subjectSpecificRules = `
+CRITICAL — PHYSICS QUESTION DISTRIBUTION (MANDATORY):
+- 80% CALCULATION QUESTIONS: Require formula selection, substitution with units, calculation, unit conversion
+- 20% THEORY/CONCEPTUAL QUESTIONS: Test concepts, definitions, principles, laws, applications
+
+CALCULATION QUESTIONS MUST:
+- Provide numerical data requiring formula application
+- Include proper units in questions and options
+- Require formula selection before substitution
+- Test ability to convert units where applicable
+- Follow WAEC and NECO standards
+
+Notation: Use proper units (ms^{-1}, N, J, W, kg, ms^{-2}), Greek letters (θ, ω, λ, μ, ρ, Δ), scientific notation (6.02 × 10^{23}).
+`;
+  } else if (isChemistry) {
+    subjectSpecificRules = `
+CRITICAL — CHEMISTRY QUESTION REQUIREMENTS:
+- Use proper subscripts for chemical formulae: H_{2}O, CO_{2}, H_{2}SO_{4}, NH_{3}
+- Use proper superscripts for charges: Ca^{2+}, SO_{4}^{2-}, Na^{+}
+- Use → for reaction arrows, ⇌ for reversible reactions
+- Show state symbols: (s), (l), (g), (aq)
+- Include calculation questions for quantitative chemistry (mole concept, concentrations)
+`;
+  }
+
   const prompt = `
 Generate exactly ${numQuestions} objective multiple choice questions for an educational test of high academic standard.
 Subject: ${subject}
@@ -2471,6 +2525,8 @@ ${noteContent}
 -----
 IMPORTANT REQUIREMENT: The questions MUST be strictly based on and derived from the content in the lesson note provided above.` : ""}
 
+${subjectSpecificRules || ""}
+
 Core Framework Requirements:
 1. CURRICULUM & DATABASE SOURCE (myschool.com style WASSCE, NECO, JAMB):
    The questions must mimic official past examination questions on WASSCE, NECO, and JAMB typical of the databases kept on myschool.com. Ensure they are highly realistic, academic, rigorously structured, and reflect the syllabus, standard context, and nomenclature of these examination boards. Prefix some questions option layouts or text with exam tags if relevant, or simply reflect their exact test patterns.
@@ -2481,6 +2537,8 @@ Core Framework Requirements:
    - Sentence / statement completion (e.g., "An oxide which dissolves in water to form an alkaline solution is ________.")
    - Direct numerical calculation or algebraic problem-solving (e.g., "A car travels 50m in... Calculate...")
    - Practical diagnostics, definitions, or scenario logic.
+   ${isMath ? '- For Mathematics: nearly 100% must be CALCULATION-BASED. Every question must require mathematical working.' : ''}
+   ${isPhysics ? '- For Physics: 80% calculation questions, 20% theory/conceptual. Calculation questions must require formula selection, substitution, and unit handling.' : ''}
 
 3. DYNAMIC SYLLABUS DISCOVERY ("all topics" vs "particular topic"):
    - If the selected scope topic state above indicates "All topics", generate questions that are distributed across a broad cross-section of different modules/topics of the entire standard syllabus for the subject "${subject}" (e.g., if Chemistry, cover atoms/elements/bonding, stoichiometry, gas laws, electrolysis, organic chemistry, non-metals, physical, etc.). Do NOT restrict to a single concept.
@@ -2490,12 +2548,15 @@ Core Framework Requirements:
    If the subject is "English Language", you MUST include questions testing English phonetic symbols, vowel/consonant sound matching, diphthongs, stress patterns, or rhyming words. Wrap all phonetic symbols in standard IPA brackets /.../ (e.g., vowels: /æ/, /ɑː/, /ɔː/, /ʊ/, /uː/, /ʌ/, /ɜː/, /ə/, /iː/, /ɪ/; diphthongs: /eɪ/, /aɪ/, /ɔɪ/, /əʊ/, /aʊ/, /ɪə/, /eə/, /ʊə/; consonants: /ʃ/, /ʒ/, /tʃ/, /dʒ/, /θ/, /ð/, /ŋ/). Ensure standard IPA representations are clearly and correctly formulated (e.g., "Which of the following words contains the vowel sound represented by the phonetic symbol /æ/?").
 
 5. MATHEMATICAL SYMBOLS, SHAPES, & FORMATTING:
-   If the subject is "Mathematics", "Physics", or any quantitative science, you MUST use appropriate math symbols in the questions and options (e.g., ±, ∑, √, ∛, ∝, ∞, ∠, ⊥, ∥, ∩, ∪, ∫, ≈, ≡, ≠, ≤, ≥, °, π, ÷, ×, −, +, =, etc.). Furthermore, you MUST include questions that test mathematical shapes (e.g., triangles, cylinders, cones, spheres, trapeziums, rhombuses, parallelograms, polygons, segments, etc.), calculating their areas, volumes, perimeters, angles, theorems, or coordinate geometries in an academic past-question style.
+   NEVER wrap math in $...$ or $$...$$ delimiters. If the subject is "Mathematics", "Physics", or any quantitative science, you MUST use appropriate math symbols in the questions and options (e.g., ±, ∑, √, ∛, ∝, ∞, ∠, ⊥, ∥, ∩, ∪, ∫, ≈, ≡, ≠, ≤, ≥, °, π, ÷, ×, −, +, =, etc.). Furthermore, you MUST include questions that test mathematical shapes (e.g., triangles, cylinders, cones, spheres, trapeziums, rhombuses, parallelograms, polygons, segments, etc.), calculating their areas, volumes, perimeters, angles, theorems, or coordinate geometries in an academic past-question style.
    - For superscripts, always write x^{2}, x^{y}, or similar (with curly braces around exponent).
    - For subscripts, always write x_{1}, H_{2}O, or similar (with curly braces around index).
    - You are STRICTLY FORBIDDEN from writing fractions with slanted slashes (e.g. do NOT write 1/2 or 3/4). Write molecular or math fractions using standard horizontal LaTeX math fraction structures: \frac{numerator}{denominator} (e.g. \frac{3}{4} or \frac{a}{b}). Ensure this rule is followed in both the question text and all option choices A, B, C, D.
+   - Use × for multiplication (not x), ÷ for division (not /), √ for square roots, π for pi
    - Anytime solution steps are requested or calculations are provided, organize them step-by-step with each step on its own clear physical line using standard newlines \n. Avoid messy, squished text.
    - You are STRICTLY FORBIDDEN from using "C.C.", "c.c.", or "cc" for volume or any other quantity. Instead, fully spell out the term, using "cm^{3}" (cubic centimeters) or "mL" or "milliliters" explicitly. Every calculation formula, step, constant, and unit must be extremely clear and easily readable by students, leaving absolutely no room for confusion. Do not append any weird characters or trailing strings.
+   ${isPhysics ? '- For Physics: Use proper Greek letters (θ, ω, λ, μ, ρ, Ω, Δ). Format units properly: ms^{-1}, ms^{-2}, N, J, W, kg. Use scientific notation: 6.02 × 10^{23} (not E-notation).' : ''}
+   ${isChemistry ? '- For Chemistry: Format all compounds with subscripts: H_{2}O, CO_{2}, H_{2}SO_{4}, NH_{3}, C_{2}H_{5}OH. Format charges with superscripts: Na^{+}, Ca^{2+}, Cl^{-}, SO_{4}^{2-}. Use → and ⇌ for reaction arrows. Show state symbols: (aq), (s), (g), (l).' : ''}
 
 6. ENGLISH GRAMMAR, LIT & PUNCTUATION/LITERATURE symbols:
    Use elegant typographic punctuation and aids: curly quote pairs (“...”, ‘...’), em-dash (—), en-dash (–), ellipses (…), standard word accents (é, è, á, ô), and brackets [ ] for phrases or grammatical clause representations.
@@ -2503,6 +2564,8 @@ Core Framework Requirements:
 7. PHYSICS & CHEMISTRY SIGNS, CONSTANTS, AND CHEMICAL NOTATIONS:
    - For Physics, use correct Greek variables and operations (e.g., θ for angle, λ for wavelength, μ for coefficient of friction, ρ for density, Ω for electrical resistance, ω for angular velocity, Δ for change, etc.) alongside standardized physical units (e.g., m/s^{2}, kg·m/s, N·m, J/kg·K).
    - For Chemistry, formulate compounds beautifully using subscript notation (e.g. H_{2}O, CO_{2}, C_{6}H_{12}O_{6}, H_{2}SO_{4}) and ionic charges with superscript notation (e.g. Na^{+}, Ca^{2+}, Cl^{-}, SO_{4}^{2-}). State symbols should be neatly wrapped in parentheses (e.g. (aq), (s), (g), (l)) and reaction paths should always utilize proper arrow characters (e.g., →, ⇌, \rightleftharpoons, or \rightarrow).
+   - Format fractions using CSS or LaTeX \\frac{}{} — NEVER slanted slashes
+   - Scientific notation: 6.02 × 10^{23} (not E-notation, not 6.02e23)
 
 Deliver the response in a JSON schema representing a list of questions:
 {

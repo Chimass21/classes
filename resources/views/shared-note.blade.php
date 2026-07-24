@@ -15,7 +15,7 @@
             </p>
         </div>
         <div class="prose max-w-none text-sm">
-            {!! $note['content'] ?? '' !!}
+            {!! \App\Helpers\MathRenderer::render($note['content'] ?? '') !!}
         </div>
 
         @if(!empty($note['sections']))
@@ -23,7 +23,7 @@
                 @if(!empty($section['heading']) && !empty($section['content']))
                 <div class="mt-6">
                     <h3 class="text-lg font-bold text-slate-800 mb-3">{{ $section['heading'] }}</h3>
-                    <div class="text-sm">{!! $section['content'] !!}</div>
+                    <div class="text-sm">{!! \App\Helpers\MathRenderer::render($section['content']) !!}</div>
                 </div>
                 @endif
             @endforeach
@@ -34,7 +34,7 @@
             <h3 class="text-lg font-bold text-slate-800 mb-3">Evaluation Questions</h3>
             <ol class="text-sm pl-5 space-y-1">
                 @foreach($note['evaluationQuestions'] as $eq)
-                <li>{{ $eq }}</li>
+                <li>{!! \App\Helpers\MathRenderer::render($eq) !!}</li>
                 @endforeach
             </ol>
         </div>
@@ -43,7 +43,7 @@
         @if(!empty($note['assignment']))
         <div class="mt-6">
             <h3 class="text-lg font-bold text-slate-800 mb-3">Assignment</h3>
-            <div class="text-sm">{{ $note['assignment'] }}</div>
+            <div class="text-sm">{!! \App\Helpers\MathRenderer::render($note['assignment']) !!}</div>
         </div>
         @endif
 
@@ -52,7 +52,7 @@
             <h3 class="text-sm font-bold text-emerald-700 mb-2">Key Points to Remember</h3>
             <ul class="text-sm space-y-1 list-disc pl-5 text-emerald-700">
                 @foreach($note['keyPoints'] as $kp)
-                <li>{{ $kp }}</li>
+                <li>{!! \App\Helpers\MathRenderer::render($kp) !!}</li>
                 @endforeach
             </ul>
         </div>

@@ -690,9 +690,24 @@ class AIController extends Controller
         $stepCountInstruction = "Generate {$minSteps}-{$maxSteps} behavioural objectives, {$minSteps}-{$maxSteps} corresponding lesson steps, and {$minSteps}-{$maxSteps} evaluation questions. The exact number depends on how many distinct sub-topics naturally arise from \"{$topic}\". Each sub-topic becomes one objective → one step → one evaluation question. Aim for at least 4 steps; use up to {$maxSteps} if the topic merits it.";
 
         $isMath = $this->categorizeSubject($subject) === 'math';
+        $isStem = $this->categorizeSubject($subject) === 'stem';
 
         if ($isMath) {
             return $this->buildMathLessonPlanPrompt($subject, $class, $term, $week, $topic, $schoolName, $teacherName, $duration, $ageRange, $weekScheme, $subtopicsInstruction, $stepCountInstruction, $minSteps, $maxSteps);
+        }
+
+        $stemFormatting = '';
+        if ($isStem) {
+            $stemFormatting = "\n\nSCIENTIFIC NOTATION REQUIREMENTS (for Physics/Chemistry):\n"
+                . "- Use <sup> for exponents: ms<sup>-1</sup>, ms<sup>-2</sup>, 10<sup>6</sup>\n"
+                . "- Use <sub> for chemical formulae: H<sub>2</sub>O, CO<sub>2</sub>, H<sub>2</sub>SO<sub>4</sub>\n"
+                . "- Use × for multiplication (not x), ÷ for division (not /)\n"
+                . "- Use Greek letters: θ, ω, λ, μ, ρ, Δ where applicable\n"
+                . "- Use →, ⇌ for chemical reaction arrows\n"
+                . "- Format fractions with CSS — NEVER slanted slashes\n"
+                . "- Include formula, substitution, and step-by-step calculation for any numerical problems\n"
+                . "- Scientific notation: 6.02 × 10<sup>23</sup> (not E-notation)\n"
+                . "- Show all SI units clearly: ms<sup>-1</sup>, kg, N, J, W, Pa";
         }
 
         return <<<PROMPT
@@ -715,13 +730,14 @@ CONTEXT:
 
 Generate a COMPLETE, DETAILED LESSON PLAN in STRICT JSON format for "{$topic}" in {$subject} for {$class}.
 
-CRITICAL — FILL THE ENTIRE A4 PAGE:
-- Write each behavioural objective as a full, detailed sentence (not a phrase).
-- Each step's teacherActivities and learnerActivities must be 2-3 detailed sentences each (not just one line).
-- learningPoints must be a substantive paragraph.
-- Evaluation must contain {$evalCount}-{$maxSteps} numbered questions (one per objective), each a full sentence.
-- Summary and conclusion must each be at least 3-4 sentences.
-- Previous knowledge must be 2-3 sentences about what students already know.
+CRITICAL — MUST FIT EXACTLY ONE A4 PAGE:
+- Each behavioural objective: full detailed sentence.
+- Each step: teacherActivities = 2-3 detailed sentences, learnerActivities = 2-3 detailed sentences.
+- learningPoints = substantive paragraph.
+- Evaluation: {$evalCount} numbered questions, each a full sentence.
+- Summary and conclusion: 3-4 sentences each.
+- Previous knowledge: 2-3 sentences.
+- Write detailed, rich content but use tight wording — every word must earn its place. No filler or fluff.
 
 Return ONLY valid JSON with this exact structure (no markdown, no code fences). The arrays must have the SAME length (behaviouralObjectives count === lessonSteps count === evaluation question count):
 {
@@ -750,6 +766,8 @@ RULES:
 - Use Nigerian examples (₦aira, Nigerian locations, cultural contexts).
 - Every field must contain substantial content — no empty or one-line entries.
 - If the topic is "{$topic}", do NOT write about anything else.
+- Use Nigeria-centric examples and contexts throughout.
+{$stemFormatting}
 PROMPT;
     }
 
@@ -840,6 +858,7 @@ RULES:
 - Allocate at least 60% of class time to students solving problems (guided + independent)
 - Evaluation questions must test calculation ability, not theory recall
 - Assignment must be substantial problem-solving practice
+- ALL mathematical expressions must use proper notation: × (not x), ÷ (not /), √, π, <sup> for powers, CSS fractions
 PROMPT;
     }
 
@@ -865,7 +884,27 @@ PROMPT;
         }
 
         $subjectGuidance = match($subjectCategory) {
-            'stem' => "This is a SCIENCE subject. Include: relevant formulae, worked examples (step-by-step), calculations, derivations, laws/principles, experiments/practical activities, labelled [DIAGRAM: description] placeholders, and real-world applications where appropriate. Use step-by-step problem-solving for calculations. Prioritize clarity in explaining concepts before introducing formulae.
+            'stem' => "This is a SCIENCE subject. Include: relevant formulae, worked examples (step-by-step), calculations, derivations, laws/principles, experiments/practical activities, labelled [DIAGRAM: description] placeholders, and real-world applications where appropriate.
+
+CRITICAL — YOU MUST INCLUDE A MINIMUM OF 5 FULLY SOLVED NUMERICAL EXAMPLES for any Physics or Chemistry topic that involves calculations:
+
+For PHYSICS topics with calculations — INCLUDE EXACTLY 5-7 WORKED EXAMPLES:
+  Example 1: Simple direct substitution (one formula, one step)
+  Example 2: Moderate (requires formula selection and substitution)
+  Example 3: Moderate-Hard (requires unit conversion + calculation)
+  Example 4: Hard (multi-step, combining two or more formulas)
+  Example 5: Examination standard (WAEC/NECO/JAMB style)
+  Each example must include: Formula Used → Given Data → Substitution with units → Step-by-step working → Final Answer with correct SI units
+
+For CHEMISTRY topics with calculations — INCLUDE EXACTLY 5-7 WORKED EXAMPLES:
+  Balance ALL chemical equations with proper state symbols
+  Use proper subscripts (H₂O, CO₂, H₂SO₄, NH₃, C₂H₅OH, CaCO₃, CH₄, NaCl)
+  Use proper superscripts for charges (Ca²⁺, SO₄²⁻, Na⁺, Cl⁻, Fe³⁺, OH⁻)
+  Use → for reaction arrows, ⇌ for reversible reactions
+  Show state symbols: (s), (l), (g), (aq)
+  Format ionic equations with proper charges
+
+For topics that are purely theoretical/conceptual — include 5 illustrative examples or case studies instead
 
 FORMATTING REQUIREMENTS FOR EQUATIONS AND FORMULAE:
 - Use <sup> for exponents and powers: m/s<sup>2</sup>, N/m<sup>2</sup>, 10<sup>6</sup>
@@ -973,34 +1012,51 @@ You are an experienced Nigerian Mathematics teacher and curriculum expert. Write
 CRITICAL — MATHEMATICS IS A PRACTICAL SUBJECT. This lesson note must focus on SOLVING PROBLEMS, not writing long explanations. Follow these rules strictly:
 
 CONTENT BALANCE (MANDATORY):
-- At least 70-90% of the lesson must be worked examples, calculations, and practice exercises
-- No more than 10-30% should be descriptive text or explanations
+- At least 80-90% of the lesson must be worked examples, calculations, and practice exercises
+- No more than 10-20% should be descriptive text or explanations
 - Keep all explanations short, clear, and straight to the point
+
+MINIMUM 5 FULLY SOLVED WORKED EXAMPLES — YOU MUST INCLUDE AT LEAST 5:
+- Example 1: Simple/basic — direct application of the formula or method
+- Example 2: Moderate — requires slightly more steps or careful substitution
+- Example 3: Moderate-Hard — word problem or application in Nigerian context
+- Example 4: Hard — multi-step problem requiring combined techniques
+- Example 5: Examination standard — WAEC/NECO/JAMB style question
+- (Include more examples if the topic merits it, up to 8)
+- EVERY example must show ALL steps — do NOT skip any calculation
+- Include the formula used, substitution, step-by-step working, and final answer
+- Include "Common Mistake to Avoid" notes after each example
 
 STRUCTURE:
 1. BRIEF DEFINITION OR EXPLANATION (only if necessary — keep it to 2-4 sentences max)
 2. FORMULAE / RULES / THEOREMS (present clearly, with notation explanations)
-3. WORKED EXAMPLES (this is the MAIN part of the lesson):
+3. WORKED EXAMPLES (this is the MAIN part of the lesson — MINIMUM 5):
    - Start with simple examples, progress to more difficult ones
    - Show EVERY step clearly — do not skip calculations
    - Explain WHY each step is taken where necessary
    - Include alternative methods of solving where appropriate
    - Use <pre> or <code> blocks for step-by-step working
-4. PRACTICE EXERCISES (questions for students WITHOUT answers)
+   - Format all mathematical expressions using proper notation:
+     × (not x), ÷ (not /), ≤, ≥, ≠, ±, ∞, √, π, θ, α, β, Δ, Σ, ∛, ∝, ∠, °, ∥, ⊥, ≈
+     Use <sup> for powers: x<sup>2</sup>, 2<sup>3</sup>, e<sup>x</sup>
+     Use CSS inline-block for fractions — NEVER slanted slashes
+4. PRACTICE EXERCISES (questions for students WITHOUT answers — at least 5)
 5. COMMON MISTAKES AND EXAMINATION TIPS (short, bullet-point format)
 6. SHORTCUTS / MENTAL MATH TRICKS (where applicable)
 
-Example format for worked examples — each example should be structured like this:
+Example format for worked examples — each example MUST have this structure:
 <div class="example">
-<h4>Example 1: [Title]</h4>
+<h4>Example 1: [Title — e.g., Solving Quadratic Equation by Formula Method]</h4>
+<p><strong>Formula:</strong> [State the formula clearly]</p>
 <p><strong>Solution:</strong></p>
 <pre>
 Step 1: [show working]
 Step 2: [show working]
+Step 3: [show working]
 ...
-Final Answer: [answer]
+Final Answer: [answer with proper notation]
 </pre>
-<p><em>Explanation:</em> [brief note on why this method works, 1-2 sentences max]</p>
+<p><em>Common Mistake:</em> [1 sentence about error students often make]</p>
 </div>
 
 For the CONTENT field, use these HTML headings as appropriate:
@@ -1023,7 +1079,7 @@ Return ONLY valid JSON:
   "subtopics": ["Relevant subtopics"],
   "learningObjectives": ["By the end of the lesson, students should be able to: ..."],
   "introduction": "VERY BRIEF — 1-2 sentences connecting to prior knowledge or stating the importance of this topic in Mathematics",
-  "content": "FULL HTML — MAIN BODY (~2-3 A4 pages). 70-90% of this must be worked examples, step-by-step solutions, and practice exercises. Use <h3> for section headings, <pre> or <code> for mathematical workings, <table> for comparison/formulae. Each worked example must show all steps clearly. Include practice exercises after each section without solutions. FORMAT ALL MATHEMATICAL EXPRESSIONS using proper notation as specified above.",
+  "content": "FULL HTML — MAIN BODY (~3-4 A4 pages). 80-90% of this must be worked examples, step-by-step solutions, and practice exercises. Use <h3> for section headings, <pre> or <code> for mathematical workings, <table> for comparison/formulae. INCLUDE A MINIMUM OF 5 WORKED EXAMPLES. Each worked example must show all steps clearly. Include practice exercises after each section without solutions. FORMAT ALL MATHEMATICAL EXPRESSIONS using proper notation as specified above.",
   "sections": [
     {
       "heading": "Additional section heading if needed",
@@ -1050,45 +1106,57 @@ PROMPT;
     private function mathFormattingInstructions(): string
     {
         return <<<'INSTRUCTIONS'
-MATHEMATICAL NOTATION FORMATTING — You MUST follow these rules for ALL expressions, equations, formulae, and calculations:
+MATHEMATICAL AND SCIENTIFIC NOTATION FORMATTING — You MUST follow these rules for ALL expressions, equations, formulae, and calculations:
 
-FRACTIONS:
+FRACTIONS (CRITICAL):
 - NEVER use slanted slashes for fractions like 3/4 or (2x+1)/(x-3)
-- Instead, use inline-block CSS fraction format:
+- ALWAYS use inline-block CSS fraction format:
   <span style="display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 2px;font-size:0.9em">
-    <span style="border-bottom:2px solid #333;padding:0 6px 2px">3</span>
-    <span style="padding:2px 6px 0">4</span>
+    <span style="border-bottom:2px solid #333;padding:0 6px 2px">numerator</span>
+    <span style="padding:2px 6px 0">denominator</span>
   </span>
-- Or for simpler fractions in text, use the Unicode fraction characters: ½ ⅓ ⅔ ¼ ¾ ⅛ etc.
-- For algebraic fractions, use the CSS fraction format described above.
+- For simple fractions in text, use Unicode fraction characters: ½ ⅓ ⅔ ¼ ¾ ⅛ ⅜ ⅝ ⅞
+- For algebraic fractions, ALWAYS use the CSS fraction format described above
+- NEVER write a/b, x/y, or any fraction with a forward slash
 
-SUPERSCHRIPTS AND SUBSCRIPTS (MANDATORY):
+SUPERSCRIPTS AND SUBSCRIPTS (MANDATORY):
 - Use <sup> for powers and exponents: x<sup>2</sup>, 2<sup>3</sup>, e<sup>x</sup>, a<sup>n</sup>
-- Use <sub> for indices and chemical formulae: log<sub>2</sub>x, H<sub>2</sub>O, CO<sub>2</sub>, H<sub>2</sub>SO<sub>4</sub>, NH<sub>3</sub>, Na<sub>2</sub>CO<sub>3</sub>, C<sub>2</sub>H<sub>5</sub>OH
-- For compound superscripts like x², use <sup>2</sup> inside the HTML
+- Use <sub> for indices and chemical formulae: log<sub>2</sub>x, H<sub>2</sub>O, CO<sub>2</sub>, H<sub>2</sub>SO<sub>4</sub>, NH<sub>3</sub>, Na<sub>2</sub>CO<sub>3</sub>, C<sub>2</sub>H<sub>5</sub>OH, CaCO<sub>3</sub>, CH<sub>4</sub>, NaCl
+- For compound superscripts like x²ⁿ, use <sup>2n</sup> inside the HTML
+- For compound subscripts like Fe₂O₃, use <sub>2</sub>O<sub>3</sub>
 
-MATHEMATICAL SYMBOLS (use Unicode or HTML entities):
-- × for multiplication (not x): 5 × 3
-- ÷ for division (not /): 12 ÷ 4
+MATHEMATICAL SYMBOLS (use Unicode or HTML entities — MANDATORY):
+- × for multiplication (not x, not *): 5 × 3, 2 × 10<sup>3</sup>
+- ÷ for division (not /): 12 ÷ 4, 144 ÷ 12
 - ≤ for less than or equal to: x ≤ 5
 - ≥ for greater than or equal to: y ≥ 3
 - ≠ for not equal to: x ≠ 0
 - ± for plus-minus: x = ±√4
 - ∞ for infinity: x → ∞
-- √ for square root: √16, √(x+1), use &radic; or the Unicode √
-- π for pi: πr²
-- θ, α, β, Δ, Σ for standard Greek letters
+- √ for square root: √16, √(x+1)
+- ∛ for cube root: ∛27, ∛(x+1)
+- π for pi: πr<sup>2</sup>, 2πr, πd
+- θ, α, β, γ, δ, ε, λ, μ, ω, ρ, φ, ψ for standard Greek letters
+- Δ for change/delta: Δx, Δt, ΔT
+- Σ for sum/summation
 - → and ⇌ for reaction arrows (Chemistry)
-- ° for degrees: 90°, 180°, 360°
-- ∠ for angles
-- ∥ for parallel
-- ⊥ for perpendicular
+- ° for degrees: 90°, 180°, 360°, 45°
+- ∠ for angles: ∠ABC, ∠θ
+- ∥ for parallel: AB ∥ CD
+- ⊥ for perpendicular: AB ⊥ CD
+- ≈ for approximately equal: π ≈ 3.142
+- ≡ for identical to/equivalence
+- ∩ for intersection, ∪ for union
+- ∫ for integration, ∬ for double integration
+- ∝ for proportional to: F ∝ ma
+- ∑ for summation
 
 BRACKETS AND GROUPING:
 - Always use clear, correctly matched brackets: ( ), [ ], { }
 - For nested expressions, alternate bracket types: { [ ( ) ] }
 - Never write confusing nested brackets like ((((x+1)))) — use different bracket types
 - Ensure every opening bracket has a matching closing bracket
+- Use \| or | for absolute value: |x|, |-5|
 
 ALIGNMENT OF WORKED SOLUTIONS:
 - Use <table> or <pre> with clear spacing for multi-step calculations
@@ -1097,31 +1165,44 @@ ALIGNMENT OF WORKED SOLUTIONS:
 - Keep expressions on separate lines rather than chaining with = on one long line
 - Indent continuation lines to show logical grouping
 
-CHEMICAL EQUATIONS (for Chemistry):
-- Use subscripts for all chemical formulae: H<sub>2</sub>SO<sub>4</sub>, CaCO<sub>3</sub>
-- Use → for reaction arrows, ⇌ for reversible reactions
-- Show state symbols: (s), (l), (g), (aq)
-- Balance all equations with proper coefficients
-- Use <sup> for charges and oxidation states: Ca<sup>2+</sup>, SO<sub>4</sub><sup>2-</sup>, Fe<sup>3+</sup>
-- Format ionic equations with proper charges
-
-PHYSICS EQUATIONS (for Physics):
-- Display equations exactly as in standard textbooks
-- Use proper Greek letters: θ, ω, α, μ, λ, ρ, etc.
-- Format units properly: ms<sup>-1</sup>, ms<sup>-2</sup>, N, J, W, kg, m, s
+PHYSICS EQUATIONS AND NOTATION:
+- Display all equations exactly as in standard textbooks
+- Use proper Greek letters: θ (theta), ω (omega), α (alpha), μ (mu), λ (lambda), ρ (rho), Δ (Delta)
+- Format units properly: ms<sup>-1</sup>, ms<sup>-2</sup>, N, J, W, kg, m, s, A, V, Ω, Hz, Pa
 - Distinguish variables (italic concept) from units (roman concept)
 - Show derivations step-by-step with clear algebraic manipulation
-
-SCIENTIFIC NOTATION:
-- Use × 10<sup>n</sup> format (not E-notation): 6.02 × 10<sup>23</sup>
+- Use subscripts for related quantities: v<sub>1</sub>, v<sub>2</sub>, F<sub>g</sub>, E<sub>k</sub>, E<sub>p</sub>
+- Scientific notation: 6.02 × 10<sup>23</sup> (not E-notation, not 6.02e23)
 - Format large numbers with commas: 1,000,000
 
+CHEMICAL EQUATIONS AND NOTATION:
+- Use subscripts for ALL chemical formulae: H<sub>2</sub>SO<sub>4</sub>, CaCO<sub>3</sub>, C<sub>2</sub>H<sub>5</sub>OH, CH<sub>4</sub>, NH<sub>3</sub>, NaCl
+- Use → for reaction arrows, ⇌ for reversible reactions (equilibrium)
+- Show state symbols for ALL substances: (s), (l), (g), (aq)
+- Balance ALL equations with proper coefficients
+- Use <sup> for charges and oxidation states: Ca<sup>2+</sup>, SO<sub>4</sub><sup>2-</sup>, Fe<sup>3+</sup>, Na<sup>+</sup>, Cl<sup>-</sup>, OH<sup>-</sup>, NH<sub>4</sub><sup>+</sup>
+- Format ionic equations with proper charges
+- Examples of properly formatted equations:
+  * Zn(s) + H<sub>2</sub>SO<sub>4</sub>(aq) → ZnSO<sub>4</sub>(aq) + H<sub>2</sub>(g)
+  * N<sub>2</sub>(g) + 3H<sub>2</sub>(g) ⇌ 2NH<sub>3</sub>(g)
+  * CaCO<sub>3</sub>(s) + 2HCl(aq) → CaCl<sub>2</sub>(aq) + H<sub>2</sub>O(l) + CO<sub>2</sub>(g)
+  * H<sup>+</sup>(aq) + OH<sup>-</sup>(aq) → H<sub>2</sub>O(l)
+
+SCIENTIFIC NOTATION:
+- Use × 10<sup>n</sup> format: 6.02 × 10<sup>23</sup>, 3.0 × 10<sup>8</sup>, 1.6 × 10<sup>-19</sup>
+- Use proper formatting: negative exponents use <sup>-n</sup>
+- For very small numbers: 1.0 × 10<sup>-6</sup> (not 0.000001)
+- Format large numbers with commas: 1,000,000,000
+
 GENERAL RULES:
+- NEVER use $...$ or $$...$$ LaTeX delimiters. The platform does NOT have MathJax/KaTeX, so ALL math must use inline HTML entities and CSS formatting as specified above.
 - Verify every bracket is correctly paired before output
 - Every expression must be clear on both mobile and desktop screens
 - Never produce confusing expressions due to incorrect spacing or misplaced symbols
 - Use <code> or <pre> for multi-line algebraic working
+- Use <table> for structured data, comparisons, and formula summaries
 - The final output should look like a professionally typeset textbook
+- Use consistent formatting throughout the entire document
 INSTRUCTIONS;
     }
 
@@ -1151,6 +1232,8 @@ INSTRUCTIONS;
         }
 
         $isMath = $this->categorizeSubject($subject) === 'math';
+        $isPhysics = stripos($subject, 'Physics') !== false;
+        $isChemistry = stripos($subject, 'Chemistry') !== false;
 
         if ($isMath) {
             return $this->buildMathQuestionsPrompt($subject, $topic, $askCount, $class, $term, $week, $includeTheory, $subTopic, $difficulty);
@@ -1170,14 +1253,62 @@ INSTRUCTIONS;
         $subtopicLine = $subTopic ? "\nSUB-TOPIC: \"{$subTopic}\". Write questions specifically about this sub-topic within \"{$topic}\"." : '';
         $difficultyLine = $difficulty && $difficulty !== 'Standard' ? " DIFFICULTY: {$difficulty}." : '';
 
+        // Physics: 80% calculation-based, 20% theory
+        $physicsInstructions = '';
+        if ($isPhysics) {
+            $physicsInstructions = <<<PHYSICS
+
+CRITICAL — PHYSICS QUESTION DISTRIBUTION (MANDATORY):
+- 80% CALCULATION QUESTIONS: Require formula selection, substitution with units, calculation, and unit conversion where appropriate.
+- 20% THEORY/CONCEPTUAL QUESTIONS: Test concepts, definitions, principles, laws, applications, and interpretation of scientific ideas.
+
+CALCULATION QUESTIONS MUST:
+- Provide numerical data that requires formula application
+- Include proper units in both questions and options
+- Require formula selection before substitution
+- Test ability to convert units where applicable
+- Follow WAEC and NECO examination standards
+
+EXAMPLES OF CALCULATION QUESTIONS:
+- "A car of mass 1200 kg accelerates from rest to 20 ms⁻¹ in 10 s. Calculate the force exerted by the engine."
+- "A ray of light strikes a plane mirror at an angle of 35° to the normal. What is the angle of reflection?"
+- "Calculate the resistance of a wire of length 2 m and cross-sectional area 4 × 10⁻⁶ m² if its resistivity is 1.7 × 10⁻⁸ Ωm."
+
+AVOID too many definition/recall questions. Focus on application and problem-solving.
+
+All Physics questions must use:
+- × for multiplication (not x), ÷ for division (not /)
+- <sup> for exponents and units: ms<sup>-1</sup>, ms<sup>-2</sup>, N, J, W, kg
+- Proper Greek letters: θ, ω, λ, μ, ρ, Δ
+- Scientific notation: 6.02 × 10<sup>23</sup> (not E-notation)
+PHYSICS;
+        }
+
+        // Chemistry: balance equations, calculations
+        $chemistryInstructions = '';
+        if ($isChemistry) {
+            $chemistryInstructions = <<<CHEMISTRY
+
+CRITICAL — CHEMISTRY QUESTIONS MUST:
+- Include balanced chemical equations where relevant
+- Use proper subscripts for chemical formulae: H<sub>2</sub>O, CO<sub>2</sub>, H<sub>2</sub>SO<sub>4</sub>, NH<sub>3</sub>, C<sub>2</sub>H<sub>5</sub>OH
+- Use proper superscripts for charges: Ca<sup>2+</sup>, SO<sub>4</sub><sup>2-</sup>, Na<sup>+</sup>, Cl<sup>-</sup>
+- Include calculation questions for quantitative chemistry (mole concept, concentrations, gas laws)
+- Use → for reaction arrows, ⇌ for reversible reactions
+- Show state symbols: (s), (l), (g), (aq)
+- Format fractions using CSS — NEVER slanted slashes
+CHEMISTRY;
+        }
+
         return <<<PROMPT
 You are a Nigerian examination expert. Generate {$askCount} objective (multiple-choice) questions{$theoryPart} about "{$topic}" in {$subject} for {$class} level ({$term}).{$difficultyLine}
 {$subtopicLine}
+{$physicsInstructions}
+{$chemistryInstructions}
 
 SUBJECT: {$subject} — Every question MUST be about {$subject} content.
 TOPIC: {$topic} — Every question MUST test knowledge specifically about "{$topic}" within {$subject}.
 CLASS: {$class} — Match difficulty to {$class} per the Nigerian curriculum (NERDC/UBEC/WASSCE/NECO/JAMB).
-{$difficultyLine}
 
 CRITICAL RULE — EVERY question stem MUST contain the word "{$topic}" or a direct reference to a specific subtopic within {$topic}. If the stem doesn't mention {$topic}, the question is OFF-TOPIC and will be rejected.
 
@@ -1215,41 +1346,50 @@ PROMPT;
         return <<<PROMPT
 You are a Nigerian Mathematics examination expert. Generate a MATHEMATICS QUESTION POOL about "{$topic}" in {$subject} for {$class} level ({$term}). Difficulty: {$difficulty}.
 
-CRITICAL — MATHEMATICS QUESTIONS MUST TEST CALCULATION AND PROBLEM-SOLVING ABILITY, NOT THEORY RECALL. Avoid questions that ask for definitions, explanations, or lists. Focus on computational questions.
+CRITICAL — NEARLY 100% OF MATHEMATICS QUESTIONS MUST BE CALCULATION-BASED. Do NOT include definition, list, state, or theory recall questions. Every question must require mathematical working.
 
 {$subtopicLine}
 
 Generate {$count} objective (multiple-choice) questions{$theoryPart}. Distribute them as:
 
 QUESTION DISTRIBUTION:
-- 60% Computational questions (solve, calculate, evaluate, simplify, find)
-- 20% Word problems (real-life scenarios using Nigerian contexts — ₦aira, market, measurements)
-- 10% Application questions (apply formula to given data)
-- 10% Conceptual understanding (short calculations testing understanding of concepts)
+- 50% Direct computational (solve, calculate, evaluate, simplify, find the value of)
+- 25% Word problems (real-life scenarios using Nigerian contexts — ₦aira, market, farm measurements, business)
+- 15% Application questions (apply formula to given data, interpret results)
+- 10% Multi-step problem-solving (combine 2+ techniques to find answer)
 
 DIFFICULTY BREAKDOWN:
-- 30% Easy (direct application of formula, simple substitution)
-- 50% Moderate (require multiple steps, combining concepts)
-- 20% Difficult (problem-solving, examination-standard, multi-step word problems)
+- 25% Beginner (direct formula application, simple substitution — but still requires calculation)
+- 50% Intermediate (require multiple steps, combining concepts, careful algebra)
+- 25% Advanced (examination-standard, multi-step word problems, WAEC/NECO/JAMB style)
 
-QUESTION TYPES must include:
-- Simplify/Evaluate expressions
-- Solve equations/inequalities
-- Calculate numerical values
-- Find unknown quantities
-- Interpret graphs/charts
-- Apply formulae
-- Word problems with Nigerian context (e.g., "A trader bought 50 bags of rice at ₦..." or "Calculate the area of a rectangular farm in Kaduna...")
+QUESTION TYPES MUST INCLUDE:
+- Simplify algebraic expressions
+- Solve equations/inequalities (linear, quadratic, simultaneous)
+- Calculate numerical values (area, volume, perimeter, distance, speed, etc.)
+- Find unknown quantities using given data
+- Evaluate trigonometric expressions
+- Apply logarithmic and indicial laws
+- Solve problems on sequences and series
+- Vector and matrix operations
+- Statistical calculations (mean, median, mode, standard deviation)
+- Probability calculations
+- Calculus problems (differentiation, integration, rates of change)
+- Mensuration problems (area, volume of solids)
+- Coordinate geometry calculations
 
-AVOID:
-- "What is the definition of..." — this is Mathematics, not theory
-- "List the properties of..." — unless specifically relevant
-- "State the..." — minimize these
-- Non-mathematical questions
+ABSOLUTELY FORBIDDEN:
+- "What is the definition of..." — DO NOT INCLUDE
+- "List the properties of..." — DO NOT INCLUDE
+- "State the..." — DO NOT INCLUDE unless followed by a calculation
+- "Which of the following is a type of..." — DO NOT INCLUDE
+- Any question that can be answered without doing a calculation
 
-Notation: Use proper mathematical symbols in questions and options — × (not x), ÷ (not /), use <sup> for powers, use √ for square roots, use π for pi, etc. Format fractions with CSS or Unicode.
+Notation: Use proper mathematical symbols in questions and options — × (not x), ÷ (not /), use <sup> for powers, use √ for square roots, use π for pi, etc. Format fractions with CSS or Unicode — NEVER slanted slashes.
 
-Each MCQ: 4 UNIQUE options (A/B/C/D), exactly ONE correct answer. Numerical options should include plausible wrong answers (common calculation errors, wrong formula application). For "none of the above" or "all of the above" use sparingly.
+Each MCQ: 4 UNIQUE options (A/B/C/D), exactly ONE correct answer. Numerical options must include plausible wrong answers derived from common calculation errors (wrong formula, sign error, unit conversion mistake). For "none of the above" or "all of the above" use sparingly (max 1 per set).
+
+AVOID one-step arithmetic (e.g., "What is 5 + 3?"). Every question must require at least 2-3 steps of reasoning.
 
 Return ONLY valid JSON:
 {"objectives":[{"id":1,"question":"Calculate ...","A":"opt","B":"opt","C":"opt","D":"opt","answer":"A"}]{$theoryPart}}
@@ -1262,9 +1402,31 @@ PROMPT;
         $askCount = min((int) ceil($count * 1.25), 200);
 
         $isMath = $this->categorizeSubject($subject) === 'math';
+        $isPhysics = stripos($subject, 'Physics') !== false;
+        $isChemistry = stripos($subject, 'Chemistry') !== false;
 
         if ($isMath) {
             return $this->buildMathQuestionsFromNotePrompt($subject, $topic, $askCount, $class, $term, $week, $includeTheory, $lessonNoteContent, $subTopic);
+        }
+
+        $physicsCalcRequirement = '';
+        if ($isPhysics) {
+            $physicsCalcRequirement = "\n\nPHYSICS QUESTION DISTRIBUTION (MANDATORY):\n"
+                . "- 80% Calculation questions (formula selection, substitution, unit conversion, calculations)\n"
+                . "- 20% Theory/Conceptual questions (definitions, principles, laws, applications)\n"
+                . "- Use proper units and scientific notation: ms<sup>-1</sup>, N, J, W, kg, ms<sup>-2</sup>\n"
+                . "- Use Greek letters: θ, ω, λ, μ, ρ, Δ\n"
+                . "- Format fractions with CSS — NEVER slanted slashes\n";
+        }
+
+        $chemistryFormatting = '';
+        if ($isChemistry) {
+            $chemistryFormatting = "\n\nCHEMISTRY FORMATTING (MANDATORY):\n"
+                . "- Use proper subscripts: H<sub>2</sub>O, CO<sub>2</sub>, H<sub>2</sub>SO<sub>4</sub>, NH<sub>3</sub>\n"
+                . "- Use proper superscripts for charges: Ca<sup>2+</sup>, SO<sub>4</sub><sup>2-</sup>, Na<sup>+</sup>\n"
+                . "- Use → for reaction arrows, ⇌ for reversible reactions\n"
+                . "- Show state symbols: (s), (l), (g), (aq)\n"
+                . "- Include calculation questions for quantitative chemistry topics\n";
         }
 
         $theoryPart = $includeTheory ? '
@@ -1314,6 +1476,8 @@ CRITICAL: The subject is {$subject}. The topic is {$topic}. The class level is {
 - About {$topic} specifically (not another topic in {$subject})
 - Appropriate for {$class} level difficulty
 - Based strictly on the lesson note content below
+{$physicsCalcRequirement}
+{$chemistryFormatting}
 
 Do NOT write questions about general knowledge, other subjects, other topics within {$subject}, or anything not covered in the lesson note.
 
@@ -1335,6 +1499,9 @@ QUESTION STYLE GUIDELINES:
 - Each question must have 4 distinct options (A, B, C, D) — one correct, three wrong but plausible
 - Randomize which letter has the correct answer across all questions
 - Ensure wrong options are also derived from the lesson note content (not made up from outside knowledge)
+- For Mathematics: nearly 100% must be calculation questions requiring mathematical working
+- For Physics: 80% calculation questions with proper units, 20% theory/conceptual
+- For Chemistry: include balanced equations, proper subscripts/superscripts, calculation questions
 
 SELF-VERIFICATION:
 After writing all {$askCount} questions, verify EVERY SINGLE ONE:
@@ -1387,22 +1554,25 @@ PROMPT;
         return <<<PROMPT
 You are a Nigerian Mathematics examination expert. Generate {$count} MATHEMATICS QUESTIONS based STRICTLY on the lesson note below for {$subject} ({$class}, {$term}, Week {$week}).
 
-CRITICAL — These are MATHEMATICS questions. They must test CALCULATION, not theory. Focus on:
+CRITICAL — These are MATHEMATICS questions. Nearly 100% must test CALCULATION, not theory. Focus on:
 - Computational problems (solve, calculate, simplify, evaluate, find)
 - Word problems using Nigerian contexts (₦aira, local measurements, markets)
 - Application of formulae and methods shown in the lesson note
 - Problems requiring logical reasoning and step-by-step working
+- Multi-step problems that combine techniques
 
 QUESTION DISTRIBUTION:
-- 60% Direct computational questions (testing the exact methods in the lesson note)
-- 20% Word problems applying the methods to real-life situations
-- 10% Multi-step problems requiring combined techniques
-- 10% Conceptual multiple-choice (short calculations that test understanding)
+- 50% Direct computational questions (exact methods from the lesson note, requiring calculation)
+- 25% Word problems applying methods to real-life situations
+- 15% Multi-step problems requiring combined techniques
+- 10% Application questions requiring formula selection and substitution
 
 DIFFICULTY:
-- 30% Easy (direct substitution, one-step)
-- 50% Moderate (2-3 steps, requiring method application)
-- 20% Difficult (multi-step problem-solving, examination standard)
+- 25% Easy (direct substitution, 2-3 step calculations)
+- 50% Moderate (3-5 steps, method application, careful working)
+- 25% Difficult (multi-step problem-solving, WAEC/NECO/JAMB examination standard)
+
+AVOID: definition questions, list questions, "what is" questions that don't require calculation.
 
 LESSON NOTE CONTENT:
 {$extract}
@@ -1651,23 +1821,23 @@ PROMPT;
                 $example = $val['example'] ?? $val['final_answer'] ?? '';
 
                 if (!empty($heading)) {
-                    $parts[] = "<h4>" . htmlspecialchars(is_string($heading) ? $heading : $key, ENT_QUOTES, 'UTF-8') . "</h4>";
+                    $parts[] = "<h4>" . (is_string($heading) ? $heading : $key) . "</h4>";
                 }
                 if (!empty($body)) {
-                    $parts[] = "<p>" . htmlspecialchars(is_string($body) ? $body : '', ENT_QUOTES, 'UTF-8') . "</p>";
+                    $parts[] = "<p>" . (is_string($body) ? $body : '') . "</p>";
                 }
                 if (!empty($example)) {
-                    $parts[] = "<p><strong>Example:</strong> " . htmlspecialchars(is_string($example) ? $example : '', ENT_QUOTES, 'UTF-8') . "</p>";
+                    $parts[] = "<p><strong>Example:</strong> " . (is_string($example) ? $example : '') . "</p>";
                 }
                 if (is_array($points)) {
                     foreach ($points as $pt) {
                         if (is_string($pt)) {
-                            $parts[] = "<li>" . htmlspecialchars($pt, ENT_QUOTES, 'UTF-8') . "</li>";
+                            $parts[] = "<li>" . $pt . "</li>";
                         } elseif (is_array($pt)) {
                             $ptHeading = $pt['title'] ?? $pt['heading'] ?? '';
                             $ptDesc = $pt['description'] ?? $pt['body'] ?? '';
                             if ($ptHeading) {
-                                $parts[] = "<li><strong>" . htmlspecialchars($ptHeading, ENT_QUOTES, 'UTF-8') . ":</strong> " . htmlspecialchars($ptDesc, ENT_QUOTES, 'UTF-8') . "</li>";
+                                $parts[] = "<li><strong>" . $ptHeading . ":</strong> " . $ptDesc . "</li>";
                             }
                         }
                     }
@@ -2257,13 +2427,20 @@ PROMPT;
                  . "- Analyze the topic and choose headings that are naturally relevant. Do NOT force any section.\n"
                  . "- Every sentence must be about \"{$topic}\".\n"
                  . "- Use Nigeria-centric examples (₦aira, Nigerian cities, local culture).\n"
+                 . "- For Mathematics/Physics/Chemistry: INCLUDE AT LEAST 5 FULLY SOLVED WORKED EXAMPLES with every step shown.\n"
+                 . "- Use proper mathematical notation: × (not x), ÷ (not /), <sup> for powers, <sub> for indices/chemical formulae\n"
+                 . "- Format fractions with CSS inline-block — NEVER slanted slashes\n"
+                 . "- Use → and ⇌ for reaction arrows, state symbols (s), (l), (g), (aq) for Chemistry\n"
+                 . "- Use √ for square roots, π for pi, θ, ω, λ, μ, ρ, Δ for Greek letters\n"
+                 . "- Scientific notation: 6.02 × 10<sup>23</sup> (not E-notation)\n"
+                 . "- Show ALL calculation steps — do not skip any\n"
                  . "- Return ONLY valid JSON with this flexible structure:\n"
-                 . '  {"topic":"...","introduction":"...","content":"FULL HTML with <h3>/<h4> headings","sections":[{"heading":"...","content":"..."}],"evaluationQuestions":["..."],"keyPoints":["..."]}' . "\n";
+                 . '  {"topic":"...","introduction":"...","content":"FULL HTML with <h3>/<h4> headings, minimum 5 worked examples","sections":[{"heading":"...","content":"..."}],"evaluationQuestions":["..."],"keyPoints":["..."]}' . "\n";
         }
 
         return "You are a Nigerian examination expert for {$subject} ({$class}).\n\n"
              . "CRITICAL: Generate {$count} objective questions about \"{$topic}\".\n\n"
-             . "PREVIOUS ATTEMPT REJECTED — QUESTIONS WERE OFF-TOPIC.\n\n"
+             . "PREVIOUS ATTEMPT REJECTED — QUESTIONS WERE OFF-TOPIC OR TOO SIMPLE.\n\n"
              . "STRICT RULES — FOLLOW EVERY ONE:\n"
              . "- SUBJECT: {$subject}. TOPIC: \"{$topic}\". CLASS: {$class}.\n"
              . "- EVERY question stem MUST contain the exact word \"{$topic}\" or one of its key subtopics.\n"
@@ -2273,6 +2450,10 @@ PROMPT;
              . "- At most 2 WH-word starters per 10 questions.\n"
              . "- 4 UNIQUE options (A/B/C/D), exactly ONE correct answer.\n"
              . "- Write questions appropriate for a {$class} student in the Nigerian curriculum.\n"
+             . "- For Mathematics questions: nearly 100% must be CALCULATION-BASED. No definition/list/state questions.\n"
+             . "- For Physics questions: 80% calculation, 20% theory. Use proper units and scientific notation.\n"
+             . "- Use proper notation: × (not x), ÷ (not /), <sup> for powers, √ for square roots, π for pi\n"
+             . "- Format fractions with CSS — NEVER slanted slashes\n"
              . "- Return ONLY valid JSON in this format: {\"objectives\":[{\"id\":1,\"question\":\"stem that mentions {$topic}\",\"A\":\"opt\",\"B\":\"opt\",\"C\":\"opt\",\"D\":\"opt\",\"answer\":\"A\"}]}\n";
     }
 

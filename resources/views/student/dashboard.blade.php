@@ -302,9 +302,10 @@
                                 <strong class="text-xs text-indigo-700 font-extrabold block" id="selected-assignment-title">Select homework task left</strong>
                             </div>
                             <form id="homework-form" class="space-y-3">
-                                <div>
+                                <div class="relative">
                                     <label class="text-[10px] text-slate-500 font-bold block mb-1">Your Answers Summary:</label>
                                     <textarea required rows="4" id="homework-answer" class="w-full p-3 text-xs bg-white border border-slate-250 rounded-xl focus:border-indigo-600 outline-none font-semibold" placeholder="Paste or write your homework answers essay here..."></textarea>
+                                    <div class="absolute right-2 top-7 z-10 flex items-center voice-btn-container" data-input="homework-answer"></div>
                                 </div>
                                 <div class="space-y-1">
                                     <label class="text-[10px] text-slate-500 font-bold block">Optional File attachment:</label>
@@ -394,18 +395,21 @@
                             </div>
                             <hr class="border-indigo-800/40">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
+                                <div class="relative">
                                     <label class="text-xs font-bold text-indigo-200 block mb-1.5">Topic</label>
                                     <input type="text" id="student-note-topic" required placeholder="e.g. Algebra, Photosynthesis" class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full focus:outline-none" />
+                                    <div class="absolute right-2 top-8 z-10 flex items-center voice-btn-container" data-input="student-note-topic"></div>
                                 </div>
-                                <div>
+                                <div class="relative">
                                     <label class="text-xs font-bold text-indigo-200 block mb-1.5">Sub-topic (Optional)</label>
                                     <input type="text" id="student-note-subtopic" placeholder="e.g., Quadratic Equations" class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full focus:outline-none" />
+                                    <div class="absolute right-2 top-8 z-10 flex items-center voice-btn-container" data-input="student-note-subtopic"></div>
                                 </div>
                             </div>
-                            <div>
+                            <div class="relative">
                                 <label class="text-xs font-bold text-indigo-200 block mb-1">Sub-topics (optional — one per line)</label>
                                 <textarea id="student-note-subtopics" rows="3" placeholder="e.g.&#10;Definition and types of algebra&#10;Algebraic expressions&#10;Solving linear equations" class="bg-white border-none rounded-xl py-2.5 px-3 text-xs w-full focus:outline-none resize-none"></textarea>
+                                <div class="absolute right-2 top-7 z-10 flex items-center voice-btn-container" data-input="student-note-subtopics"></div>
                             </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
@@ -505,13 +509,15 @@
                             </div>
                             <hr class="border-indigo-800/40">
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
+                                <div class="relative">
                                     <label class="text-xs font-bold text-indigo-200 block mb-1.5">Topic</label>
                                     <input required type="text" id="practice-topic" placeholder="e.g. 'Algebra', 'Calculus'" class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full focus:outline-none" />
+                                    <div class="absolute right-2 top-8 z-10 flex items-center voice-btn-container" data-input="practice-topic"></div>
                                 </div>
-                                <div>
+                                <div class="relative">
                                     <label class="text-xs font-bold text-indigo-200 block mb-1.5">Sub-topic (Optional)</label>
                                     <input type="text" id="practice-subtopic" placeholder="e.g., Solving by Substitution" class="bg-white border-none rounded-xl py-3 px-3 text-sm w-full focus:outline-none" />
+                                    <div class="absolute right-2 top-8 z-10 flex items-center voice-btn-container" data-input="practice-subtopic"></div>
                                 </div>
                             </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1156,6 +1162,11 @@ document.addEventListener('DOMContentLoaded', function() {
     createVoiceInput('join-exam-input');
     createVoiceInput('exam-search');
     createVoiceInput('practice-topic');
+    createVoiceInput('practice-subtopic');
+    createVoiceInput('homework-answer');
+    createVoiceInput('student-note-topic');
+    createVoiceInput('student-note-subtopic');
+    createVoiceInput('student-note-subtopics');
     loadData();
 });
 </script>

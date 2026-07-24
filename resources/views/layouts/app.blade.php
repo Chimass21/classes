@@ -56,6 +56,7 @@
                 <form id="chat-form" onsubmit="sendChatMessage(event)" class="p-3 bg-white border-t border-slate-100 flex items-center gap-2 shrink-0">
                     <div class="relative flex-1 flex items-center">
                         <input type="text" id="chat-input" placeholder="Type a message..." class="w-full bg-slate-50 border border-slate-200 rounded-xl py-2 pl-3 pr-10 text-xs font-semibold focus:outline-none focus:border-violet-600 focus:ring-1 focus:ring-violet-600">
+                        <div class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center voice-btn-container" data-input="chat-input"></div>
                     </div>
                     <button type="submit" id="chat-send-btn" disabled class="w-8.5 h-8.5 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-xs hover:bg-violet-750 active:scale-95 disabled:bg-slate-100 disabled:text-slate-400 transition cursor-pointer">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
@@ -67,9 +68,9 @@
                 <form id="ticket-form" onsubmit="submitTicket(event)" class="flex-1 p-4 flex flex-col justify-between overflow-y-auto h-full">
                     <div class="space-y-3.5">
                         <div class="p-3 bg-violet-50 text-violet-800 rounded-2xl text-[11px] font-semibold leading-relaxed border border-violet-100">Submit high-priority requests or constructive reviews here. Austin and our technical support group will review every item.</div>
-                        <div><label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Your Name</label><input required type="text" id="ticket-name" placeholder="e.g. Principal Abigail" class="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs font-semibold focus:outline-none focus:border-violet-600"></div>
-                        <div><label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Reply Email</label><input required type="email" id="ticket-email" placeholder="abigail@wisdomacademy.com" class="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs font-semibold focus:outline-none focus:border-violet-600"></div>
-                        <div><label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Message Details</label><textarea required rows="4" id="ticket-message" placeholder="Describe feature request or complaint details..." class="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs font-semibold focus:outline-none focus:border-violet-600 resize-none"></textarea></div>
+                        <div class="relative"><label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Your Name</label><input required type="text" id="ticket-name" placeholder="e.g. Principal Abigail" class="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs font-semibold focus:outline-none focus:border-violet-600"><div class="absolute right-2 top-7 z-10 flex items-center voice-btn-container" data-input="ticket-name"></div></div>
+                        <div class="relative"><label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Reply Email</label><input required type="email" id="ticket-email" placeholder="abigail@wisdomacademy.com" class="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs font-semibold focus:outline-none focus:border-violet-600"><div class="absolute right-2 top-7 z-10 flex items-center voice-btn-container" data-input="ticket-email"></div></div>
+                        <div class="relative"><label class="text-[10px] text-slate-500 font-bold uppercase block mb-1">Message Details</label><textarea required rows="4" id="ticket-message" placeholder="Describe feature request or complaint details..." class="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs font-semibold focus:outline-none focus:border-violet-600 resize-none"></textarea><div class="absolute right-2 top-7 z-10 flex items-center voice-btn-container" data-input="ticket-message"></div></div>
                     </div>
                     <div class="pt-4 shrink-0">
                         <div id="ticket-success" class="hidden bg-emerald-50 text-emerald-800 p-2 text-center rounded-xl text-xs font-bold border border-emerald-200">Message Recorded Successfully!</div>
@@ -194,6 +195,51 @@ function submitTicket(e) {
 document.getElementById('chat-input').addEventListener('input', function() {
     document.getElementById('chat-send-btn').disabled = !this.value.trim();
 });
+
+// ====== SPEECH-TO-TEXT VOICE INPUT ======
+function createVoiceInput(inputId) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    const container = document.querySelector(`[data-input="${inputId}"]`);
+    if (!container) return;
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SR) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>';
+        btn.className = 'inline-flex items-center justify-center opacity-60 text-slate-400 cursor-help p-1 rounded-md bg-slate-100';
+        btn.title = 'Speech not supported';
+        container.appendChild(btn);
+        return;
+    }
+    let recognition = null, listening = false;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>';
+    btn.className = 'inline-flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-slate-100 text-slate-600 hover:bg-slate-200 p-1 rounded-md';
+    btn.title = 'Use speech-to-text (microphone input)';
+    btn.onclick = function(e) {
+        e.preventDefault(); e.stopPropagation();
+        if (listening) { try { recognition.stop(); } catch(e) {} listening = false; resetBtn(); return; }
+        if (!recognition) {
+            recognition = new SR();
+            recognition.continuous = false; recognition.interimResults = false; recognition.lang = 'en-US';
+            recognition.onend = function() { listening = false; resetBtn(); };
+            recognition.onresult = function(ev) {
+                const t = ev.results[0][0].transcript;
+                if (t) { const cur = input.value.trim(); input.value = cur ? cur + ' ' + t : t; input.dispatchEvent(new Event('input')); }
+            };
+            recognition.onerror = function() { listening = false; resetBtn(); };
+        }
+        try { recognition.start(); listening = true; btn.className = 'inline-flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-rose-500 text-white animate-pulse p-1 rounded-md'; btn.innerHTML = '<span class="flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-white animate-ping"></span><svg class="w-3.5 h-3.5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg></span>'; } catch(e) {}
+    };
+    function resetBtn() { btn.className = 'inline-flex items-center justify-center transition-all cursor-pointer border-none shrink-0 bg-slate-100 text-slate-600 hover:bg-slate-200 p-1 rounded-md'; btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>'; }
+    container.appendChild(btn);
+}
+createVoiceInput('chat-input');
+createVoiceInput('ticket-name');
+createVoiceInput('ticket-email');
+createVoiceInput('ticket-message');
 </script>
 </body>
 </html>

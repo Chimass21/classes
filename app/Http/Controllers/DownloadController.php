@@ -434,22 +434,22 @@ class DownloadController extends Controller
 
         $phpWord = new PhpWord();
         $phpWord->setDefaultFontName('Arial');
-        $phpWord->setDefaultFontSize(7);
+        $phpWord->setDefaultFontSize(7.5);
 
         $section = $phpWord->addSection([
             'pageSizeW' => 11906,
             'pageSizeH' => 16838,
-            'marginLeft' => 454,
-            'marginRight' => 454,
-            'marginTop' => 283,
-            'marginBottom' => 283,
+            'marginLeft' => 567,
+            'marginRight' => 567,
+            'marginTop' => 340,
+            'marginBottom' => 340,
         ]);
 
-        $pStyle = ['spaceBefore' => 0, 'spaceAfter' => 0, 'lineHeight' => 1.0];
-        $pStyleSmall = ['spaceBefore' => 0, 'spaceAfter' => 0, 'lineHeight' => 0.9];
+        $pStyle = ['spaceBefore' => 0, 'spaceAfter' => 0, 'lineHeight' => 1.05];
+        $pStyleSmall = ['spaceBefore' => 0, 'spaceAfter' => 0, 'lineHeight' => 1.0];
 
         $border = ['borderSize' => 6, 'borderColor' => '000000'];
-        $cm = 15;
+        $cm = 20;
 
         $table = $section->addTable(array_merge($border, [
             'cellMargin' => $cm,
@@ -606,117 +606,117 @@ class DownloadController extends Controller
 
         $objRows = '';
         foreach ($objectives as $obj) {
-            $objRows .= '<tr><td style="padding:0 2px;font-size:7.5pt;border:1px solid #000" colspan="4">' . $obj . '</td></tr>';
+            $objRows .= '<tr><td style="padding:0 1px;font-size:6.5pt;border:1px solid #000" colspan="4">' . $obj . '</td></tr>';
         }
 
         $matRow = '';
         if (!empty($materials)) {
-            $matRow = '<tr><td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000" colspan="4">Instructional Materials</td></tr>'
-                . '<tr><td style="padding:1px 2px;font-size:7pt;border:1px solid #000" colspan="4">' . implode('; ', $materials) . '</td></tr>';
+            $matRow = '<tr><td style="padding:1px 2px;font-size:6.5pt;font-weight:700;border:1px solid #000" colspan="4">Instructional Materials</td></tr>'
+                . '<tr><td style="padding:1px 2px;font-size:6.5pt;border:1px solid #000" colspan="4">' . implode('; ', $materials) . '</td></tr>';
         }
 
         $prevRow = '';
         if ($previousKnowledge) {
-            $prevRow = '<tr><td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000" colspan="4">Previous Knowledge</td></tr>'
-                . '<tr><td style="padding:1px 2px;font-size:7pt;border:1px solid #000" colspan="4">' . $previousKnowledge . '</td></tr>';
+            $prevRow = '<tr><td style="padding:1px 2px;font-size:6.5pt;font-weight:700;border:1px solid #000" colspan="4">Previous Knowledge</td></tr>'
+                . '<tr><td style="padding:1px 2px;font-size:6.5pt;border:1px solid #000" colspan="4">' . $previousKnowledge . '</td></tr>';
         }
 
         $stepsHtml = '';
         foreach ($steps as $s) {
             $stepsHtml .= '<tr>
-                <td style="padding:1px 2px;border:1px solid #000;font-size:7pt;font-weight:700;vertical-align:top;text-align:center">' . ($s['step'] ?? '') . '</td>
-                <td style="padding:1px 2px;border:1px solid #000;font-size:7pt;vertical-align:top">' . ($s['teacherActivities'] ?? '') . '</td>
-                <td style="padding:1px 2px;border:1px solid #000;font-size:7pt;vertical-align:top">' . ($s['learnerActivities'] ?? '') . '</td>
-                <td style="padding:1px 2px;border:1px solid #000;font-size:7pt;vertical-align:top">' . ($s['learningPoints'] ?? '') . '</td>
+                <td style="padding:1px 1px;border:1px solid #000;font-size:6.5pt;font-weight:700;vertical-align:top;text-align:center">' . ($s['step'] ?? '') . '</td>
+                <td style="padding:1px 1px;border:1px solid #000;font-size:6.5pt;vertical-align:top">' . ($s['teacherActivities'] ?? '') . '</td>
+                <td style="padding:1px 1px;border:1px solid #000;font-size:6.5pt;vertical-align:top">' . ($s['learnerActivities'] ?? '') . '</td>
+                <td style="padding:1px 1px;border:1px solid #000;font-size:6.5pt;vertical-align:top">' . ($s['learningPoints'] ?? '') . '</td>
             </tr>';
         }
 
         $evalRow = '';
         if ($evaluation) {
-            $evalRow = '<tr><td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000" colspan="4">Evaluation / Assessment</td></tr>'
-                . '<tr><td style="padding:1px 2px;font-size:7pt;border:1px solid #000" colspan="4">' . nl2br(e($evaluation)) . '</td></tr>';
+            $evalRow = '<tr><td style="padding:1px 2px;font-size:6.5pt;font-weight:700;border:1px solid #000" colspan="4">Evaluation / Assessment</td></tr>'
+                . '<tr><td style="padding:1px 2px;font-size:6.5pt;border:1px solid #000" colspan="4">' . nl2br(e($evaluation)) . '</td></tr>';
         }
 
         $assignRow = '';
         if ($assignment) {
-            $assignRow = '<tr><td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000" colspan="4">Assignment / Homework</td></tr>'
-                . '<tr><td style="padding:1px 2px;font-size:7pt;border:1px solid #000" colspan="4">' . nl2br(e($assignment)) . '</td></tr>';
+            $assignRow = '<tr><td style="padding:1px 2px;font-size:6.5pt;font-weight:700;border:1px solid #000" colspan="4">Assignment / Homework</td></tr>'
+                . '<tr><td style="padding:1px 2px;font-size:6.5pt;border:1px solid #000" colspan="4">' . nl2br(e($assignment)) . '</td></tr>';
         }
 
         $summaryRow = '';
         if ($summary) {
-            $summaryRow = '<tr><td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000" colspan="4">Summary</td></tr>'
-                . '<tr><td style="padding:1px 2px;font-size:7pt;border:1px solid #000" colspan="4">' . $summary . '</td></tr>';
+            $summaryRow = '<tr><td style="padding:1px 2px;font-size:6.5pt;font-weight:700;border:1px solid #000" colspan="4">Summary</td></tr>'
+                . '<tr><td style="padding:1px 2px;font-size:6.5pt;border:1px solid #000" colspan="4">' . $summary . '</td></tr>';
         }
 
         $conclusionRow = '';
         if ($conclusion) {
-            $conclusionRow = '<tr><td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000" colspan="4">Conclusion</td></tr>'
-                . '<tr><td style="padding:1px 2px;font-size:7pt;border:1px solid #000" colspan="4">' . $conclusion . '</td></tr>';
+            $conclusionRow = '<tr><td style="padding:1px 2px;font-size:6.5pt;font-weight:700;border:1px solid #000" colspan="4">Conclusion</td></tr>'
+                . '<tr><td style="padding:1px 2px;font-size:6.5pt;border:1px solid #000" colspan="4">' . $conclusion . '</td></tr>';
         }
 
         return $this->wrapHtml('
         <div style="max-width:210mm;margin:0 auto;page-break-inside:avoid;break-inside:avoid">
-        <table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:7.5pt">
+        <table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;font-size:7pt">
             <tr>
-                <th colspan="4" style="padding:3px;font-size:9pt;font-weight:700;text-align:center;background:#1a56db;color:#fff;border:1px solid #000">LESSON PLAN</th>
+                <th colspan="4" style="padding:2px 3px;font-size:8pt;font-weight:700;text-align:center;background:#1a56db;color:#fff;border:1px solid #000">LESSON PLAN</th>
             </tr>
             <tr>
-                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700;border:1px solid #000;width:12%">School:</td>
-                <td style="padding:1px 3px;font-size:7.5pt;border:1px solid #000;width:38%">' . $schoolName . '</td>
-                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700;border:1px solid #000;width:12%">Teacher:</td>
-                <td style="padding:1px 3px;font-size:7.5pt;border:1px solid #000;width:38%">' . $teacherName . '</td>
+                <td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000;width:12%">School:</td>
+                <td style="padding:1px 2px;font-size:7pt;border:1px solid #000;width:38%">' . $schoolName . '</td>
+                <td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000;width:12%">Teacher:</td>
+                <td style="padding:1px 2px;font-size:7pt;border:1px solid #000;width:38%">' . $teacherName . '</td>
             </tr>
             <tr>
-                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700;border:1px solid #000">Subject:</td>
-                <td style="padding:1px 3px;font-size:7.5pt;border:1px solid #000">' . $subject . '</td>
-                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700;border:1px solid #000">Class:</td>
-                <td style="padding:1px 3px;font-size:7.5pt;border:1px solid #000">' . $class . ($ageRange ? ' (' . $ageRange . ')' : '') . '</td>
+                <td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000">Subject:</td>
+                <td style="padding:1px 2px;font-size:7pt;border:1px solid #000">' . $subject . '</td>
+                <td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000">Class:</td>
+                <td style="padding:1px 2px;font-size:7pt;border:1px solid #000">' . $class . ($ageRange ? ' (' . $ageRange . ')' : '') . '</td>
             </tr>
             <tr>
-                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700;border:1px solid #000">Term:</td>
-                <td style="padding:1px 3px;font-size:7.5pt;border:1px solid #000">' . $term . '</td>
-                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700;border:1px solid #000">Week:</td>
-                <td style="padding:1px 3px;font-size:7.5pt;border:1px solid #000">' . $week . '</td>
+                <td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000">Term:</td>
+                <td style="padding:1px 2px;font-size:7pt;border:1px solid #000">' . $term . '</td>
+                <td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000">Week:</td>
+                <td style="padding:1px 2px;font-size:7pt;border:1px solid #000">' . $week . '</td>
             </tr>
             <tr>
-                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700;border:1px solid #000">Date:</td>
-                <td style="padding:1px 3px;font-size:7.5pt;border:1px solid #000">' . $date . '</td>
-                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700;border:1px solid #000">Duration:</td>
-                <td style="padding:1px 3px;font-size:7.5pt;border:1px solid #000">' . $duration . '</td>
+                <td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000">Date:</td>
+                <td style="padding:1px 2px;font-size:7pt;border:1px solid #000">' . $date . '</td>
+                <td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000">Duration:</td>
+                <td style="padding:1px 2px;font-size:7pt;border:1px solid #000">' . $duration . '</td>
             </tr>
             <tr>
-                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700;border:1px solid #000" colspan="2">Topic:</td>
-                <td style="padding:1px 3px;font-size:7.5pt;border:1px solid #000" colspan="2">' . $topic . '</td>
+                <td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000" colspan="2">Topic:</td>
+                <td style="padding:1px 2px;font-size:7pt;border:1px solid #000" colspan="2">' . $topic . '</td>
             </tr>
             <tr>
-                <td style="padding:1px 3px;font-size:7.5pt;font-weight:700;border:1px solid #000" colspan="4">Behavioural Objectives</td>
+                <td style="padding:1px 2px;font-size:7pt;font-weight:700;border:1px solid #000" colspan="4">Behavioural Objectives</td>
             </tr>
             ' . $objRows . '
             ' . $matRow . '
             ' . $prevRow . '
             <tr>
-                <td style="padding:1px 2px;font-size:7pt;font-weight:700;text-align:center;background:#1a56db;color:#fff;border:1px solid #1a56db">Step</td>
-                <td style="padding:1px 2px;font-size:7pt;font-weight:700;text-align:left;background:#1a56db;color:#fff;border:1px solid #1a56db">Teacher\'s Activities</td>
-                <td style="padding:1px 2px;font-size:7pt;font-weight:700;text-align:left;background:#1a56db;color:#fff;border:1px solid #1a56db">Learners\' Activities</td>
-                <td style="padding:1px 2px;font-size:7pt;font-weight:700;text-align:left;background:#1a56db;color:#fff;border:1px solid #1a56db">Learning Points</td>
+                <td style="padding:1px 2px;font-size:6.5pt;font-weight:700;text-align:center;background:#1a56db;color:#fff;border:1px solid #1a56db">Step</td>
+                <td style="padding:1px 2px;font-size:6.5pt;font-weight:700;text-align:left;background:#1a56db;color:#fff;border:1px solid #1a56db">Teacher\'s Activities</td>
+                <td style="padding:1px 2px;font-size:6.5pt;font-weight:700;text-align:left;background:#1a56db;color:#fff;border:1px solid #1a56db">Learners\' Activities</td>
+                <td style="padding:1px 2px;font-size:6.5pt;font-weight:700;text-align:left;background:#1a56db;color:#fff;border:1px solid #1a56db">Learning Points</td>
             </tr>
-            ' . ($stepsHtml ?: '<tr><td style="padding:2px;border:1px solid #000;font-size:7pt" colspan="4">No steps available</td></tr>') . '
+            ' . ($stepsHtml ?: '<tr><td style="padding:1px;border:1px solid #000;font-size:6.5pt" colspan="4">No steps available</td></tr>') . '
             ' . $evalRow . '
             ' . $assignRow . '
             ' . $summaryRow . '
             ' . $conclusionRow . '
             <tr>
-                <td style="padding:1px 2px;border:1px solid #000;font-size:7pt;font-weight:700" colspan="4">Remarks</td>
+                <td style="padding:1px 2px;border:1px solid #000;font-size:6.5pt;font-weight:700" colspan="4">Remarks</td>
             </tr>
             <tr>
-                <td colspan="4" style="padding:1px 2px;border:1px solid #000;font-size:7pt;height:12px"></td>
+                <td colspan="4" style="padding:1px 2px;border:1px solid #000;font-size:6.5pt;height:8px"></td>
             </tr>
             <tr>
-                <td style="padding:1px 2px;border:1px solid #000;font-size:7.5pt;width:25%"><b>Teacher\'s Signature:</b> _______________</td>
-                <td style="padding:1px 2px;border:1px solid #000;font-size:7.5pt;width:25%"><b>Date:</b> _______________</td>
-                <td style="padding:1px 2px;border:1px solid #000;font-size:7.5pt;width:25%"><b>Head Teacher\'s Signature:</b> _______________</td>
-                <td style="padding:1px 2px;border:1px solid #000;font-size:7.5pt;width:25%"><b>Date:</b> _______________</td>
+                <td style="padding:1px 2px;border:1px solid #000;font-size:6.5pt;width:25%"><b>Teacher\'s Signature:</b> _______________</td>
+                <td style="padding:1px 2px;border:1px solid #000;font-size:6.5pt;width:25%"><b>Date:</b> _______________</td>
+                <td style="padding:1px 2px;border:1px solid #000;font-size:6.5pt;width:25%"><b>Head Teacher\'s Signature:</b> _______________</td>
+                <td style="padding:1px 2px;border:1px solid #000;font-size:6.5pt;width:25%"><b>Date:</b> _______________</td>
             </tr>
         </table>
         </div>
@@ -784,16 +784,16 @@ class DownloadController extends Controller
         <head>
             <meta charset="UTF-8">
             <style>
-                @page { size: A4; margin: 10mm 12mm; }
-                body { font-family: Arial, sans-serif; font-size: 7.5pt; color: #000; margin: 0; padding: 0; line-height: 1.4; }
-                table { page-break-inside: avoid; break-inside: avoid; }
+                @page { size: A4; margin: 6mm 8mm; }
+                body { font-family: Arial, sans-serif; font-size: 7pt; color: #000; margin: 0; padding: 0; line-height: 1.15; }
+                table { page-break-inside: avoid; break-inside: avoid; width: 100%; border-collapse: collapse; }
                 tr { page-break-inside: avoid; break-inside: avoid; }
-                td, th { page-break-inside: avoid; break-inside: avoid; }
+                td, th { page-break-inside: avoid; break-inside: avoid; padding: 1px 2px; }
                 img { max-width: 100%; }
                 .page-break { page-break-before: always; break-before: page; }
                 @media print {
                     body { margin: 0; padding: 0; }
-                    table { font-size: 7pt !important; }
+                    table { font-size: 6.5pt !important; }
                     .no-print { display: none !important; }
                 }
             </style>
@@ -822,7 +822,12 @@ class DownloadController extends Controller
     {
         $pdf = Pdf::loadHTML($html);
         $pdf->setPaper('A4', 'portrait');
-        $pdf->setOptions(['dpi' => 150, 'defaultFont' => 'serif']);
+        $pdf->setOptions([
+            'dpi' => 150,
+            'defaultFont' => 'serif',
+            'isHtml5ParserEnabled' => true,
+            'isRemoteEnabled' => false,
+        ]);
         return $pdf->download($filename . '.pdf');
     }
 
