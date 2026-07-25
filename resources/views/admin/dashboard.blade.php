@@ -140,13 +140,13 @@
         transform: rotate(45deg) translateX(100%);
     }
     .badge-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
-    #sidebar { transition: width 0.25s ease, transform 0.25s ease; }
-    @media (max-width: 1023px) {
-        #sidebar { position: fixed; inset: 0 auto 0 0; z-index: 50; }
+    #sidebar {
+        position: fixed; inset: 0 auto 0 0; z-index: 50;
+        width: 14rem; transform: translateX(-100%);
+        transition: transform 0.3s ease;
     }
-    @media (min-width: 1024px) {
-        #sidebar { position: relative; flex-shrink: 0; overflow: hidden; }
-    }
+    #sidebar.open { transform: translateX(0); }
+    #sidebar-overlay { position: fixed; inset: 0; z-index: 45; }
 </style>
 
 <div class="min-h-screen flex flex-col" style="background: linear-gradient(135deg, #f0f4ff 0%, #fdf2f8 40%, #eff6ff 100%);">
@@ -171,10 +171,8 @@
     {{-- Sidebar Overlay --}}
     <div id="sidebar-overlay" class="fixed inset-0 z-40 bg-black/20 hidden" onclick="toggleSidebar()"></div>
 
-    <div class="flex flex-row flex-1 min-h-0">
-
     {{-- Sidebar --}}
-    <aside id="sidebar" class="bg-white border-r border-purple-100/50 flex flex-col" style="width:12rem;">
+    <aside id="sidebar" class="bg-white border-r border-purple-100/50 flex flex-col shadow-2xl">
         <div class="sidebar-header px-3 py-3 border-b border-purple-100/50 flex items-center gap-2">
             <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 via-pink-500 to-amber-500 flex items-center justify-center text-white font-black text-xs shadow shadow-purple-500/30 shrink-0">CP</div>
             <div class="min-w-0">
@@ -495,7 +493,6 @@
             </div>{{-- /content --}}
         </div>
     </main>
-    </div>{{-- /flex-row --}}
 </div>
 
 {{-- Edit User Modal --}}
@@ -530,43 +527,12 @@
 let data = { users: [], exams: [], results: [], feedback: [], lessonPlans: [], lessonNotes: [], schoolConfig: {} };
 let editingUserId = null;
 let currentPage = 'overview';
-let sidebarCollapsed = localStorage.getItem('admin_sidebar_collapsed') === 'true';
-
 function toggleSidebar() {
-    sidebarCollapsed = !sidebarCollapsed;
-    localStorage.setItem('admin_sidebar_collapsed', sidebarCollapsed);
-    applySidebarState();
-}
-
-function applySidebarState() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebar-overlay');
-    const isMobile = window.innerWidth < 1024;
-
-    if (isMobile) {
-        sidebar.style.width = '12rem';
-        sidebar.classList.remove('collapsed');
-        if (sidebarCollapsed) {
-            sidebar.classList.add('-translate-x-full');
-            overlay.classList.add('hidden');
-        } else {
-            sidebar.classList.remove('-translate-x-full');
-            overlay.classList.remove('hidden');
-        }
-    } else {
-        sidebar.classList.remove('-translate-x-full');
-        overlay.classList.add('hidden');
-        if (sidebarCollapsed) {
-            sidebar.style.width = '4rem';
-            sidebar.classList.add('collapsed');
-        } else {
-            sidebar.style.width = '12rem';
-            sidebar.classList.remove('collapsed');
-        }
-    }
+    sidebar.classList.toggle('open');
+    overlay.classList.toggle('hidden');
 }
-
-window.addEventListener('resize', applySidebarState);
 
 function navigateTo(page) {
     currentPage = page;
@@ -577,7 +543,7 @@ function navigateTo(page) {
         const isActive = b.id === 'nav-' + page;
         b.className = 'nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all duration-200 cursor-pointer ' + (isActive ? 'sidebar-item-active' : 'sidebar-item');
     });
-    if (window.innerWidth < 1024) toggleSidebar();
+    if (document.getElementById('sidebar').classList.contains('open')) toggleSidebar();
     if (page === 'feedback') renderFeedback();
     if (page === 'results') renderResults();
     if (page === 'settings') loadSettings();
@@ -928,7 +894,6 @@ function handleDeleteUser(userId) {
         .then(r => r.json()).then(d => { if (d.success) fetchData(); });
 }
 
-applySidebarState();
 fetchData();
 </script>
 @endsection
