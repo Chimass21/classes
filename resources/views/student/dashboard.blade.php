@@ -863,7 +863,7 @@ function viewNote(id) {
                 </div>
                 <button onclick="document.getElementById('note-viewer').classList.add('hidden')" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 rounded-xl text-xs font-bold cursor-pointer border-none">Back</button>
             </div>
-            <div class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800 p-5 bg-slate-50 rounded-2xl border border-slate-150">${escapeHtml(n.content?.detailedNote || n.content?.explanation || 'No content')}</div>
+            <div class="whitespace-pre-wrap text-sm leading-relaxed text-slate-800 p-5 bg-slate-50 rounded-2xl border border-slate-150">${renderMath(n.content?.detailedNote || n.content?.explanation || 'No content')}</div>
         </div>
     `;
 }
@@ -913,7 +913,7 @@ function renderStudentNote(note) {
     const noteContent = note.content || note.detailedNote || note.body || note.noteContent || note.htmlContent || note.lessonContent || note.lesson_content || note.definition || '';
 
     let definitionsHtml = definitions.length ? `<div class="mt-4"><h3 class="text-base font-bold text-slate-800 mb-2">Definitions of Key Terms</h3><table class="w-full text-sm border-collapse">${definitions.map(d => `<tr class="border-b border-slate-200"><td class="py-2 pr-3 font-semibold text-indigo-700 w-1/3">${escapeHtml(d.term || '')}</td><td class="py-2 text-slate-600">${escapeHtml(d.definition || '')}</td></tr>`).join('')}</table></div>` : '';
-    let keyPointsHtml = keyPoints.length ? `<div class="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-xl"><h3 class="text-sm font-bold text-indigo-800 mb-2">Key Points to Remember</h3><ul class="text-sm space-y-1 list-disc pl-5 text-indigo-700">${keyPoints.map(k => `<li>${escapeHtml(k)}</li>`).join('')}</ul></div>` : '';
+    let keyPointsHtml = keyPoints.length ? `<div class="mt-4 p-4 bg-indigo-50 border border-indigo-200 rounded-xl"><h3 class="text-sm font-bold text-indigo-800 mb-2">Key Points to Remember</h3><ul class="text-sm space-y-1 list-disc pl-5 text-indigo-700">${keyPoints.map(k => `<li>${renderMath(k)}</li>`).join('')}</ul></div>` : '';
 
     let extraHtml = '';
     sections.forEach(sec => {
@@ -932,8 +932,8 @@ function renderStudentNote(note) {
             ${noteContent}
             ${definitionsHtml}
             ${extraHtml}
-            ${evaluation.length ? `<div class="mt-6"><h3 class="text-base font-bold text-slate-800 mb-3">Evaluation Questions</h3><ol class="text-sm pl-5 space-y-1 text-slate-700 list-decimal">${evaluation.map(eq => `<li>${escapeHtml(eq)}</li>`).join('')}</ol></div>` : ''}
-            ${note.assignment ? `<div class="mt-6"><h3 class="text-base font-bold text-slate-800 mb-2">Assignment</h3><div class="text-sm whitespace-pre-wrap text-slate-700 p-4 bg-slate-50 rounded-2xl border">${escapeHtml(note.assignment)}</div></div>` : ''}
+            ${evaluation.length ? `<div class="mt-6"><h3 class="text-base font-bold text-slate-800 mb-3">Evaluation Questions</h3><ol class="text-sm pl-5 space-y-1 text-slate-700 list-decimal">${evaluation.map(eq => `<li>${renderMath(eq)}</li>`).join('')}</ol></div>` : ''}
+            ${note.assignment ? `<div class="mt-6"><h3 class="text-base font-bold text-slate-800 mb-2">Assignment</h3><div class="text-sm whitespace-pre-wrap text-slate-700 p-4 bg-slate-50 rounded-2xl border">${renderMath(note.assignment)}</div></div>` : ''}
             ${keyPointsHtml}
         </div>
     `;
@@ -1091,12 +1091,12 @@ function renderPracticeQuiz(questions, timeLimitMinutes) {
                 <span class="text-[10px] bg-indigo-50 text-indigo-700 px-2.5 py-0.5 rounded-full font-bold">Q ${idx+1} of ${questions.length}</span>
                 ${timerHtml}
             </div>
-            <p class="text-base font-extrabold text-slate-800">${escapeHtml(q.question)}</p>
+            <p class="text-base font-extrabold text-slate-800">${renderMath(q.question)}</p>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 ${['A','B','C','D'].map(k => `
                     <button onclick="practiceSelect('${k}')" class="p-3.5 rounded-xl border text-left font-semibold text-xs flex items-center gap-2.5 transition cursor-pointer ${answers[idx] === k ? 'bg-slate-900 text-white border-slate-900' : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'}">
                         <span class="w-6 h-6 rounded-md flex items-center justify-center font-bold font-mono border text-[11px] ${answers[idx] === k ? 'bg-white text-slate-900' : 'bg-blue-50 text-blue-700 border-blue-200'}">${k}</span>
-                        ${escapeHtml(q['option'+k] || q[k] || (q.options && q.options[k]) || '')}
+                        ${renderMath(q['option'+k] || q[k] || (q.options && q.options[k]) || '')}
                     </button>
                 `).join('')}
             </div>

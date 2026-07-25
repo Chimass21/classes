@@ -191,6 +191,113 @@ function submitTicket(e) {
     });
 }
 
+// ====== Math Renderer (mirrors PHP MathRenderer::render) ======
+function renderMath(text) {
+    if (!text) return '';
+    let html = text;
+    // Strip $$...$$ and $...$ delimiters
+    html = html.replace(/\$\$([\s\S]*?)\$\$/g, '$1');
+    html = html.replace(/\$([^$\n]*?)\$/g, '$1');
+    // Convert \frac{a}{b} to CSS fractions
+    html = html.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, function(_, num, den) {
+        return '<span class="inline-flex flex-col text-center align-middle mx-1" style="vertical-align:-0.35rem">'
+            + '<span class="border-b border-slate-700 pb-0.5 px-1.5 leading-none font-bold text-slate-800 font-mono" style="font-size:11px">' + num + '</span>'
+            + '<span class="pt-0.5 px-1.5 leading-none font-bold text-slate-800 font-mono" style="font-size:11px">' + den + '</span>'
+            + '</span>';
+    });
+    // Convert \sqrt[n]{x}
+    html = html.replace(/\\sqrt\[(\d+)\]\{([^}]+)\}/g, function(_, n, x) {
+        return '<span class="font-bold text-emerald-700" style="font-size:1.1em">&#8731;<span style="font-size:0.6em;vertical-align:super">' + n + '</span></span><span style="text-decoration:overline" class="mx-px">' + x + '</span>';
+    });
+    // Convert \sqrt{x}
+    html = html.replace(/\\sqrt\{([^}]+)\}/g, function(_, x) {
+        return '<span class="font-bold text-emerald-700" style="font-size:1.2em">&radic;</span><span style="text-decoration:overline" class="mx-px">' + x + '</span>';
+    });
+    // LaTeX commands to HTML entities
+    var cmdMap = {
+        '\\\\cdot': '&middot; ',
+        '\\\\times': '&times;',
+        '\\\\div': '&divide;',
+        '\\\\pm': '&plusmn;',
+        '\\\\rightarrow': '&rarr;',
+        '\\\\to': '&rarr;',
+        '\\\\Rightarrow': '&rArr;',
+        '\\\\leftarrow': '&larr;',
+        '\\\\gets': '&larr;',
+        '\\\\Leftarrow': '&lArr;',
+        '\\\\infty': '&infin;',
+        '\\\\circ': '&deg;',
+        '\\\\angle': '&ang;',
+        '\\\\perp': '&perp;',
+        '\\\\parallel': '&parallel;',
+        '\\\\cup': '&cup;',
+        '\\\\cap': '&cap;',
+        '\\\\emptyset': '&empty;',
+        '\\\\varnothing': '&empty;',
+        '\\\\geq': '&ge;',
+        '\\\\leq': '&le;',
+        '\\\\neq': '&ne;',
+        '\\\\approx': '&asymp;',
+        '\\\\equiv': '&equiv;',
+        '\\\\propto': '&prop;',
+        '\\\\subset': '&sub;',
+        '\\\\supset': '&sup;',
+        '\\\\subseteq': '&sube;',
+        '\\\\supseteq': '&supe;',
+        '\\\\int': '&int;',
+        '\\\\sum': '&sum;',
+        '\\\\prod': '&prod;',
+        '\\\\cdot': '&middot; ',
+    };
+    for (var cmd in cmdMap) {
+        html = html.replace(new RegExp(cmd + '\\b', 'g'), cmdMap[cmd]);
+    }
+    // Greek letters
+    var greekMap = {
+        '\\\\alpha': '&alpha;',
+        '\\\\beta': '&beta;',
+        '\\\\gamma': '&gamma;',
+        '\\\\delta': '&delta;',
+        '\\\\epsilon': '&epsilon;',
+        '\\\\varepsilon': '&epsilon;',
+        '\\\\zeta': '&zeta;',
+        '\\\\eta': '&eta;',
+        '\\\\theta': '&theta;',
+        '\\\\iota': '&iota;',
+        '\\\\kappa': '&kappa;',
+        '\\\\lambda': '&lambda;',
+        '\\\\mu': '&mu;',
+        '\\\\nu': '&nu;',
+        '\\\\xi': '&xi;',
+        '\\\\omicron': '&omicron;',
+        '\\\\pi': '&pi;',
+        '\\\\rho': '&rho;',
+        '\\\\sigma': '&sigma;',
+        '\\\\tau': '&tau;',
+        '\\\\upsilon': '&upsilon;',
+        '\\\\phi': '&phi;',
+        '\\\\varphi': '&phi;',
+        '\\\\chi': '&chi;',
+        '\\\\psi': '&psi;',
+        '\\\\omega': '&omega;',
+    };
+    for (var g in greekMap) {
+        html = html.replace(new RegExp(g + '\\b', 'g'), greekMap[g]);
+    }
+    // \sin, \cos, \tan, \log, \ln, \sec, \csc, \cot
+    var funcs = ['sin', 'cos', 'tan', 'log', 'ln', 'sec', 'csc', 'cot'];
+    funcs.forEach(function(fn) {
+        html = html.replace(new RegExp('\\\\' + fn + '\\b', 'g'), '<span class="font-serif italic mx-px">' + fn + '</span>');
+    });
+    // ^{expression} superscripts
+    html = html.replace(/\^+\{([^}]+)\}/g, '<sup class="font-bold text-pink-700 mx-px" style="font-size:9px">$1</sup>');
+    html = html.replace(/\^+([a-zA-Z0-9+\-=()]+)/g, '<sup class="font-bold text-pink-700 mx-px" style="font-size:9px">$1</sup>');
+    // _{expression} subscripts
+    html = html.replace(/_+\{([^}]+)\}/g, '<sub class="font-bold text-indigo-800 mx-px" style="font-size:9px">$1</sub>');
+    html = html.replace(/_+([a-zA-Z0-9+\-=()]+)/g, '<sub class="font-bold text-indigo-800 mx-px" style="font-size:9px">$1</sub>');
+    return html;
+}
+
 // Enable/disable chat send button based on input
 document.getElementById('chat-input').addEventListener('input', function() {
     document.getElementById('chat-send-btn').disabled = !this.value.trim();

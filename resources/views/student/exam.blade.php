@@ -298,7 +298,7 @@ function updateAnsweredCount() {
 function renderQuestion() {
   const q = questions[currentIndex];
   if (!q) return;
-  document.getElementById('q-text').textContent = q.question;
+  document.getElementById('q-text').innerHTML = renderMath(q.question);
   document.getElementById('q-counter').textContent = 'Question ' + (currentIndex + 1) + ' of ' + questions.length;
   document.getElementById('q-nav-counter').textContent = 'Question ' + (currentIndex + 1) + ' of ' + questions.length;
   document.getElementById('q-marks').textContent = '+' + (q.marks || examDefaultMarks) + ' Mark';
@@ -328,7 +328,7 @@ function renderQuestion() {
     return `<button onclick="selectOption('${opt.key}')" class="opt-btn w-full flex items-center justify-between text-left p-3 sm:p-3.5 rounded-xl border font-bold text-xs sm:text-sm transition-all duration-150 cursor-pointer ${isSelected ? 'bg-indigo-50 border-indigo-400 text-indigo-900 ring-2 ring-indigo-200 shadow-sm' : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300 text-slate-700 shadow-xs'}">
       <div class="flex items-center gap-3 min-w-0 flex-1">
         <span class="w-8 h-8 rounded-lg font-mono font-black flex items-center justify-center shrink-0 border text-sm leading-none transition ${isSelected ? 'bg-indigo-600 text-white border-indigo-600 shadow-sm' : 'bg-slate-200 text-slate-700 border-slate-300'}">${opt.key}</span>
-        <span class="break-words min-w-0 leading-snug">${opt.label}</span>
+        <span class="break-words min-w-0 leading-snug">${renderMath(opt.label)}</span>
       </div>${isSelected ? '<div class="w-5 h-5 bg-indigo-600 text-white rounded-full flex items-center justify-center text-[10px] shrink-0 shadow-sm">&#10003;</div>' : ''}
     </button>`;
   }).join('');
@@ -703,7 +703,7 @@ function showResults() {
         '<span class="text-xs bg-slate-100 text-slate-600 py-1 px-3 rounded-full font-extrabold font-mono">Question ' + String(idx + 1).padStart(2, '0') + '</span>' +
         '<span class="text-[10px] uppercase font-black tracking-wide border py-1 px-3 rounded-full ' + badgeColor + '">' + badgeIcon + ' ' + badgeText + '</span>' +
       '</div>' +
-      '<p class="text-sm sm:text-base font-bold text-slate-800 leading-relaxed break-words">' + item.question + '</p>' +
+      '<p class="text-sm sm:text-base font-bold text-slate-800 leading-relaxed break-words">' + renderMath(item.question) + '</p>' +
       '<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">' +
       opts.map(opt => {
         const isCorrectOpt = opt.key === item.correctAnswer;
@@ -713,9 +713,9 @@ function showResults() {
         let badge = '';
         if (isCorrectOpt) { borderStyle = 'border-emerald-300 bg-emerald-50/50 ring-1 ring-emerald-200'; markerColor = 'bg-emerald-500 text-white border-emerald-500'; badge = '<span class="text-[10px] font-extrabold text-emerald-600 shrink-0 ml-auto">&#10004; Correct</span>'; }
         else if (isSelectedOpt && !isCorrectOpt) { borderStyle = 'border-rose-300 bg-rose-50/50 ring-1 ring-rose-200'; markerColor = 'bg-rose-500 text-white border-rose-500'; badge = '<span class="text-[10px] font-extrabold text-rose-600 shrink-0 ml-auto">&#10008; Your Answer</span>'; }
-        return '<div class="p-3 border rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2.5 transition-all ' + borderStyle + '"><span class="w-7 h-7 rounded-lg flex items-center justify-center font-mono font-bold shrink-0 text-xs shadow-xs border ' + markerColor + '">' + opt.key + '</span><span class="break-words min-w-0 flex-1 leading-snug">' + opt.label + '</span>' + badge + '</div>';
+        return '<div class="p-3 border rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2.5 transition-all ' + borderStyle + '"><span class="w-7 h-7 rounded-lg flex items-center justify-center font-mono font-bold shrink-0 text-xs shadow-xs border ' + markerColor + '">' + opt.key + '</span><span class="break-words min-w-0 flex-1 leading-snug">' + renderMath(opt.label) + '</span>' + badge + '</div>';
       }).join('') + '</div>' +
-      '<div class="p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl flex items-start gap-3 mt-1"><svg class="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><div class="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium break-words min-w-0"><strong class="text-indigo-700 font-extrabold">Explanation:</strong> ' + (item.explanation || 'The correct answer is Option ' + item.correctAnswer + '.') + '</div></div>' +
+      '<div class="p-4 bg-indigo-50/60 border border-indigo-100 rounded-xl flex items-start gap-3 mt-1"><svg class="w-5 h-5 text-indigo-500 shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg><div class="text-xs sm:text-sm text-slate-700 leading-relaxed font-medium break-words min-w-0"><strong class="text-indigo-700 font-extrabold">Explanation:</strong> ' + renderMath(item.explanation || 'The correct answer is Option ' + item.correctAnswer + '.') + '</div></div>' +
     '</div>';
   }).join('');
 
@@ -741,7 +741,7 @@ function showResults() {
           '<span style="font-size:11px;font-weight:800;color:#64748b">Question ' + (idx + 1) + '</span>' +
           statusBadge +
         '</div>' +
-        '<p style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:8px;line-height:1.4">' + item.question + '</p>' +
+        '<p style="font-size:13px;font-weight:700;color:#1e293b;margin-bottom:8px;line-height:1.4">' + renderMath(item.question) + '</p>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">' +
         optLabels.map(opt => {
           const isCorrectOpt = opt.k === item.correctAnswer;
@@ -753,11 +753,11 @@ function showResults() {
           const markColor = isCorrectOpt ? '#059669' : (isSelectedOpt && !isCorrectOpt ? '#e11d48' : 'transparent');
           return '<div style="padding:6px 10px;border:1px solid ' + border + ';border-radius:6px;background:' + bg + ';font-size:12px;font-weight:600;color:#334155;display:flex;align-items:center;gap:6px">' +
             '<span style="width:20px;height:20px;border-radius:4px;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;background:' + marker + ';border:1px solid ' + border + '">' + opt.k + '</span>' +
-            '<span style="flex:1">' + opt.v + '</span>' +
+            '<span style="flex:1">' + renderMath(opt.v) + '</span>' +
             (mark ? '<span style="font-size:11px;font-weight:800;color:' + markColor + '">' + mark + '</span>' : '') +
           '</div>';
         }).join('') + '</div>' +
-        '<div style="margin-top:8px;padding:8px 12px;background:#eef2ff;border:1px solid #e0e7ff;border-radius:6px;font-size:11px;color:#334155;line-height:1.4"><strong style="color:#4338ca">Explanation:</strong> ' + (item.explanation || 'The correct answer is Option ' + item.correctAnswer + '.') + '</div>' +
+        '<div style="margin-top:8px;padding:8px 12px;background:#eef2ff;border:1px solid #e0e7ff;border-radius:6px;font-size:11px;color:#334155;line-height:1.4"><strong style="color:#4338ca">Explanation:</strong> ' + renderMath(item.explanation || 'The correct answer is Option ' + item.correctAnswer + '.') + '</div>' +
       '</div>';
     }).join('')}
   `;

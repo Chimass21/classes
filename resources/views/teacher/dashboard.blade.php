@@ -1257,12 +1257,12 @@ function displayQuestions(qs) {
         html += `<h3 class="text-base font-bold text-slate-800 mb-3">Objective Questions (${objectives.length})</h3>`;
         html += objectives.map((q, idx) => `
             <div class="p-3 bg-slate-50 border border-slate-200 rounded-lg mb-2">
-                <p class="text-sm font-medium mb-1">${q.id || (idx + 1)}. ${q.question || q.text || ''}</p>
+                <p class="text-sm font-medium mb-1">${q.id || (idx + 1)}. ${renderMath(q.question || q.text || '')}</p>
                 <ul class="text-xs text-slate-600 grid grid-cols-2 gap-1 pl-4">
-                    <li>A. ${q.A || q.option_a || q.options?.A || ''}</li>
-                    <li>B. ${q.B || q.option_b || q.options?.B || ''}</li>
-                    <li>C. ${q.C || q.option_c || q.options?.C || ''}</li>
-                    <li>D. ${q.D || q.option_d || q.options?.D || ''}</li>
+                    <li>A. ${renderMath(q.A || q.option_a || q.options?.A || '')}</li>
+                    <li>B. ${renderMath(q.B || q.option_b || q.options?.B || '')}</li>
+                    <li>C. ${renderMath(q.C || q.option_c || q.options?.C || '')}</li>
+                    <li>D. ${renderMath(q.D || q.option_d || q.options?.D || '')}</li>
                 </ul>
                 <p class="text-xs text-blue-600 font-bold mt-1">Answer: ${q.answer || q.correctAnswer || q.correct_answer || ''}</p>
             </div>
@@ -1270,15 +1270,15 @@ function displayQuestions(qs) {
     }
     if (theory.length) {
         html += `<h3 class="text-base font-bold text-slate-800 mt-4 mb-3">Theory Questions</h3>`;
-        html += theory.map(q => `<div class="p-3 bg-slate-800/10 border border-slate-800/20 rounded-lg mb-2"><p class="text-sm font-medium">${q.question}</p><p class="text-xs text-slate-500 mt-1">Model Answer: ${q.answer || ''}</p></div>`).join('');
+        html += theory.map(q => `<div class="p-3 bg-slate-800/10 border border-slate-800/20 rounded-lg mb-2"><p class="text-sm font-medium">${renderMath(q.question)}</p><p class="text-xs text-slate-500 mt-1">Model Answer: ${renderMath(q.answer || '')}</p></div>`).join('');
     }
     if (essay.length) {
         html += `<h3 class="text-base font-bold text-slate-800 mt-4 mb-3">Essay Questions</h3>`;
-        html += essay.map(q => `<div class="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-2"><p class="text-sm font-medium">${q.question}</p><p class="text-xs text-slate-500 mt-1">Guidance: ${q.guidance || ''}</p></div>`).join('');
+        html += essay.map(q => `<div class="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-2"><p class="text-sm font-medium">${renderMath(q.question)}</p><p class="text-xs text-slate-500 mt-1">Guidance: ${renderMath(q.guidance || '')}</p></div>`).join('');
     }
     if (structured.length) {
         html += `<h3 class="text-base font-bold text-slate-800 mt-4 mb-3">Structured Questions</h3>`;
-        html += structured.map(q => `<div class="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-2"><p class="text-sm font-medium">${q.question}</p>${q.parts ? Object.entries(q.parts).map(([k,v]) => `<p class="text-xs text-slate-600 ml-2">(${k}) ${v}</p>`).join('') : ''}</div>`).join('');
+        html += structured.map(q => `<div class="p-3 bg-blue-50 border border-blue-200 rounded-lg mb-2"><p class="text-sm font-medium">${renderMath(q.question)}</p>${q.parts ? Object.entries(q.parts).map(([k,v]) => `<p class="text-xs text-slate-600 ml-2">(${k}) ${renderMath(v)}</p>`).join('') : ''}</div>`).join('');
     }
     container.innerHTML = html || '<p class="text-sm text-slate-500">No questions generated.</p>';
 

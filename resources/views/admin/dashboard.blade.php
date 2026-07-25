@@ -22,6 +22,15 @@
     .stat-card { transition: all 0.3s; }
     .stat-card:hover { transform: translateY(-3px); box-shadow: 0 8px 25px rgba(124,58,237,0.12); }
 
+    #sidebar.collapsed .nav-label { display: none; }
+    #sidebar.collapsed .nav-badge { display: none; }
+    #sidebar.collapsed .nav-btn { justify-content: center; padding-left: 0; padding-right: 0; }
+    #sidebar.collapsed .sidebar-header h1,
+    #sidebar.collapsed .sidebar-header p { display: none; }
+    #sidebar.collapsed .sidebar-header { justify-content: center; }
+    #sidebar.collapsed hr + a span { display: none; }
+    #sidebar.collapsed hr + a { justify-content: center; }
+
     .input-bright {
         background: linear-gradient(135deg, #f0f4ff 0%, #fdf2f8 50%, #fefce8 100%) !important;
         border: 2px solid transparent !important;
@@ -131,86 +140,89 @@
         transform: rotate(45deg) translateX(100%);
     }
     .badge-dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+    #sidebar { transition: width 0.25s ease, transform 0.25s ease; }
     @media (max-width: 1023px) {
-        #sidebar.sidebar-mobile-fixed { position: fixed; inset: 0 auto 0 0; z-index: 50; }
+        #sidebar { position: fixed; inset: 0 auto 0 0; z-index: 50; }
     }
     @media (min-width: 1024px) {
-        #sidebar { position: sticky; top: 0; }
+        #sidebar { position: relative; flex-shrink: 0; overflow: hidden; }
     }
 </style>
 
-<div class="min-h-screen flex flex-col lg:flex-row" style="background: linear-gradient(135deg, #f0f4ff 0%, #fdf2f8 40%, #eff6ff 100%);">
+<div class="min-h-screen flex flex-col" style="background: linear-gradient(135deg, #f0f4ff 0%, #fdf2f8 40%, #eff6ff 100%);">
 
-    {{-- Mobile Header Bar --}}
-    <div class="lg:hidden flex items-center justify-between px-4 py-3 bg-white/90 border-b border-purple-100/50 sticky top-0 z-30">
-        <button onclick="toggleSidebar()" class="p-2 hover:bg-purple-50 rounded-lg cursor-pointer text-slate-600">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
-        </button>
-        <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 via-pink-500 to-amber-500 flex items-center justify-center text-white font-bold text-[10px]">CP</div>
-            <span class="text-sm font-bold text-slate-800">Admin Panel</span>
+    {{-- Top Header Bar --}}
+    <div class="flex items-center justify-between px-4 py-3 bg-white/90 border-b border-purple-100/50 sticky top-0 z-30 shrink-0">
+        <div class="flex items-center gap-3">
+            <button id="sidebar-toggle" onclick="toggleSidebar()" class="p-2 hover:bg-purple-50 rounded-lg cursor-pointer text-slate-600" title="Toggle sidebar">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </button>
+            <div class="flex items-center gap-2">
+                <div class="w-7 h-7 rounded-lg bg-gradient-to-br from-purple-500 via-pink-500 to-amber-500 flex items-center justify-center text-white font-bold text-[10px]">CP</div>
+                <span class="text-sm font-bold text-slate-800">Admin Panel</span>
+            </div>
         </div>
-        <span class="text-xs text-purple-500 font-semibold">{{ Session::get('user.name') }}</span>
+        <div class="flex items-center gap-3">
+            <span class="text-xs text-purple-500 font-semibold hidden sm:inline">{{ Session::get('user.name') }}</span>
+            <span class="text-xs text-purple-500 font-semibold sm:hidden">{{ substr(Session::get('user.name'), 0, 1) }}</span>
+        </div>
     </div>
 
-    {{-- Mobile Sidebar Overlay --}}
-    <div id="sidebar-overlay" class="lg:hidden fixed inset-0 z-40 bg-black/20 hidden" onclick="toggleSidebar()"></div>
+    {{-- Sidebar Overlay --}}
+    <div id="sidebar-overlay" class="fixed inset-0 z-40 bg-black/20 hidden" onclick="toggleSidebar()"></div>
+
+    <div class="flex flex-row flex-1 min-h-0">
 
     {{-- Sidebar --}}
-    <aside id="sidebar" class="sidebar-mobile-fixed w-48 shrink-0 bg-white border-r border-purple-100/50 flex flex-col min-h-screen -translate-x-full lg:translate-x-0 transition-transform duration-300" style="top:0;">
-        <div class="px-3 py-3 border-b border-purple-100/50 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 via-pink-500 to-amber-500 flex items-center justify-center text-white font-black text-xs shadow shadow-purple-500/30">CP</div>
-                <div>
-                    <h1 class="font-bold text-slate-800 text-xs tracking-tight">ClassPortal</h1>
-                    <p class="text-[9px] text-purple-500/60 font-semibold tracking-widest uppercase">Admin</p>
-                </div>
+    <aside id="sidebar" class="bg-white border-r border-purple-100/50 flex flex-col" style="width:12rem;">
+        <div class="sidebar-header px-3 py-3 border-b border-purple-100/50 flex items-center gap-2">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-purple-500 via-pink-500 to-amber-500 flex items-center justify-center text-white font-black text-xs shadow shadow-purple-500/30 shrink-0">CP</div>
+            <div class="min-w-0">
+                <h1 class="font-bold text-slate-800 text-xs tracking-tight truncate">ClassPortal</h1>
+                <p class="text-[9px] text-purple-500/60 font-semibold tracking-widest uppercase truncate">Admin</p>
             </div>
-            <button onclick="toggleSidebar()" class="lg:hidden p-1 hover:bg-purple-50 rounded-lg cursor-pointer text-slate-400">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
-            </button>
         </div>
 
         <nav class="flex-1 p-2 space-y-0.5 overflow-y-auto">
             <button onclick="navigateTo('overview')" id="nav-overview" class="nav-btn w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer sidebar-item-active">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/></svg>
-                <span>Dashboard</span>
+                <span class="nav-label">Dashboard</span>
             </button>
             <button onclick="navigateTo('users')" id="nav-users" class="nav-btn w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer sidebar-item">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                <span>Users</span>
-                <span id="user-count-badge" class="ml-auto px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-600">0</span>
+                <span class="nav-label">Users</span>
+                <span id="user-count-badge" class="nav-badge ml-auto px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-600">0</span>
             </button>
             <button onclick="navigateTo('activity')" id="nav-activity" class="nav-btn w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer sidebar-item">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
-                <span>Activity Log</span>
+                <span class="nav-label">Activity Log</span>
             </button>
             <button onclick="navigateTo('exams')" id="nav-exams" class="nav-btn w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer sidebar-item">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
-                <span>Exams</span>
-                <span id="exam-count-badge" class="ml-auto px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-cyan-100 text-cyan-600">0</span>
+                <span class="nav-label">Exams</span>
+                <span id="exam-count-badge" class="nav-badge ml-auto px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-cyan-100 text-cyan-600">0</span>
             </button>
             <button onclick="navigateTo('content')" id="nav-content" class="nav-btn w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer sidebar-item">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
-                <span>Content</span>
+                <span class="nav-label">Content</span>
             </button>
             <button onclick="navigateTo('results')" id="nav-results" class="nav-btn w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer sidebar-item">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
-                <span>Results</span>
+                <span class="nav-label">Results</span>
             </button>
             <button onclick="navigateTo('feedback')" id="nav-feedback" class="nav-btn w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer sidebar-item">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-                <span>Feedback</span>
-                <span id="feedback-count-badge" class="ml-auto px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-600">0</span>
+                <span class="nav-label">Feedback</span>
+                <span id="feedback-count-badge" class="nav-badge ml-auto px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-600">0</span>
             </button>
             <button onclick="navigateTo('settings')" id="nav-settings" class="nav-btn w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-200 cursor-pointer sidebar-item">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                <span>Settings</span>
+                <span class="nav-label">Settings</span>
             </button>
             <hr class="my-2 border-purple-100/50">
             <a href="{{ route('logout') }}" class="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold text-pink-500 hover:bg-pink-50 w-full">
                 <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-                <span>Logout</span>
+                <span class="nav-label">Logout</span>
             </a>
         </nav>
     </aside>
@@ -483,6 +495,7 @@
             </div>{{-- /content --}}
         </div>
     </main>
+    </div>{{-- /flex-row --}}
 </div>
 
 {{-- Edit User Modal --}}
@@ -517,11 +530,43 @@
 let data = { users: [], exams: [], results: [], feedback: [], lessonPlans: [], lessonNotes: [], schoolConfig: {} };
 let editingUserId = null;
 let currentPage = 'overview';
+let sidebarCollapsed = localStorage.getItem('admin_sidebar_collapsed') === 'true';
 
 function toggleSidebar() {
-    document.getElementById('sidebar').classList.toggle('-translate-x-full');
-    document.getElementById('sidebar-overlay').classList.toggle('hidden');
+    sidebarCollapsed = !sidebarCollapsed;
+    localStorage.setItem('admin_sidebar_collapsed', sidebarCollapsed);
+    applySidebarState();
 }
+
+function applySidebarState() {
+    const sidebar = document.getElementById('sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    const isMobile = window.innerWidth < 1024;
+
+    if (isMobile) {
+        sidebar.style.width = '12rem';
+        sidebar.classList.remove('collapsed');
+        if (sidebarCollapsed) {
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+        } else {
+            sidebar.classList.remove('-translate-x-full');
+            overlay.classList.remove('hidden');
+        }
+    } else {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.add('hidden');
+        if (sidebarCollapsed) {
+            sidebar.style.width = '4rem';
+            sidebar.classList.add('collapsed');
+        } else {
+            sidebar.style.width = '12rem';
+            sidebar.classList.remove('collapsed');
+        }
+    }
+}
+
+window.addEventListener('resize', applySidebarState);
 
 function navigateTo(page) {
     currentPage = page;
@@ -883,6 +928,7 @@ function handleDeleteUser(userId) {
         .then(r => r.json()).then(d => { if (d.success) fetchData(); });
 }
 
+applySidebarState();
 fetchData();
 </script>
 @endsection
