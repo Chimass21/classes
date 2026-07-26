@@ -1603,8 +1603,9 @@ function renderResults() {
             const grade = pct >= 75 ? 'A' : pct >= 60 ? 'B' : pct >= 50 ? 'C' : pct >= 40 ? 'D' : 'F';
             const gradeColors = { 'A': 'bg-emerald-100 text-emerald-700', 'B': 'bg-blue-100 text-blue-700', 'C': 'bg-amber-100 text-amber-700', 'D': 'bg-orange-100 text-orange-700', 'F': 'bg-red-100 text-red-700' };
             const safeId = (r.id || '').replace(/[^a-zA-Z0-9-_]/g, '_');
+            const safeExamId = (r.examId || '').replace(/[^a-zA-Z0-9-_]/g, '_');
 
-            return `<div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white border border-slate-100 rounded-lg hover:border-slate-200 hover:shadow-sm hover:cursor-pointer transition-all gap-2" data-view-result="${r.id}" onclick="if(!event.target.closest('button'))viewResult('${r.id}')" title="Click to view result">
+            return `<div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white border border-slate-100 rounded-lg hover:border-slate-200 hover:shadow-sm hover:cursor-pointer transition-all gap-2" data-view-result="${safeId}" onclick="if(!event.target.closest('button'))viewResult('${safeId}')" title="Click to view result">
                 <div class="flex-1 min-w-0">
                     <div class="flex items-center gap-2 flex-wrap">
                         <span class="font-semibold text-sm text-slate-900">${r.studentName || 'Student'}</span>
@@ -1622,11 +1623,11 @@ function renderResults() {
                 </div>
                 <div class="flex items-center gap-2 shrink-0">
                     <span class="px-2.5 py-1 rounded-lg text-xs font-bold ${isPassed ? 'bg-blue-50 text-blue-600 border border-blue-200' : 'bg-red-800/10 text-red-700 border border-red-700/20'}">${pct}%</span>
-                    <button data-view-result="${r.id}" onclick="event.stopPropagation();viewResult('${r.id}')" class="px-3 py-1.5 bg-blue-600 text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border-2 border-white" title="View Result">
+                    <button data-view-result="${safeId}" onclick="event.stopPropagation();viewResult('${safeId}')" class="px-3 py-1.5 bg-blue-600 text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border-2 border-white" title="View Result">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                         <span>View</span>
                     </button>
-                    <button data-download-script="${r.id}" data-exam-id="${r.examId}" onclick="event.stopPropagation();downloadGradedScript('${r.examId}', '${r.id}')" class="px-3 py-1.5 bg-red-600 text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border-2 border-white" title="Download Graded Script PDF">
+                    <button data-download-script="${safeId}" data-exam-id="${safeExamId}" onclick="event.stopPropagation();downloadGradedScript('${safeExamId}', '${safeId}')" class="px-3 py-1.5 bg-red-600 text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border-2 border-white" title="Download Graded Script PDF">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         <span>Script</span>
                     </button>
@@ -2249,14 +2250,13 @@ function switchTab(tab) {
     });
 }
 
-// ====== EVENT DELEGATION (ensures clicks work even with CSP or rendering issues) ======
+// ====== EVENT DELEGATION (fallback if inline onclick fails) ======
 document.addEventListener('click', function(e) {
-    const target = e.target;
-    if (target.closest('button[data-download-script]')) return;
-    if (target.closest('button[data-view-result]')) return;
-    const viewRow = target.closest('[data-view-result]');
-    if (viewRow && !viewRow.closest('button')) {
-        viewResult(viewRow.getAttribute('data-view-result'));
+    if (e.target.closest('[data-download-script]')) return;
+    const viewEl = e.target.closest('[data-view-result]');
+    if (viewEl) {
+        const id = viewEl.getAttribute('data-view-result');
+        if (id) viewResult(id);
     }
 });
 
