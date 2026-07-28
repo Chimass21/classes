@@ -665,11 +665,7 @@
                     Validate Credentials
                 </button>
                 
-                <div class="p-4 bg-slate-50 rounded-2xl border border-slate-150 text-[10px] text-slate-500 leading-snug font-medium font-mono text-center">
-                    <strong>Admin Login:</strong> Username: <span class="text-indigo-600 font-bold">admin</span> / Password: <span class="text-red-650 font-bold">admin</span><br>
-                    <span class="text-[9px]">Or use your registered email &amp; password</span>
-                </div>
-            </form>
+                </form>
         </div>
     </div>
 </div>

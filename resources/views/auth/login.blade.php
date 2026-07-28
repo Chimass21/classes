@@ -12,7 +12,7 @@
             @csrf
             <div class="mb-4">
                 <label class="block text-sm font-semibold text-slate-700 mb-1.5">Username or Email</label>
-                <input type="text" name="login" required placeholder="admin or admin@admin.com" value="{{ old('login') }}" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                <input type="text" name="login" required placeholder="Enter your username or email" value="{{ old('login') }}" class="w-full px-4 py-2.5 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
                 @error('login') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
             </div>
             <div class="mb-6">
@@ -23,11 +23,6 @@
                 Sign In
             </button>
         </form>
-        <div class="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-200 text-center">
-            <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Admin Credentials</p>
-            <p class="text-sm text-slate-700 font-mono">Username: <span class="font-bold text-indigo-700">admin</span></p>
-            <p class="text-sm text-slate-700 font-mono">Password: <span class="font-bold text-indigo-700">admin</span></p>
-        </div>
     </div>
 </div>
 @endsection
