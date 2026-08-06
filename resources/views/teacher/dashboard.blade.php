@@ -743,6 +743,7 @@
                                 <div class="text-center py-8 text-sm text-slate-500">Loading...</div>
                             </div>
                             <div class="sticky bottom-0 bg-white rounded-b-2xl border-t border-slate-200 px-4 sm:px-6 py-3 flex justify-end gap-2" id="result-modal-footer">
+                                <button id="result-modal-wa-btn" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg transition cursor-pointer hidden">Send to WhatsApp</button>
                                 <button onclick="closeResultModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-lg transition cursor-pointer">Close</button>
                                 <button id="result-modal-download-btn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-bold rounded-lg transition cursor-pointer hidden">Download Script</button>
                             </div>
@@ -777,6 +778,43 @@ let teacherData = { plans: [], notes: [], exams: [], results: [], questionSets: 
 let currentPlanId = null, currentNoteId = null, currentQsId = null, currentNote = null, generatingFromNote = false;
 let currentQuestions = null;
 let plansFilter = '', notesFilter = '', qsFilter = '';
+const WHATSAPP_PHONE = '{{ \App\Helpers\WhatsApp::phone() }}';
+const RESULTS_REFRESH_MS = 15000;
+let resultsRefreshTimer = null;
+
+function whatsappResultLink(result) {
+    if (!WHATSAPP_PHONE) return '';
+    const pct = Number(result.percentage || result.score / (result.totalPossibleMarks || result.totalQuestions || 1) * 100) || 0;
+    const lines = [
+        'EXAM RESULT NOTIFICATION',
+        '----------------------------',
+        'Student: ' + (result.studentName || 'Student'),
+        'Exam: ' + (result.examTitle || ''),
+        'Subject: ' + (result.subject || ''),
+        'Score: ' + (result.score ?? 0) + ' / ' + (result.totalPossibleMarks || result.totalQuestions || 0),
+        'Percentage: ' + Math.round(pct) + '%',
+        'Grade: ' + (result.grade || ''),
+        'Correct: ' + (result.correctAnswers || 0) + ' / ' + (result.totalQuestions || 0),
+        'Date: ' + (result.date ? new Date(result.date).toLocaleString() : ''),
+        'Status: ' + (pct >= 50 ? 'PASSED' : 'FAILED')
+    ];
+    return 'https://wa.me/' + WHATSAPP_PHONE + '?text=' + encodeURIComponent(lines.join('\n'));
+}
+
+function showToast(message) {
+    let box = document.getElementById('result-toast');
+    if (!box) {
+        box = document.createElement('div');
+        box.id = 'result-toast';
+        box.style.cssText = 'position:fixed;top:20px;right:20px;z-index:99999;background:#10b981;color:#fff;padding:12px 18px;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,.2);font-weight:600;cursor:pointer;';
+        box.onclick = () => { box.remove(); };
+        document.body.appendChild(box);
+    }
+    box.textContent = message;
+    box.style.display = 'block';
+    clearTimeout(box._t);
+    box._t = setTimeout(() => { box.remove(); }, 8000);
+}
 // ====== DATA LOADING ======
 async function initTeacherDashboard() {
     document.getElementById('loading').classList.remove('hidden');
@@ -827,6 +865,29 @@ async function initTeacherDashboard() {
     } catch(e) {
         document.getElementById('loading').innerHTML = '<p class="text-sm text-red-700 font-medium">Failed to load. <button onclick="initTeacherDashboard()" class="underline cursor-pointer">Retry</button></p>';
     }
+}
+
+async function pollResults() {
+    if (!document.getElementById('content').classList.contains('hidden')) {
+        try {
+            const res = await fetch('/api/teacher/init').then(r => r.json());
+            if (!res.results) return;
+            const before = teacherData.results.length;
+            teacherData.results = res.results || [];
+            const after = teacherData.results.length;
+            if (after > before && currentTab === 'results') {
+                showToast(after - before + ' new exam result' + (after - before > 1 ? 's' : '') + ' received');
+            }
+            renderResults();
+        } catch(e) { /* keep previous data on failure */ }
+    }
+}
+function stopResultsPolling() {
+    if (resultsRefreshTimer) { clearInterval(resultsRefreshTimer); resultsRefreshTimer = null; }
+}
+function startResultsPolling() {
+    if (resultsRefreshTimer) return;
+    resultsRefreshTimer = setInterval(pollResults, RESULTS_REFRESH_MS);
 }
 
 // ====== LESSON PLAN ======
@@ -1604,6 +1665,7 @@ function renderResults() {
             const gradeColors = { 'A': 'bg-emerald-100 text-emerald-700', 'B': 'bg-blue-100 text-blue-700', 'C': 'bg-amber-100 text-amber-700', 'D': 'bg-orange-100 text-orange-700', 'F': 'bg-red-100 text-red-700' };
             const safeId = (r.id || '').replace(/[^a-zA-Z0-9-_]/g, '_');
             const safeExamId = (r.examId || '').replace(/[^a-zA-Z0-9-_]/g, '_');
+            const waLink = whatsappResultLink(r);
 
             return `<div class="flex flex-col sm:flex-row sm:items-center justify-between p-3 bg-white border border-slate-100 rounded-lg hover:border-slate-200 hover:shadow-sm hover:cursor-pointer transition-all gap-2" data-view-result="${safeId}" onclick="if(!event.target.closest('button'))viewResult('${safeId}')" title="Click to view result">
                 <div class="flex-1 min-w-0">
@@ -1627,6 +1689,10 @@ function renderResults() {
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
                         <span>View</span>
                     </button>
+                    ${waLink ? `<button data-wa-result="${safeId}" onclick="event.stopPropagation();window.open('${waLink}','_blank')" class="px-3 py-1.5 bg-green-600 text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border-2 border-white" title="Send this result to WhatsApp">
+                        <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+                        <span>WhatsApp</span>
+                    </button>` : ''}
                     <button data-download-script="${safeId}" data-exam-id="${safeExamId}" onclick="event.stopPropagation();downloadGradedScript('${safeExamId}', '${safeId}')" class="px-3 py-1.5 bg-red-600 text-white text-[11px] font-bold rounded-lg transition-all duration-200 cursor-pointer whitespace-nowrap flex items-center gap-1.5 shadow-md hover:shadow-lg border-2 border-white" title="Download Graded Script PDF">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                         <span>Script</span>
@@ -1680,6 +1746,7 @@ function viewResult(resultId) {
     const title = document.getElementById('result-modal-title');
     const subtitle = document.getElementById('result-modal-subtitle');
     const downloadBtn = document.getElementById('result-modal-download-btn');
+    const waBtn = document.getElementById('result-modal-wa-btn');
 
     if (!modal || !body || !title) return;
 
@@ -1687,6 +1754,7 @@ function viewResult(resultId) {
     title.textContent = 'Loading...';
     subtitle.textContent = '';
     if (downloadBtn) downloadBtn.classList.add('hidden');
+    if (waBtn) waBtn.classList.add('hidden');
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 
@@ -1804,6 +1872,13 @@ function viewResult(resultId) {
             if (downloadBtn) {
                 downloadBtn.classList.remove('hidden');
                 downloadBtn.onclick = function() { downloadGradedScript(r.examId, r.id); };
+            }
+            if (waBtn) {
+                const waLink = whatsappResultLink(r);
+                if (waLink) {
+                    waBtn.classList.remove('hidden');
+                    waBtn.onclick = function() { window.open(waLink, '_blank'); };
+                }
             }
         })
         .catch(err => {
@@ -2240,7 +2315,9 @@ async function saveExamSettings() {
 
 // ====== SCHEME OF WORK ======
 // ====== TAB SWITCHING ======
+let currentTab = '';
 function switchTab(tab) {
+    currentTab = tab;
     document.querySelectorAll('.tab-btn').forEach(btn => {
         const isActive = btn.id === 'tab-' + tab + '-btn';
         btn.className = 'tab-btn px-4 py-3 text-sm font-semibold border-b-2 transition cursor-pointer whitespace-nowrap ' + (isActive ? 'border-slate-800 text-slate-800 bg-white' : 'border-transparent text-slate-500 hover:text-slate-700');
@@ -2248,6 +2325,12 @@ function switchTab(tab) {
     document.querySelectorAll('.tab-panel').forEach(p => {
         p.classList.toggle('hidden', p.id !== 'tab-' + tab);
     });
+    if (tab === 'results') {
+        pollResults();
+        startResultsPolling();
+    } else {
+        stopResultsPolling();
+    }
 }
 
 // ====== EVENT DELEGATION (fallback if inline onclick fails) ======

@@ -70,6 +70,7 @@ class HomeController extends Controller
             'results' => $db['results'] ?? [],
             'questionSets' => array_values(array_filter($db['questionSets'] ?? [], fn($q) => ($q['teacherId'] ?? '') === $userId)),
             'schoolConfig' => $db['schoolConfig'] ?? [],
+            'whatsappPhone' => \App\Helpers\WhatsApp::phone(),
         ]);
     }
 
@@ -90,6 +91,7 @@ class HomeController extends Controller
             'results' => $db['results'] ?? [],
             'questionSets' => array_values(array_filter($db['questionSets'] ?? [], fn($q) => ($q['teacherId'] ?? '') === $userId)),
             'schoolConfig' => $db['schoolConfig'] ?? [],
+            'whatsappPhone' => \App\Helpers\WhatsApp::phone(),
         ]);
     }
 

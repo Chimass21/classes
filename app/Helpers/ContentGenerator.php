@@ -96,6 +96,22 @@ class ContentGenerator
         return $result;
     }
 
+    /**
+     * Generate multiple-choice questions using the archetype engine only.
+     * Unlike generateQuestions(), this skips the static question bank, so
+     * EVERY generated stem explicitly embeds the topic keyword. This makes the
+     * questions pass strict topic-stem validation for any subject/topic and is
+     * used as an offline top-up / last-resort when the AI is unavailable.
+     */
+    public static function generateTopicAnchoredQuestions(string $subject, string $topic, int $count): array
+    {
+        $items = [];
+        for ($i = 1; $i <= $count; $i++) {
+            $items[] = self::generateSingleQuestion($subject, $topic, $i + ($i * 7));
+        }
+        return $items;
+    }
+
     private static function getQuestionBank(string $subject, string $topic): array
     {
         $key = strtolower(str_replace(' ', '_', $subject));

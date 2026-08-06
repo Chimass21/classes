@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Helpers\JsonDb;
+use App\Helpers\WhatsApp;
 use Illuminate\Http\Request;
 
 class ResultController extends Controller
@@ -10,7 +11,10 @@ class ResultController extends Controller
     public function apiIndex()
     {
         JsonDb::init();
-        return response()->json(['results' => JsonDb::get()['results']]);
+        return response()->json([
+            'results' => JsonDb::get()['results'],
+            'whatsapp' => ['phone' => WhatsApp::phone()],
+        ]);
     }
 
     public function apiShow($resultId)

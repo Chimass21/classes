@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { BookOpen, GraduationCap, Clock, Award, HelpCircle, ArrowRight, TrendingUp, Sparkles, LogOut, CheckCircle, Wallet, Plus, Upload, Download, Copy, Printer, Check, Trash2, Edit3, MessageSquare, AlertCircle, FileSpreadsheet, School, FileText, Volume2, FolderOpen, Layers } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { Exam, Question, LessonPlan, LessonNote, Transaction } from "../types";
@@ -68,6 +68,10 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
   const [resultsClassFilter, setResultsClassFilter] = useState("All");
   const [resultsSubjectFilter, setResultsSubjectFilter] = useState("All");
   const [walletBalance, setWalletBalance] = useState(user.walletBalance || 0);
+  const [whatsappPhone, setWhatsappPhone] = useState("");
+  const [newResultsCount, setNewResultsCount] = useState(0);
+  const resultsCountRef = useRef(0);
+  const newResultsTimer = useRef<number | null>(null);
 
   // 6. SCHOOL CONFIGURATION & REPORT CARD STATES
   const [schoolConfig, setSchoolConfig] = useState<any>({
@@ -307,6 +311,8 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
       const rsData = await rsRes.json();
       if (rsRes.ok) {
         setStudentResults(rsData.results || []);
+        resultsCountRef.current = (rsData.results || []).length;
+        if (rsData.whatsapp?.phone) setWhatsappPhone(rsData.whatsapp.phone);
       }
 
       // Fetch school config
@@ -379,6 +385,59 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
   useEffect(() => {
     fetchTeacherData();
   }, [user]);
+
+  // Live results: poll while the Results tab is open so new exam submissions appear immediately.
+  useEffect(() => {
+    if (activeTab !== "results") return;
+    let cancelled = false;
+    const poll = async () => {
+      try {
+        const res = await fetch("/api/results");
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+        const incoming = data.results || [];
+        if (data.whatsapp?.phone) setWhatsappPhone(data.whatsapp.phone);
+        const prev = resultsCountRef.current;
+        if (prev > 0 && incoming.length > prev) {
+          setNewResultsCount(incoming.length - prev);
+          if (newResultsTimer.current) clearTimeout(newResultsTimer.current);
+          newResultsTimer.current = window.setTimeout(() => setNewResultsCount(0), 12000);
+        }
+        resultsCountRef.current = incoming.length;
+        setStudentResults(incoming);
+      } catch (e) {
+        // keep previous data on failure
+      }
+    };
+    poll();
+    const timer = window.setInterval(poll, 15000);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+      if (newResultsTimer.current) clearTimeout(newResultsTimer.current);
+    };
+  }, [activeTab, user]);
+
+  const waResultLink = (r: any): string => {
+    if (!whatsappPhone) return "";
+    const pct = Number(r.percentage ?? ((r.score || 0) / (r.totalPossibleMarks || r.totalQuestions || 1)) * 100) || 0;
+    const grade = pct >= 75 ? "A" : pct >= 60 ? "B" : pct >= 50 ? "C" : pct >= 40 ? "D" : "F";
+    const lines = [
+      "EXAM RESULT NOTIFICATION",
+      "----------------------------",
+      "Student: " + (r.studentName || "Student"),
+      "Exam: " + (r.examTitle || ""),
+      "Subject: " + (r.subject || ""),
+      "Score: " + (r.score ?? 0) + " / " + (r.totalPossibleMarks || r.totalQuestions || 0),
+      "Percentage: " + Math.round(pct) + "%",
+      "Grade: " + grade,
+      "Correct: " + (r.correctAnswers || 0) + " / " + (r.totalQuestions || 0),
+      "Date: " + (r.date ? new Date(r.date).toLocaleString() : ""),
+      "Status: " + (pct >= 50 ? "PASSED" : "FAILED"),
+    ];
+    return "https://wa.me/" + whatsappPhone + "?text=" + encodeURIComponent(lines.join("\n"));
+  };
 
   const findSchemeForForm = (classLevel: string, subject: string) => {
     if (!classLevel || !subject) return null;
@@ -3427,6 +3486,21 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                     </button>
                   </div>
 
+                  {newResultsCount > 0 && (
+                    <div className="flex items-center justify-between gap-3 p-4 bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-2xl shadow-xs">
+                      <p className="text-sm font-black">
+                        {newResultsCount} new exam result{newResultsCount > 1 ? "s" : ""} received
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setNewResultsCount(0)}
+                        className="text-[11px] font-bold px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition cursor-pointer"
+                      >
+                        OK
+                      </button>
+                    </div>
+                  )}
+
                   <div className="p-6 bg-white border border-slate-200 rounded-3xl shadow-xs space-y-4">
                     <h3 className="text-base font-extrabold text-slate-900 mb-2">My CBT Assessments & Active Student Logs</h3>
                     
@@ -3576,13 +3650,27 @@ export default function TeacherDashboard({ user, onLogout }: TeacherDashboardPro
                                                 {new Date(resItem.date).toLocaleString()}
                                               </td>
                                               <td className="py-2.5 px-3 text-right">
-                                                <button
-                                                  type="button"
-                                                  onClick={() => setSelectedScript(resItem)}
-                                                  className="px-3.5 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl transition font-extrabold text-[10px] cursor-pointer"
-                                                >
-                                                  View Script & Grade Remarks
-                                                </button>
+                                                <div className="flex items-center justify-end gap-1.5">
+                                                  {whatsappPhone && waResultLink(resItem) && (
+                                                    <a
+                                                      href={waResultLink(resItem)}
+                                                      target="_blank"
+                                                      rel="noopener noreferrer"
+                                                      title="Send this result to WhatsApp"
+                                                      className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-xl transition font-extrabold text-[10px] cursor-pointer inline-flex items-center gap-1"
+                                                    >
+                                                      <MessageSquare className="w-3 h-3" />
+                                                      WhatsApp
+                                                    </a>
+                                                  )}
+                                                  <button
+                                                    type="button"
+                                                    onClick={() => setSelectedScript(resItem)}
+                                                    className="px-3.5 py-1.5 bg-indigo-650 hover:bg-indigo-700 text-white rounded-xl transition font-extrabold text-[10px] cursor-pointer"
+                                                  >
+                                                    View Script & Grade Remarks
+                                                  </button>
+                                                </div>
                                               </td>
                                             </tr>
                                           );

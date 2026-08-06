@@ -368,20 +368,59 @@ class AIController extends Controller
             $hasValidFormat = is_array($questionsArray) && !empty($questionsArray) && isset($questionsArray[0]);
 
             if (!$hasValidFormat) {
+                // A truncated response may only have yielded a single complete
+                // question object (or the top-level array never closed) — try
+                // to salvage every complete question emitted before the cut-off.
+                $salvaged = $this->extractAllQuestionObjects($response);
+                if (count($salvaged) > 0) {
+                    Log::warning('Salvaging questions from truncated AI response', [
+                        'salvaged' => count($salvaged),
+                        'requested' => $data['count'],
+                    ]);
+                    $questionsArray = $salvaged;
+                    $hasValidFormat = true;
+                }
+            }
+
+            if (!$hasValidFormat) {
                 Log::warning('Questions rejected - invalid format', [
                     'decoded_structure' => is_array($questions) ? array_keys($questions) : 'not_array',
                 ]);
                 return $this->fallbackToContentGenerator($data);
             }
 
-            $questionItems = $questions['objectives'] ?? $questions;
+            $questionItems = isset($questions['objectives']) && is_array($questions['objectives'])
+                ? $questions['objectives']
+                : $questionsArray;
 
-            // Validate quality and retry if needed
-            $validated = $this->validateAndRetryQuestions($questionItems, $prompt, $data, !empty($lessonNoteContent));
-            if ($validated === null) {
-                return $this->fallbackToContentGenerator($data);
+            // If the response is partial (e.g. the AI hit its output-token
+            // limit), skip the expensive AI retry loop — retrying with the same
+            // huge target count truncates again. Validate structure only; any
+            // stem that does not literally mention the topic is later made
+            // on-topic by the prepend mitigation below, preserving the AI's
+            // real questions instead of discarding them.
+            if (count($questionItems) < (int) $data['count']) {
+                Log::warning('AI returned partial questions set', [
+                    'received' => count($questionItems),
+                    'requested' => (int) $data['count'],
+                ]);
+                $validated = $this->normalizeQuestionFields($questionItems);
+                $validated = $this->filterValidQuestions($validated, $data['topic'], $data['subject'], true, 1) ?? [];
+            } else {
+                // Validate quality and retry if needed
+                $validated = $this->validateAndRetryQuestions($questionItems, $prompt, $data, !empty($lessonNoteContent));
+                if ($validated === null) {
+                    return $this->fallbackToContentGenerator($data);
+                }
             }
             $questionItems = $validated;
+
+            // Top up to the requested count using the offline topic-anchored
+            // generator so users always receive their full set of questions.
+            $questionItems = $this->topUpQuestionsFromContentGenerator($questionItems, $data);
+            if (empty($questionItems)) {
+                return $this->fallbackToContentGenerator($data);
+            }
 
             // Normalize field names from various AI output formats
             $questionItems = $this->normalizeQuestionFields($questionItems);
@@ -1937,6 +1976,16 @@ PROMPT;
             if (is_array($items) && !empty($items)) {
                 $items = $this->normalizeQuestionFields($items);
                 $items = $this->filterValidQuestions($items, $topic, $subject, false, 1) ?? [];
+                if (count($items) === 0) {
+                    // The static question bank does not embed the topic keyword
+                    // in its stems, so the strict topic filter rejects them all.
+                    // Regenerate with the topic-anchored archetype engine, which
+                    // guarantees every stem mentions the topic.
+                    Log::warning('Question bank failed the topic filter — regenerating topic-anchored questions');
+                    $items = ContentGenerator::generateTopicAnchoredQuestions($subject, $topic, $data['count']);
+                    $items = $this->normalizeQuestionFields($items);
+                    $items = $this->filterValidQuestions($items, $topic, $subject, false, 1) ?? [];
+                }
                 if (count($items) > 0) {
                     $items = $this->shuffleAnswers($items);
                     $actual = count($items);
@@ -1958,6 +2007,36 @@ PROMPT;
             'success' => false,
             'error' => 'Unable to generate questions at this time. Please try again with a different topic or try again later.',
         ], 503);
+    }
+
+    /**
+     * Fill a question set up to the requested count using the offline
+     * topic-anchored generator. The AI may return fewer questions than
+     * requested (output-token truncation) or have some rejected during
+     * validation — this guarantees the user always receives their full set.
+     */
+    private function topUpQuestionsFromContentGenerator(array $items, array $data): array
+    {
+        $target = max(1, (int) $data['count']);
+        if (count($items) >= $target) {
+            return array_slice($items, 0, $target);
+        }
+
+        $remaining = $target - count($items);
+        $fill = ContentGenerator::generateTopicAnchoredQuestions($data['subject'], $data['topic'], $remaining);
+        $fill = $this->normalizeQuestionFields($fill);
+        $fill = $this->filterValidQuestions($fill, $data['topic'], $data['subject'], false, 1) ?? [];
+
+        if (!empty($fill)) {
+            Log::warning('Topping up questions from offline generator', [
+                'had' => count($items),
+                'filling' => count($fill),
+                'requested' => $target,
+            ]);
+            $items = array_merge($items, array_slice($fill, 0, $remaining));
+        }
+
+        return array_slice($items, 0, $target);
     }
 
     /**
@@ -2024,36 +2103,20 @@ PROMPT;
             ]);
         }
 
-        // If we still don't have enough, try to generate remaining questions
-        $currentItems = $this->normalizeQuestionFields($currentItems);
-        $currentItems = $this->filterValidQuestions($currentItems, $topic, $subject, false, 1) ?? [];
+        // If we still don't have enough, fill the remainder offline so users
+        // always receive their requested count even when the AI truncates its
+        // output (finish_reason=length) or rate-limits every retry.
         if (count($currentItems) < $targetCount && count($currentItems) > 0) {
             $remaining = $targetCount - count($currentItems);
-            try {
-                $fillPrompt = "You are a Nigerian exam expert for {$subject} ({$class}). SUBJECT: {$subject}. TOPIC: \"{$topic}\". "
-                    . "Generate {$remaining} multiple-choice questions that DIRECTLY TEST KNOWLEDGE OF \"{$topic}\" in {$subject} for {$class} level. "
-                    . "Every question stem MUST contain the word \"{$topic}\" or a direct reference to a subtopic within {$topic}. "
-                    . "Vary question styles: definitions, fill-the-blank (___), scenarios, classifications, comparisons, calculations (if applicable), and negatives (EXCEPT). "
-                    . "4 UNIQUE options (A/B/C/D), exactly ONE correct answer. "
-                    . "Return ONLY a JSON array: [{\"id\":1,\"question\":\"stem that references {$topic}\",\"A\":\"opt\",\"B\":\"opt\",\"C\":\"opt\",\"D\":\"opt\",\"answer\":\"A\"}]";
-                $fillResponse = $this->ai->generate($fillPrompt, false, 8192, 0.6);
-                if (!empty(trim($fillResponse))) {
-                    $fillData = json_decode($fillResponse, true);
-                    if (!is_array($fillData) || empty($fillData)) {
-                        $cleaned = $this->extractJson($fillResponse);
-                        if ($cleaned !== null) $fillData = $cleaned;
-                    }
-                    if (is_array($fillData) && !empty($fillData)) {
-                        $fillItems = $fillData['objectives'] ?? $fillData;
-                        if (is_array($fillItems) && isset($fillItems[0])) {
-                            $fillItems = $this->normalizeQuestionFields($fillItems);
-                            $fillItems = $this->filterValidQuestions($fillItems, $topic, $subject, false, 1) ?? [];
-                            $currentItems = array_merge($currentItems, $fillItems);
-                        }
-                    }
-                }
-            } catch (\Exception $e) {
-                Log::warning('Question fill generation failed', ['error' => $e->getMessage()]);
+            $fillItems = ContentGenerator::generateTopicAnchoredQuestions($subject, $topic, $remaining);
+            $fillItems = $this->normalizeQuestionFields($fillItems);
+            $fillItems = $this->filterValidQuestions($fillItems, $topic, $subject, false, 1) ?? [];
+            if (!empty($fillItems)) {
+                Log::warning('Filling remaining questions from offline generator', [
+                    'remaining' => $remaining,
+                    'filled' => count($fillItems),
+                ]);
+                $currentItems = array_merge($currentItems, array_slice($fillItems, 0, $remaining));
             }
         }
 
@@ -2493,10 +2556,117 @@ PROMPT;
         // that balances braces, to catch deeply nested or oddly formatted JSON
         $decoded = $this->bruteForceFindJson($text);
         if ($decoded !== null) {
+            // If this is a single question object salvaged from a TRUNCATED
+            // response, prefer the complete list of salvaged questions so the
+            // caller receives every question emitted before the cut-off.
+            if ($this->looksLikeQuestion($decoded)) {
+                $salvaged = $this->extractAllQuestionObjects($text);
+                if (count($salvaged) > 0) {
+                    return $salvaged;
+                }
+            }
             return $decoded;
         }
 
+        // Last resort 2: the JSON may be TRUNCATED (e.g. the AI hit its output
+        // token limit and finish_reason=length). json_decode fails on an
+        // unclosed object, so salvage every complete, balanced question object
+        // that was emitted before the cut-off and return them as a list.
+        $salvaged = $this->extractAllQuestionObjects($text);
+        if (count($salvaged) > 0) {
+            return $salvaged;
+        }
+
         return null;
+    }
+
+    /**
+     * Salvage complete question objects from a malformed or truncated JSON
+     * response. Scans the raw text for every balanced {…} block that looks
+     * like a question (has a "question" stem plus at least one option) and
+     * returns them as a list.
+     */
+    private function extractAllQuestionObjects(string $text): array
+    {
+        $text = trim($text);
+        if (empty($text)) {
+            return [];
+        }
+
+        // Remove BOM characters and all markdown fences
+        $text = preg_replace('/^[\xEF\xBB\xBF\xFE\xFF]+/', '', $text);
+        $text = preg_replace('/```(?:json)?\s*/i', '', $text);
+        $text = str_replace('`', '', $text);
+
+        $objects = [];
+        $len = strlen($text);
+
+        for ($i = 0; $i < $len; $i++) {
+            if ($text[$i] !== '{') {
+                continue;
+            }
+
+            $depth = 0;
+            $inString = false;
+            $escaped = false;
+            $closeAt = -1;
+
+            for ($j = $i; $j < $len; $j++) {
+                $c = $text[$j];
+                if ($escaped) { $escaped = false; continue; }
+                if ($c === '\\') { $escaped = true; continue; }
+                if ($c === '"') { $inString = !$inString; continue; }
+                if ($inString) continue;
+
+                if ($c === '{') {
+                    $depth++;
+                } elseif ($c === '}') {
+                    $depth--;
+                    if ($depth === 0) {
+                        $closeAt = $j;
+                        break;
+                    }
+                }
+            }
+
+            if ($closeAt !== -1) {
+                // Balanced object — try to decode it as a question.
+                $block = substr($text, $i, $closeAt - $i + 1);
+                $candidate = preg_replace('/,\s*([}\]])/', '$1', $block);
+                $decoded = json_decode($candidate, true);
+                if (is_array($decoded) && $this->looksLikeQuestion($decoded)) {
+                    $objects[] = $decoded;
+                }
+                // Skip past this balanced block.
+                $i = $closeAt;
+            }
+            // Else: unbalanced object (e.g. the truncated top-level
+            // {"objectives":[…) — keep scanning inside it for balanced
+            // question objects.
+        }
+
+        return $objects;
+    }
+
+    /**
+     * Quick heuristic: does this decoded object look like a single
+     * multiple-choice question?
+     */
+    private function looksLikeQuestion(array $item): bool
+    {
+        if (empty($item['question']) || !is_scalar($item['question'])) {
+            return false;
+        }
+
+        $optionFound = false;
+        foreach (['A', 'B', 'C', 'D'] as $letter) {
+            if (isset($item[$letter]) && is_scalar($item[$letter]) && trim((string) $item[$letter]) !== '') {
+                $optionFound = true;
+                break;
+            }
+        }
+
+        return $optionFound;
     }
 
     /**

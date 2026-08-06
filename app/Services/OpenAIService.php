@@ -120,12 +120,22 @@ Always respond with accurate, well-structured content tailored for teachers and 
                     }
 
                     $usage = $data['usage'] ?? [];
+                    $finishReason = $data['choices'][0]['finish_reason'] ?? 'unknown';
+                    if ($finishReason === 'length') {
+                        Log::warning('AI response truncated (finish_reason=length)', [
+                            'model' => $this->model,
+                            'json_mode' => $useJsonMode,
+                            'prompt_tokens' => $usage['prompt_tokens'] ?? 'unknown',
+                            'completion_tokens' => $usage['completion_tokens'] ?? 'unknown',
+                            'total_tokens' => $usage['total_tokens'] ?? 'unknown',
+                        ]);
+                    }
                     Log::debug('AI API Response', [
                         'model' => $this->model,
                         'json_mode' => $useJsonMode,
                         'response_length' => strlen($text),
                         'response_preview' => substr($text, 0, 500),
-                        'finish_reason' => $data['choices'][0]['finish_reason'] ?? 'unknown',
+                        'finish_reason' => $finishReason,
                         'prompt_tokens' => $usage['prompt_tokens'] ?? 'unknown',
                         'completion_tokens' => $usage['completion_tokens'] ?? 'unknown',
                         'total_tokens' => $usage['total_tokens'] ?? 'unknown',

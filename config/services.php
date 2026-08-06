@@ -8,4 +8,10 @@ return [
         'max_retries' => env('OPENAI_MAX_RETRIES', 3),
         'timeout' => env('OPENAI_TIMEOUT', 120),
     ],
+
+    'whatsapp' => [
+        // Number exam results are forwarded to via wa.me deep links.
+        // Accepts local (0806...) or international (+2348062...) formats.
+        'phone' => env('WHATSAPP_PHONE', '+2348062078597'),
+    ],
 ];
